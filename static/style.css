@@ -1173,3 +1173,107 @@ a {
         min-width: 1050px;
     }
 }
+
+/* =========================
+   Card List: larger image but no horizontal scroll
+========================= */
+
+.table-card {
+    overflow-x: visible;
+}
+
+.card-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+}
+
+/* 欄位重新分配：圖片加大，其他欄位略微壓縮 */
+.card-table th:nth-child(1),
+.card-table td:nth-child(1) {
+    width: 8%;
+}
+
+.card-table th:nth-child(2),
+.card-table td:nth-child(2) {
+    width: 21%;
+}
+
+.card-table th:nth-child(3),
+.card-table td:nth-child(3) {
+    width: 9%;
+}
+
+.card-table th:nth-child(4),
+.card-table td:nth-child(4) {
+    width: 8%;
+}
+
+.card-table th:nth-child(5),
+.card-table td:nth-child(5) {
+    width: 8%;
+}
+
+.card-table th:nth-child(6),
+.card-table td:nth-child(6) {
+    width: 11%;
+}
+
+.card-table th:nth-child(7),
+.card-table td:nth-child(7) {
+    width: 13%;
+}
+
+.card-table th:nth-child(8),
+.card-table td:nth-child(8) {
+    width: 11%;
+}
+
+.card-table th:nth-child(9),
+.card-table td:nth-child(9) {
+    width: 11%;
+}
+
+/* 圖片放大 */
+.list-card-img,
+.list-no-img {
+    width: 68px !important;
+    height: 92px !important;
+}
+
+/* 表格間距稍微縮一點，避免因圖片變大又需要左右滑 */
+.card-table th {
+    padding: 13px 8px;
+    font-size: 13px;
+}
+
+.card-table td {
+    padding: 14px 8px;
+    font-size: 14px;
+}
+
+/* 卡名維持兩行 */
+.card-name-text {
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* 金額欄位不換行 */
+.card-table td:nth-child(6),
+.card-table td:nth-child(7),
+.card-table td:nth-child(8),
+.card-table td:nth-child(9) {
+    white-space: nowrap;
+}
+
+/* 小螢幕才允許左右滑 */
+@media (max-width: 1000px) {
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .card-table {
+        min-width: 1050px;
+    }
+}
