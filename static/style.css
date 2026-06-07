@@ -1053,3 +1053,123 @@ a {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   Fix Card List: show all columns without horizontal scroll
+========================= */
+
+.table-card {
+    overflow-x: visible;
+}
+
+.card-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+}
+
+/* 縮小表格整體文字與間距 */
+.card-table th {
+    padding: 13px 10px;
+    font-size: 13px;
+}
+
+.card-table td {
+    padding: 14px 10px;
+    font-size: 14px;
+}
+
+/* 重新分配欄位寬度，讓 ROI 也看得到 */
+.card-table th:nth-child(1),
+.card-table td:nth-child(1) {
+    width: 7%;
+}
+
+.card-table th:nth-child(2),
+.card-table td:nth-child(2) {
+    width: 22%;
+}
+
+.card-table th:nth-child(3),
+.card-table td:nth-child(3) {
+    width: 9%;
+}
+
+.card-table th:nth-child(4),
+.card-table td:nth-child(4) {
+    width: 8%;
+}
+
+.card-table th:nth-child(5),
+.card-table td:nth-child(5) {
+    width: 8%;
+}
+
+.card-table th:nth-child(6),
+.card-table td:nth-child(6) {
+    width: 11%;
+}
+
+.card-table th:nth-child(7),
+.card-table td:nth-child(7) {
+    width: 13%;
+}
+
+.card-table th:nth-child(8),
+.card-table td:nth-child(8) {
+    width: 11%;
+}
+
+.card-table th:nth-child(9),
+.card-table td:nth-child(9) {
+    width: 11%;
+}
+
+/* 圖片再稍微縮小，避免壓縮欄位 */
+.list-card-img,
+.list-no-img {
+    width: 58px !important;
+    height: 78px !important;
+}
+
+/* 卡名維持兩行，但寬度跟著欄位走 */
+.card-name-text {
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* 標籤縮小一點 */
+.tag-row {
+    max-width: 100%;
+    gap: 5px;
+}
+
+.mini-tag {
+    font-size: 11px;
+    padding: 3px 7px;
+}
+
+/* 金額、ROI 不要亂換行 */
+.card-table td:nth-child(6),
+.card-table td:nth-child(7),
+.card-table td:nth-child(8),
+.card-table td:nth-child(9) {
+    white-space: nowrap;
+}
+
+/* 狀態不要換行 */
+.status {
+    white-space: nowrap;
+}
+
+/* 小螢幕才允許左右滑動 */
+@media (max-width: 1000px) {
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .card-table {
+        min-width: 1050px;
+    }
+}
