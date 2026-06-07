@@ -49,7 +49,7 @@ from calculations import (
     calculate_realized_profit,
     calculate_realized_roi
 )
-
+from datetime import datetime, date
 
 app = Flask(__name__)
 
@@ -63,6 +63,44 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 # key = user_id
 # value = 商品列表
 user_products = {}
+
+def calculate_holding_days_for_card(card):
+    """
+    持有中：今天 - 購入日期
+    已售出：售出日期 - 購入日期
+    沒有購入日期：回傳 "-"
+    """
+    buy_date_text = card.get("buy_date") if isinstance(card, dict) else card["buy_date"]
+
+    if not buy_date_text:
+        return "-"
+
+    try:
+        buy_date = datetime.strptime(buy_date_text, "%Y-%m-%d").date()
+    except:
+        return "-"
+
+    status = card.get("status") if isinstance(card, dict) else card["status"]
+
+    if status == "sold":
+        sell_date_text = card.get("sell_date") if isinstance(card, dict) else card["sell_date"]
+
+        if sell_date_text:
+            try:
+                end_date = datetime.strptime(sell_date_text, "%Y-%m-%d").date()
+            except:
+                end_date = date.today()
+        else:
+            end_date = date.today()
+    else:
+        end_date = date.today()
+
+    days = (end_date - buy_date).days
+
+    if days < 0:
+        days = 0
+
+    return f"{days} 天"
 
 
 @app.route("/")
@@ -148,9 +186,16 @@ def card_list_page():
 
     cards = get_all_cards(status, keyword, sort)
 
+    card_list = []
+
+    for card in cards:
+        card_dict = dict(card)
+        card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
+        card_list.append(card_dict)
+
     return render_template(
         "card_list.html",
-        cards=cards,
+        cards=card_list,
         current_status=status,
         keyword=keyword,
         sort=sort
@@ -178,7 +223,7 @@ def add_card_page():
         other_fee = 0
 
         # 目前表單已刪除圖片網址，所以固定為空字串
-        image_url = ""
+        image_url = request.form.get("image_url", "").strip()
 
         total_cost = calculate_total_cost(
             buy_price,
@@ -229,14 +274,15 @@ def add_card_page():
 
     # GET：讓網址參數可以自動帶入新增表單
     prefill = {
-        "card_name": request.args.get("card_name", "").strip(),
-        "card_number": request.args.get("card_number", "").strip(),
-        "grade": request.args.get("grade", "").strip(),
-        "purchase_method": "",
-        "buy_date": request.args.get("buy_date", "").strip(),
-        "buy_price": request.args.get("buy_price", "").strip(),
-        "current_market_price": request.args.get("current_market_price", "").strip(),
-        "note": request.args.get("note", "").strip()
+    "card_name": request.args.get("card_name", "").strip(),
+    "card_number": request.args.get("card_number", "").strip(),
+    "grade": request.args.get("grade", "").strip(),
+    "purchase_method": "",
+    "buy_date": request.args.get("buy_date", "").strip(),
+    "buy_price": request.args.get("buy_price", "").strip(),
+    "current_market_price": request.args.get("current_market_price", "").strip(),
+    "image_url": request.args.get("image_url", "").strip(),
+    "note": request.args.get("note", "").strip()
     }
 
     return render_template("add_card.html", prefill=prefill)

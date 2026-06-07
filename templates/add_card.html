@@ -6,6 +6,14 @@
 
 <form action="/cards/add" method="post" class="form-card">
 
+    <form action="/cards/add" method="post" class="form-card">
+
+    <input
+        type="hidden"
+        name="image_url"
+        value="{{ prefill.image_url or '' }}"
+    >
+
     <h2>基本資料</h2>
 
     <label>卡牌名稱 *</label>

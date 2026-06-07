@@ -77,26 +77,31 @@ def calculate_price_stats(prices):
     }
 
 
-def create_cadouka_add_url(product_name, price_stats, jpy_rate):
+def create_cadouka_add_url(product_name, price_stats, jpy_rate, image_url=""):
     """
     產生 Cadouka 新增卡牌頁網址。
     自動帶入：
     - card_name
     - grade = PSA10
     - current_market_price = 平均成交價換算台幣
+    - image_url = SNKRDUNK 抓到的商品圖片
     """
     market_price = 0
 
     if price_stats and jpy_rate:
         market_price = round(price_stats["average"] * jpy_rate)
 
-    base_url = BASE_URL.rstrip("/")
+    base_url = BASE_URL.strip().rstrip("/")
+
+    if not base_url.startswith("http://") and not base_url.startswith("https://"):
+        base_url = "https://" + base_url
 
     return (
         f"{base_url}/cards/add"
         f"?card_name={quote(product_name)}"
         f"&grade=PSA10"
         f"&current_market_price={market_price}"
+        f"&image_url={quote(image_url, safe='')}"
     )
 
 
@@ -175,9 +180,10 @@ def create_price_flex(product, prices, jpy_rate=None):
 
     # Cadouka 新增卡牌頁網址
     cadouka_add_url = create_cadouka_add_url(
-        product_name,
-        price_stats,
-        jpy_rate
+    product_name,
+    price_stats,
+    jpy_rate,
+    image_url
     )
 
     price_contents = []
