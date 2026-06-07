@@ -1,61 +1,136 @@
+import os
 import sqlite3
+
+import psycopg2
+import psycopg2.extras
 
 
 DB_NAME = "cards.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def is_postgres():
+    return DATABASE_URL is not None and DATABASE_URL.strip() != ""
 
 
 def get_connection():
+    if is_postgres():
+        conn = psycopg2.connect(
+            DATABASE_URL,
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+        return conn
+
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def execute_sql(cursor, sql, params=None):
+    """
+    讓同一份 SQL 可以同時支援：
+    SQLite：?
+    PostgreSQL：%s
+    """
+    if params is None:
+        params = []
+
+    if is_postgres():
+        sql = sql.replace("?", "%s")
+
+    cursor.execute(sql, params)
 
 
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS cards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cards (
+            id SERIAL PRIMARY KEY,
 
-        card_name TEXT NOT NULL,
-        card_number TEXT,
-        series_name TEXT,
-        rarity TEXT,
-        grade TEXT,
+            card_name TEXT NOT NULL,
+            card_number TEXT,
+            series_name TEXT,
+            rarity TEXT,
+            grade TEXT,
 
-        purchase_method TEXT,
+            purchase_method TEXT,
 
-        buy_price REAL DEFAULT 0,
-        shipping_fee REAL DEFAULT 0,
-        tax_fee REAL DEFAULT 0,
-        platform_fee REAL DEFAULT 0,
-        other_fee REAL DEFAULT 0,
+            buy_price REAL DEFAULT 0,
+            shipping_fee REAL DEFAULT 0,
+            tax_fee REAL DEFAULT 0,
+            platform_fee REAL DEFAULT 0,
+            other_fee REAL DEFAULT 0,
 
-        total_cost REAL DEFAULT 0,
-        current_market_price REAL DEFAULT 0,
+            total_cost REAL DEFAULT 0,
+            current_market_price REAL DEFAULT 0,
 
-        unrealized_profit REAL DEFAULT 0,
-        roi REAL DEFAULT 0,
+            unrealized_profit REAL DEFAULT 0,
+            roi REAL DEFAULT 0,
 
-        status TEXT DEFAULT 'holding',
+            status TEXT DEFAULT 'holding',
 
-        sell_price REAL DEFAULT 0,
-        sell_fee REAL DEFAULT 0,
-        sell_shipping_fee REAL DEFAULT 0,
-        sell_other_fee REAL DEFAULT 0,
-        net_revenue REAL DEFAULT 0,
-        realized_profit REAL DEFAULT 0,
-        realized_roi REAL DEFAULT 0,
+            sell_price REAL DEFAULT 0,
+            sell_fee REAL DEFAULT 0,
+            sell_shipping_fee REAL DEFAULT 0,
+            sell_other_fee REAL DEFAULT 0,
+            net_revenue REAL DEFAULT 0,
+            realized_profit REAL DEFAULT 0,
+            realized_roi REAL DEFAULT 0,
 
-        buy_date TEXT,
-        sell_date TEXT,
-        image_url TEXT,
-        note TEXT,
+            buy_date TEXT,
+            sell_date TEXT,
+            image_url TEXT,
+            note TEXT,
 
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            card_name TEXT NOT NULL,
+            card_number TEXT,
+            series_name TEXT,
+            rarity TEXT,
+            grade TEXT,
+
+            purchase_method TEXT,
+
+            buy_price REAL DEFAULT 0,
+            shipping_fee REAL DEFAULT 0,
+            tax_fee REAL DEFAULT 0,
+            platform_fee REAL DEFAULT 0,
+            other_fee REAL DEFAULT 0,
+
+            total_cost REAL DEFAULT 0,
+            current_market_price REAL DEFAULT 0,
+
+            unrealized_profit REAL DEFAULT 0,
+            roi REAL DEFAULT 0,
+
+            status TEXT DEFAULT 'holding',
+
+            sell_price REAL DEFAULT 0,
+            sell_fee REAL DEFAULT 0,
+            sell_shipping_fee REAL DEFAULT 0,
+            sell_other_fee REAL DEFAULT 0,
+            net_revenue REAL DEFAULT 0,
+            realized_profit REAL DEFAULT 0,
+            realized_roi REAL DEFAULT 0,
+
+            buy_date TEXT,
+            sell_date TEXT,
+            image_url TEXT,
+            note TEXT,
+
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
     conn.commit()
     conn.close()
@@ -65,7 +140,7 @@ def add_card(card_data):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    sql = """
     INSERT INTO cards (
         card_name,
         card_number,
@@ -91,7 +166,9 @@ def add_card(card_data):
         note
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
+    """
+
+    params = [
         card_data["card_name"],
         card_data.get("card_number", ""),
         card_data.get("series_name", ""),
@@ -114,7 +191,9 @@ def add_card(card_data):
         card_data.get("buy_date", ""),
         card_data.get("image_url", ""),
         card_data.get("note", "")
-    ))
+    ]
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
@@ -122,6 +201,7 @@ def add_card(card_data):
 
 def get_all_cards(status=None, keyword=None, sort=None):
     conn = get_connection()
+    cursor = conn.cursor()
 
     sql = """
         SELECT * FROM cards
@@ -135,15 +215,26 @@ def get_all_cards(status=None, keyword=None, sort=None):
         params.append(status)
 
     if keyword:
-        sql += """
-            AND (
-                card_name LIKE ?
-                OR card_number LIKE ?
-                OR grade LIKE ?
-                OR purchase_method LIKE ?
-                OR note LIKE ?
-            )
-        """
+        if is_postgres():
+            sql += """
+                AND (
+                    card_name ILIKE ?
+                    OR card_number ILIKE ?
+                    OR grade ILIKE ?
+                    OR purchase_method ILIKE ?
+                    OR note ILIKE ?
+                )
+            """
+        else:
+            sql += """
+                AND (
+                    card_name LIKE ?
+                    OR card_number LIKE ?
+                    OR grade LIKE ?
+                    OR purchase_method LIKE ?
+                    OR note LIKE ?
+                )
+            """
 
         search_keyword = f"%{keyword}%"
         params.extend([
@@ -197,7 +288,8 @@ def get_all_cards(status=None, keyword=None, sort=None):
     else:
         sql += " ORDER BY created_at DESC"
 
-    cards = conn.execute(sql, params).fetchall()
+    execute_sql(cursor, sql, params)
+    cards = cursor.fetchall()
 
     conn.close()
     return cards
@@ -205,11 +297,15 @@ def get_all_cards(status=None, keyword=None, sort=None):
 
 def get_card_by_id(card_id):
     conn = get_connection()
+    cursor = conn.cursor()
 
-    card = conn.execute("""
+    sql = """
         SELECT * FROM cards
         WHERE id = ?
-    """, (card_id,)).fetchone()
+    """
+
+    execute_sql(cursor, sql, [card_id])
+    card = cursor.fetchone()
 
     conn.close()
     return card
@@ -219,7 +315,7 @@ def update_card(card_id, card_data):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    sql = """
     UPDATE cards
     SET
         card_name = ?,
@@ -244,7 +340,9 @@ def update_card(card_id, card_data):
         image_url = ?,
         note = ?
     WHERE id = ?
-    """, (
+    """
+
+    params = [
         card_data["card_name"],
         card_data.get("card_number", ""),
         card_data.get("series_name", ""),
@@ -268,7 +366,9 @@ def update_card(card_id, card_data):
         card_data.get("note", ""),
 
         card_id
-    ))
+    ]
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
@@ -278,10 +378,12 @@ def delete_card(card_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    sql = """
         DELETE FROM cards
         WHERE id = ?
-    """, (card_id,))
+    """
+
+    execute_sql(cursor, sql, [card_id])
 
     conn.commit()
     conn.close()
@@ -291,14 +393,32 @@ def add_column_if_not_exists(column_name, column_definition):
     conn = get_connection()
     cursor = conn.cursor()
 
-    columns = cursor.execute("PRAGMA table_info(cards)").fetchall()
-    existing_columns = [col["name"] for col in columns]
+    if is_postgres():
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'cards'
+        """)
 
-    if column_name not in existing_columns:
-        cursor.execute(
-            f"ALTER TABLE cards ADD COLUMN {column_name} {column_definition}"
-        )
-        conn.commit()
+        columns = cursor.fetchall()
+        existing_columns = [col["column_name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE cards ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
+
+    else:
+        cursor.execute("PRAGMA table_info(cards)")
+        columns = cursor.fetchall()
+        existing_columns = [col["name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE cards ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
 
     conn.close()
 
@@ -306,8 +426,7 @@ def add_column_if_not_exists(column_name, column_definition):
 def migrate_db():
     """
     舊資料庫升級用。
-    如果 cards.db 已經存在，init_db() 不會重建表格，
-    所以要用 migrate_db() 補上後來新增的欄位。
+    PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
     add_column_if_not_exists("purchase_method", "TEXT")
 
@@ -322,7 +441,7 @@ def mark_card_as_sold(card_id, sell_data):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    sql = """
     UPDATE cards
     SET
         status = 'sold',
@@ -335,7 +454,9 @@ def mark_card_as_sold(card_id, sell_data):
         realized_roi = ?,
         sell_date = ?
     WHERE id = ?
-    """, (
+    """
+
+    params = [
         sell_data.get("sell_price", 0),
         sell_data.get("sell_fee", 0),
         sell_data.get("sell_shipping_fee", 0),
@@ -345,7 +466,9 @@ def mark_card_as_sold(card_id, sell_data):
         sell_data.get("realized_roi", 0),
         sell_data.get("sell_date", ""),
         card_id
-    ))
+    ]
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
@@ -353,8 +476,9 @@ def mark_card_as_sold(card_id, sell_data):
 
 def get_dashboard_full_summary():
     conn = get_connection()
+    cursor = conn.cursor()
 
-    holding = conn.execute("""
+    cursor.execute("""
         SELECT
             COUNT(*) AS total_cards,
             SUM(total_cost) AS total_cost,
@@ -362,9 +486,10 @@ def get_dashboard_full_summary():
             SUM(unrealized_profit) AS total_unrealized_profit
         FROM cards
         WHERE status = 'holding'
-    """).fetchone()
+    """)
+    holding = cursor.fetchone()
 
-    sold = conn.execute("""
+    cursor.execute("""
         SELECT
             COUNT(*) AS total_cards,
             SUM(total_cost) AS total_cost,
@@ -372,7 +497,8 @@ def get_dashboard_full_summary():
             SUM(realized_profit) AS total_realized_profit
         FROM cards
         WHERE status = 'sold'
-    """).fetchone()
+    """)
+    sold = cursor.fetchone()
 
     conn.close()
 

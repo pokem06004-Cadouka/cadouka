@@ -6,3 +6,4 @@ requests
 Pillow
 lxml
 python-dotenv
+psycopg2-binary

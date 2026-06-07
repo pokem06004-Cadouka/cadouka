@@ -1,11 +1,14 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 
 BASE_URL = os.getenv(
     "BASE_URL",
-    "https://cadouka.onrender.com"
+    "https://undergrad-suffering-showcase.ngrok-free.dev"
 ).strip().rstrip("/")
 
 headers = {
