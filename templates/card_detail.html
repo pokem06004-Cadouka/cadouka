@@ -8,6 +8,12 @@
     <div>
         {% if card.status != "sold" %}
             <a href="/cards/{{ card.id }}/sell" class="btn-sell">標記為已售出</a>
+        {% else %}
+            <form action="/cards/{{ card.id }}/unsell" method="post" style="display:inline;">
+                <button type="submit" class="btn-secondary" onclick="return confirm('確定要把這張卡改回持有中嗎？')">
+                    標記為持有中
+                </button>
+            </form>
         {% endif %}
 
         <a href="/cards/{{ card.id }}/edit" class="btn-add">編輯卡牌</a>
@@ -172,6 +178,10 @@
     <table class="detail-table">
         <tr>
             <th>狀態</th>
+            <tr>
+                <th>持有天數</th>
+                <td>{{ card.holding_days or "-" }}</td>
+            </tr>
             <td>
                 {% if card.status == "sold" %}
                     已售出

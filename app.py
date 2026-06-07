@@ -39,7 +39,8 @@ from models import (
     get_card_by_id,
     update_card,
     delete_card,
-    mark_card_as_sold
+    mark_card_as_sold,
+    mark_card_as_holding
 )
 
 from calculations import (
@@ -295,7 +296,10 @@ def card_detail_page(card_id):
     if not card:
         return "找不到這張卡牌", 404
 
-    return render_template("card_detail.html", card=card)
+    card_dict = dict(card)
+    card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
+
+    return render_template("card_detail.html", card=card_dict)
 
 
 @app.route("/cards/<int:card_id>/edit", methods=["GET", "POST"])
@@ -433,6 +437,16 @@ def sell_card_page(card_id):
 
     return render_template("sell_card.html", card=card)
 
+@app.route("/cards/<int:card_id>/unsell", methods=["POST"])
+def unsell_card_page(card_id):
+    card = get_card_by_id(card_id)
+
+    if not card:
+        return "找不到這張卡牌", 404
+
+    mark_card_as_holding(card_id)
+
+    return redirect(f"/cards/{card_id}")
 
 @app.route("/callback", methods=["POST"])
 def callback():

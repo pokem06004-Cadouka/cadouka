@@ -473,6 +473,29 @@ def mark_card_as_sold(card_id, sell_data):
     conn.commit()
     conn.close()
 
+def mark_card_as_holding(card_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+    UPDATE cards
+    SET
+        status = 'holding',
+        sell_price = 0,
+        sell_fee = 0,
+        sell_shipping_fee = 0,
+        sell_other_fee = 0,
+        net_revenue = 0,
+        realized_profit = 0,
+        realized_roi = 0,
+        sell_date = ''
+    WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [card_id])
+
+    conn.commit()
+    conn.close()
 
 def get_dashboard_full_summary():
     conn = get_connection()
