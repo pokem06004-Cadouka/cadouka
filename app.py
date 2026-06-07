@@ -43,14 +43,10 @@ from models import (
     mark_card_as_holding
 )
 
-from calculations import (
-    calculate_total_cost,
-    calculate_unrealized_profit,
-    calculate_roi,
-    calculate_realized_profit,
-    calculate_realized_roi
-)
+from calculations import calculate_total_cost
+
 from datetime import datetime, date
+
 
 app = Flask(__name__)
 
@@ -60,10 +56,12 @@ migrate_db()
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+
 # 暫存 LINE 使用者搜尋到的商品結果
 # key = user_id
 # value = 商品列表
 user_products = {}
+
 
 def calculate_holding_days_for_card(card):
     """
@@ -102,6 +100,36 @@ def calculate_holding_days_for_card(card):
         days = 0
 
     return f"{days} 天"
+
+
+def calculate_unrealized_by_buy_price(current_market_price, buy_price):
+    """
+    未實現損益 = 目前市價 - 購入價格
+    未實現 ROI = 未實現損益 / 購入價格 * 100%
+    """
+    unrealized_profit = current_market_price - buy_price
+
+    if buy_price == 0:
+        roi = 0
+    else:
+        roi = (unrealized_profit / buy_price) * 100
+
+    return unrealized_profit, roi
+
+
+def calculate_realized_by_buy_price(net_revenue, buy_price):
+    """
+    已實現損益 = 實際收入 - 購入價格
+    已實現 ROI = 已實現損益 / 購入價格 * 100%
+    """
+    realized_profit = net_revenue - buy_price
+
+    if buy_price == 0:
+        realized_roi = 0
+    else:
+        realized_roi = (realized_profit / buy_price) * 100
+
+    return realized_profit, realized_roi
 
 
 @app.route("/")
@@ -223,7 +251,7 @@ def add_card_page():
         platform_fee = 0
         other_fee = 0
 
-        # 目前表單已刪除圖片網址，所以固定為空字串
+        # LINE/SNKRDUNK 新增時會帶入圖片網址；手動新增則可能為空
         image_url = request.form.get("image_url", "").strip()
 
         total_cost = calculate_total_cost(
@@ -234,14 +262,11 @@ def add_card_page():
             other_fee
         )
 
-        unrealized_profit = calculate_unrealized_profit(
+        # 未實現損益 = 目前市價 - 購入價格
+        # 未實現 ROI = 未實現損益 / 購入價格 * 100%
+        unrealized_profit, roi = calculate_unrealized_by_buy_price(
             current_market_price,
-            total_cost
-        )
-
-        roi = calculate_roi(
-            unrealized_profit,
-            total_cost
+            buy_price
         )
 
         card_data = {
@@ -275,15 +300,15 @@ def add_card_page():
 
     # GET：讓網址參數可以自動帶入新增表單
     prefill = {
-    "card_name": request.args.get("card_name", "").strip(),
-    "card_number": request.args.get("card_number", "").strip(),
-    "grade": request.args.get("grade", "").strip(),
-    "purchase_method": "",
-    "buy_date": request.args.get("buy_date", "").strip(),
-    "buy_price": request.args.get("buy_price", "").strip(),
-    "current_market_price": request.args.get("current_market_price", "").strip(),
-    "image_url": request.args.get("image_url", "").strip(),
-    "note": request.args.get("note", "").strip()
+        "card_name": request.args.get("card_name", "").strip(),
+        "card_number": request.args.get("card_number", "").strip(),
+        "grade": request.args.get("grade", "").strip(),
+        "purchase_method": "",
+        "buy_date": request.args.get("buy_date", "").strip(),
+        "buy_price": request.args.get("buy_price", "").strip(),
+        "current_market_price": request.args.get("current_market_price", "").strip(),
+        "image_url": request.args.get("image_url", "").strip(),
+        "note": request.args.get("note", "").strip()
     }
 
     return render_template("add_card.html", prefill=prefill)
@@ -327,7 +352,7 @@ def edit_card_page(card_id):
         platform_fee = 0
         other_fee = 0
 
-        # 目前表單已刪除圖片網址，編輯時保留原本 image_url
+        # 編輯時保留原本 image_url，不顯示給使用者修改
         image_url = card["image_url"] or ""
 
         total_cost = calculate_total_cost(
@@ -338,14 +363,11 @@ def edit_card_page(card_id):
             other_fee
         )
 
-        unrealized_profit = calculate_unrealized_profit(
+        # 未實現損益 = 目前市價 - 購入價格
+        # 未實現 ROI = 未實現損益 / 購入價格 * 100%
+        unrealized_profit, roi = calculate_unrealized_by_buy_price(
             current_market_price,
-            total_cost
-        )
-
-        roi = calculate_roi(
-            unrealized_profit,
-            total_cost
+            buy_price
         )
 
         card_data = {
@@ -374,6 +396,29 @@ def edit_card_page(card_id):
 
         update_card(card_id, card_data)
 
+        # 如果這張卡已經售出，購入價格改變後，
+        # 已實現損益與已實現 ROI 也要重新計算。
+        if card["status"] == "sold":
+            net_revenue = card["net_revenue"] or card["sell_price"] or 0
+
+            realized_profit, realized_roi = calculate_realized_by_buy_price(
+                net_revenue,
+                buy_price
+            )
+
+            sell_data = {
+                "sell_price": card["sell_price"] or net_revenue,
+                "sell_fee": card["sell_fee"] or 0,
+                "sell_shipping_fee": card["sell_shipping_fee"] or 0,
+                "sell_other_fee": card["sell_other_fee"] or 0,
+                "net_revenue": net_revenue,
+                "realized_profit": realized_profit,
+                "realized_roi": realized_roi,
+                "sell_date": card["sell_date"] or ""
+            }
+
+            mark_card_as_sold(card_id, sell_data)
+
         return redirect(f"/cards/{card_id}")
 
     return render_template("edit_card.html", card=card)
@@ -400,6 +445,8 @@ def sell_card_page(card_id):
 
     if request.method == "POST":
         sell_date = request.form.get("sell_date", "").strip()
+
+        # 現在這個欄位代表「實際收入」
         sell_price = float(request.form.get("sell_price") or 0)
 
         # 目前售出表單已簡化，所以售出成本固定為 0
@@ -407,17 +454,16 @@ def sell_card_page(card_id):
         sell_shipping_fee = 0
         sell_other_fee = 0
 
-        # 沒有售出成本時，實際收入 = 售出價格
+        # 實際收入 = 使用者填寫的金額
         net_revenue = sell_price
 
-        realized_profit = calculate_realized_profit(
-            net_revenue,
-            card["total_cost"] or 0
-        )
+        # 已實現損益 = 實際收入 - 購入價格
+        # 已實現 ROI = 已實現損益 / 購入價格 * 100%
+        buy_price = card["buy_price"] or 0
 
-        realized_roi = calculate_realized_roi(
-            realized_profit,
-            card["total_cost"] or 0
+        realized_profit, realized_roi = calculate_realized_by_buy_price(
+            net_revenue,
+            buy_price
         )
 
         sell_data = {
@@ -437,6 +483,7 @@ def sell_card_page(card_id):
 
     return render_template("sell_card.html", card=card)
 
+
 @app.route("/cards/<int:card_id>/unsell", methods=["POST"])
 def unsell_card_page(card_id):
     card = get_card_by_id(card_id)
@@ -447,6 +494,7 @@ def unsell_card_page(card_id):
     mark_card_as_holding(card_id)
 
     return redirect(f"/cards/{card_id}")
+
 
 @app.route("/callback", methods=["POST"])
 def callback():
