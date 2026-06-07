@@ -71,38 +71,14 @@
 
         <select name="sort" onchange="this.form.submit()">
             <option value="" {% if not sort %}selected{% endif %}>預設排序</option>
-
-            <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>
-                購入日期：新到舊
-            </option>
-
-            <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>
-                購入日期：舊到新
-            </option>
-
-            <option value="cost_desc" {% if sort == "cost_desc" %}selected{% endif %}>
-                總成本：高到低
-            </option>
-
-            <option value="cost_asc" {% if sort == "cost_asc" %}selected{% endif %}>
-                總成本：低到高
-            </option>
-
-            <option value="profit_desc" {% if sort == "profit_desc" %}selected{% endif %}>
-                損益：高到低
-            </option>
-
-            <option value="profit_asc" {% if sort == "profit_asc" %}selected{% endif %}>
-                損益：低到高
-            </option>
-
-            <option value="roi_desc" {% if sort == "roi_desc" %}selected{% endif %}>
-                ROI：高到低
-            </option>
-
-            <option value="roi_asc" {% if sort == "roi_asc" %}selected{% endif %}>
-                ROI：低到高
-            </option>
+            <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>購入日期：新到舊</option>
+            <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>購入日期：舊到新</option>
+            <option value="cost_desc" {% if sort == "cost_desc" %}selected{% endif %}>總成本：高到低</option>
+            <option value="cost_asc" {% if sort == "cost_asc" %}selected{% endif %}>總成本：低到高</option>
+            <option value="profit_desc" {% if sort == "profit_desc" %}selected{% endif %}>損益：高到低</option>
+            <option value="profit_asc" {% if sort == "profit_asc" %}selected{% endif %}>損益：低到高</option>
+            <option value="roi_desc" {% if sort == "roi_desc" %}selected{% endif %}>ROI：高到低</option>
+            <option value="roi_asc" {% if sort == "roi_asc" %}selected{% endif %}>ROI：低到高</option>
         </select>
 
     </form>
@@ -111,7 +87,7 @@
 
 {% if cards %}
 <div class="table-card">
-    <table class="card-table">
+    <table class="card-table card-table-polished">
         <thead>
             <tr>
                 <th>圖片</th>
@@ -119,16 +95,16 @@
                 <th>卡號</th>
                 <th>狀態</th>
                 <th>持有天數</th>
-                <th>總成本</th>
-                <th>參考價格 / 實際收入</th>
-                <th>損益</th>
-                <th>ROI</th>
+                <th class="money-cell">購入價格</th>
+                <th class="money-cell">市價 / 實收</th>
+                <th class="money-cell">損益</th>
+                <th class="money-cell">ROI</th>
             </tr>
         </thead>
 
         <tbody>
             {% for card in cards %}
-            <tr>
+            <tr class="{% if card.status == 'sold' %}sold-row{% else %}holding-row{% endif %}">
                 <td>
                     <a href="/cards/{{ card.id }}" class="card-image-link">
                         {% if card.image_url %}
@@ -150,7 +126,7 @@
                         {% if card.grade %}
                             <span class="mini-tag">{{ card.grade }}</span>
                         {% else %}
-                            <span class="mini-tag light">無鑑定狀態</span>
+                            <span class="mini-tag light">無鑑定</span>
                         {% endif %}
 
                         {% if card.buy_date %}
@@ -161,7 +137,7 @@
 
                 <td>
                     {% if card.card_number %}
-                        {{ card.card_number }}
+                        <span class="sub-text strong-text">{{ card.card_number }}</span>
                     {% else %}
                         <span class="sub-text">未填</span>
                     {% endif %}
@@ -178,14 +154,14 @@
                 </td>
 
                 <td>
-                    {{ card.holding_days or "-" }}
+                    <span class="sub-text strong-text">{{ card.holding_days or "-" }}</span>
                 </td>
 
-                <td>
-                    <strong>NT${{ "{:,.0f}".format(card.total_cost or 0) }}</strong>
+                <td class="money-cell">
+                    <strong>NT${{ "{:,.0f}".format(card.buy_price or 0) }}</strong>
                 </td>
 
-                <td>
+                <td class="money-cell">
                     {% if card.status == "sold" %}
                         NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
                     {% else %}
@@ -193,34 +169,34 @@
                     {% endif %}
                 </td>
 
-                <td>
+                <td class="money-cell">
                     {% if card.status == "sold" %}
                         {% if card.realized_profit >= 0 %}
-                            <span class="profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
+                            <span class="pill-profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
                         {% else %}
-                            <span class="loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
+                            <span class="pill-loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
                         {% endif %}
                     {% else %}
                         {% if card.unrealized_profit >= 0 %}
-                            <span class="profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
+                            <span class="pill-profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
                         {% else %}
-                            <span class="loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
+                            <span class="pill-loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
                         {% endif %}
                     {% endif %}
                 </td>
 
-                <td>
+                <td class="money-cell">
                     {% if card.status == "sold" %}
                         {% if card.realized_roi >= 0 %}
-                            <span class="profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            <span class="pill-profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
                         {% else %}
-                            <span class="loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
                         {% endif %}
                     {% else %}
                         {% if card.roi >= 0 %}
-                            <span class="profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
                         {% else %}
-                            <span class="loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
                         {% endif %}
                     {% endif %}
                 </td>

@@ -1393,3 +1393,93 @@ a {
         flex-direction: column;
     }
 }
+
+/* =========================
+   Card List Beautify
+========================= */
+
+.card-table-polished tbody tr {
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.card-table-polished tbody tr:hover {
+    background: #f8fafc;
+}
+
+.card-table-polished .sold-row {
+    background: #fbfbfc;
+}
+
+.card-table-polished .sold-row:hover {
+    background: #f3f4f6;
+}
+
+.card-table-polished .holding-row {
+    background: #ffffff;
+}
+
+.money-cell {
+    text-align: right;
+}
+
+.card-table th.money-cell {
+    text-align: right;
+}
+
+.strong-text {
+    font-weight: 700;
+    color: #374151;
+}
+
+.pill-profit,
+.pill-loss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.pill-profit {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.pill-loss {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.card-table-polished td:nth-child(6),
+.card-table-polished td:nth-child(7),
+.card-table-polished td:nth-child(8),
+.card-table-polished td:nth-child(9) {
+    font-variant-numeric: tabular-nums;
+}
+
+.card-table-polished .status.sold {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.card-table-polished .status.holding {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.card-table-polished .card-name-text {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.card-table-polished .list-card-img {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-table-polished .list-card-img:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
