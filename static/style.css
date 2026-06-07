@@ -1277,3 +1277,119 @@ a {
         min-width: 1050px;
     }
 }
+
+/* =========================
+   Dashboard Beautify
+========================= */
+
+.dashboard-hero {
+    background: linear-gradient(135deg, #ffffff 0%, #f3f7ff 100%);
+    border: 1px solid #e5e7eb;
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 34px;
+}
+
+.dashboard-hero h1 {
+    font-size: 34px;
+    margin-bottom: 8px;
+    letter-spacing: -0.03em;
+}
+
+.eyebrow {
+    margin: 0 0 8px 0;
+    color: #3b82f6;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.overview-grid {
+    align-items: stretch;
+}
+
+.highlight-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.highlight-card::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 130px;
+    height: 130px;
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 999px;
+}
+
+.summary-card {
+    min-height: 96px;
+}
+
+.primary-card .summary-value {
+    font-size: 30px;
+}
+
+.with-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.section-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.holding-badge {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.sold-badge {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.dashboard-section {
+    margin-bottom: 40px;
+}
+
+.dashboard-section .summary-grid {
+    margin-top: 14px;
+}
+
+.section-action-row {
+    margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+    .dashboard-hero {
+        flex-direction: column;
+        padding: 24px;
+    }
+
+    .dashboard-hero h1 {
+        font-size: 28px;
+    }
+
+    .with-badge {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
