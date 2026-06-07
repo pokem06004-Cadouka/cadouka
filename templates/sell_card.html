@@ -4,27 +4,42 @@
 
 <a href="/cards/{{ card.id }}" class="back-link">← 回到卡牌明細</a>
 
-<h1>標記為已售出</h1>
+{% if card.status == "sold" %}
+    <h1>編輯已售出資料</h1>
+{% else %}
+    <h1>標記為已售出</h1>
+{% endif %}
 
 <div class="sell-card-summary">
     <h2>{{ card.card_name }}</h2>
-    <p>總成本：NT${{ "{:,.0f}".format(card.total_cost or 0) }}</p>
-    <p class="sub-text">
-        系統會依照售出價格，自動計算已實現損益與已實現 ROI。
-    </p>
+    <p>購入價格：NT${{ "{:,.0f}".format(card.buy_price or 0) }}</p>
 </div>
 
 <form action="/cards/{{ card.id }}/sell" method="post" class="form-card">
 
     <h2>售出資料</h2>
 
+    <label>實際收入</label>
+    <input
+        type="number"
+        name="sell_price"
+        step="1"
+        value="{{ card.net_revenue or card.sell_price or 0 }}"
+        placeholder="請輸入實際收到的金額"
+    >
+
     <label>售出日期</label>
-    <input type="date" name="sell_date">
+    <input
+        type="date"
+        name="sell_date"
+        value="{{ card.sell_date or '' }}"
+    >
 
-    <label>售出價格</label>
-    <input type="number" name="sell_price" step="1" value="0">
-
-    <button type="submit">確認售出</button>
+    {% if card.status == "sold" %}
+        <button type="submit">更新已售出資料</button>
+    {% else %}
+        <button type="submit">確認售出</button>
+    {% endif %}
 
 </form>
 

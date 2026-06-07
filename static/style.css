@@ -948,3 +948,22 @@ a {
         grid-template-columns: 1fr;
     }
 }
+
+.detail-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.detail-action-buttons form {
+    display: inline;
+}
+
+.detail-action-buttons .btn-secondary,
+.detail-action-buttons .btn-sell,
+.detail-action-buttons .btn-add,
+.detail-action-buttons .btn-danger {
+    margin-left: 0;
+    margin-right: 0;
+}

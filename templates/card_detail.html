@@ -5,21 +5,31 @@
 <div class="detail-actions">
     <a href="/cards" class="back-link">← 回到卡牌庫存</a>
 
-    <div>
-        {% if card.status != "sold" %}
-            <a href="/cards/{{ card.id }}/sell" class="btn-sell">標記為已售出</a>
-        {% else %}
+    <div class="detail-action-buttons">
+        {% if card.status == "sold" %}
             <form action="/cards/{{ card.id }}/unsell" method="post" style="display:inline;">
-                <button type="submit" class="btn-secondary" onclick="return confirm('確定要把這張卡改回持有中嗎？')">
+                <button
+                    type="submit"
+                    class="btn-secondary"
+                    onclick="return confirm('確定要把這張卡牌標記回持有中嗎？')"
+                >
                     標記為持有中
                 </button>
             </form>
+
+            <a href="/cards/{{ card.id }}/sell" class="btn-sell">編輯已售出資料</a>
+        {% else %}
+            <a href="/cards/{{ card.id }}/sell" class="btn-sell">標記為已售出</a>
         {% endif %}
 
         <a href="/cards/{{ card.id }}/edit" class="btn-add">編輯卡牌</a>
 
         <form action="/cards/{{ card.id }}/delete" method="post" style="display:inline;">
-            <button type="submit" class="btn-danger" onclick="return confirm('確定要刪除這張卡牌嗎？')">
+            <button
+                type="submit"
+                class="btn-danger"
+                onclick="return confirm('確定要刪除這張卡牌嗎？')"
+            >
                 刪除卡牌
             </button>
         </form>
@@ -52,8 +62,8 @@
 
         <div class="detail-summary">
             <div>
-                <div class="summary-title">總成本</div>
-                <div class="summary-value">NT${{ "{:,.0f}".format(card.total_cost or 0) }}</div>
+                <div class="summary-title">購入價格</div>
+                <div class="summary-value">NT${{ "{:,.0f}".format(card.buy_price or 0) }}</div>
             </div>
 
             {% if card.status == "sold" %}
@@ -141,10 +151,6 @@
             <td>{{ card.sell_date or "-" }}</td>
         </tr>
         <tr>
-            <th>售出價格</th>
-            <td>NT${{ "{:,.0f}".format(card.sell_price or 0) }}</td>
-        </tr>
-        <tr class="total-row">
             <th>實際收入</th>
             <td>NT${{ "{:,.0f}".format(card.net_revenue or 0) }}</td>
         </tr>
@@ -191,13 +197,7 @@
 
         <tr>
             <th>持有天數</th>
-            <td>
-                {% if card.holding_days is not none %}
-                    {{ card.holding_days }} 天
-                {% else %}
-                    -
-                {% endif %}
-            </td>
+            <td>{{ card.holding_days or "-" }}</td>
         </tr>
 
         {% if card.status == "sold" %}
