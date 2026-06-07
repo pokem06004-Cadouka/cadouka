@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cards/{{ card.id }}" class="back-link">← 回到卡牌明細</a>
+
+<h1>標記為已售出</h1>
+
+<div class="sell-card-summary">
+    <h2>{{ card.card_name }}</h2>
+    <p>總成本：NT${{ "{:,.0f}".format(card.total_cost or 0) }}</p>
+    <p class="sub-text">
+        系統會依照售出價格，自動計算已實現損益與已實現 ROI。
+    </p>
+</div>
+
+<form action="/cards/{{ card.id }}/sell" method="post" class="form-card">
+
+    <h2>售出資料</h2>
+
+    <label>售出日期</label>
+    <input type="date" name="sell_date">
+
+    <label>售出價格</label>
+    <input type="number" name="sell_price" step="1" value="0">
+
+    <button type="submit">確認售出</button>
+
+</form>
+
+{% endblock %}

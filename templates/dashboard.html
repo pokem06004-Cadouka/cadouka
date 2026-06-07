@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-header">
+    <div>
+        <h1>投資總覽</h1>
+        <p class="page-subtitle">追蹤卡牌持有、售出與整體投資表現</p>
+    </div>
+
+    <div class="dashboard-actions">
+        <a href="/cards/add" class="btn-add">新增卡牌</a>
+        <a href="/cards" class="btn-secondary">查看庫存</a>
+    </div>
+</div>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h2>整體表現</h2>
+        <p>包含持有中未實現損益與已售出實現損益</p>
+    </div>
+
+    <div class="summary-grid three featured-summary">
+        <div class="summary-card primary-card">
+            <div class="summary-title">總投入成本</div>
+            <div class="summary-value">NT${{ "{:,.0f}".format(total_cost) }}</div>
+        </div>
+
+        <div class="summary-card primary-card">
+            <div class="summary-title">總損益</div>
+            {% if total_profit >= 0 %}
+                <div class="summary-value profit">+NT${{ "{:,.0f}".format(total_profit) }}</div>
+            {% else %}
+                <div class="summary-value loss">-NT${{ "{:,.0f}".format(total_profit * -1) }}</div>
+            {% endif %}
+        </div>
+
+        <div class="summary-card primary-card">
+            <div class="summary-title">整體 ROI</div>
+            {% if total_roi >= 0 %}
+                <div class="summary-value profit">+{{ "{:.2f}".format(total_roi) }}%</div>
+            {% else %}
+                <div class="summary-value loss">{{ "{:.2f}".format(total_roi) }}%</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h2>持有中</h2>
+        <p>尚未售出的卡牌，以目前市價估算未實現損益</p>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-title">持有張數</div>
+            <div class="summary-value">{{ holding_cards }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">持有總成本</div>
+            <div class="summary-value">NT${{ "{:,.0f}".format(holding_cost) }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">目前總市值</div>
+            <div class="summary-value">NT${{ "{:,.0f}".format(holding_market_value) }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">未實現損益</div>
+            {% if holding_unrealized_profit >= 0 %}
+                <div class="summary-value profit">+NT${{ "{:,.0f}".format(holding_unrealized_profit) }}</div>
+            {% else %}
+                <div class="summary-value loss">-NT${{ "{:,.0f}".format(holding_unrealized_profit * -1) }}</div>
+            {% endif %}
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">未實現 ROI</div>
+            {% if holding_roi >= 0 %}
+                <div class="summary-value profit">+{{ "{:.2f}".format(holding_roi) }}%</div>
+            {% else %}
+                <div class="summary-value loss">{{ "{:.2f}".format(holding_roi) }}%</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-action-row">
+        <a href="/cards?status=holding" class="btn-secondary">查看持有中卡牌</a>
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <div class="section-heading">
+        <h2>已售出</h2>
+        <p>已完成售出的卡牌，以實際收入計算已實現損益</p>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-title">已售出張數</div>
+            <div class="summary-value">{{ sold_cards }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">售出卡總成本</div>
+            <div class="summary-value">NT${{ "{:,.0f}".format(sold_cost) }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">實際收入</div>
+            <div class="summary-value">NT${{ "{:,.0f}".format(sold_net_revenue) }}</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">已實現損益</div>
+            {% if sold_realized_profit >= 0 %}
+                <div class="summary-value profit">+NT${{ "{:,.0f}".format(sold_realized_profit) }}</div>
+            {% else %}
+                <div class="summary-value loss">-NT${{ "{:,.0f}".format(sold_realized_profit * -1) }}</div>
+            {% endif %}
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-title">已實現 ROI</div>
+            {% if sold_roi >= 0 %}
+                <div class="summary-value profit">+{{ "{:.2f}".format(sold_roi) }}%</div>
+            {% else %}
+                <div class="summary-value loss">{{ "{:.2f}".format(sold_roi) }}%</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-action-row">
+        <a href="/cards?status=sold" class="btn-secondary">查看已售出卡牌</a>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>卡牌庫存</h1>
+    <a href="/cards/add" class="btn-add">新增卡牌</a>
+</div>
+<form action="/cards" method="get" class="search-form">
+
+    {% if current_status %}
+        <input type="hidden" name="status" value="{{ current_status }}">
+    {% endif %}
+
+    {% if sort %}
+        <input type="hidden" name="sort" value="{{ sort }}">
+    {% endif %}
+
+    <input
+        type="text"
+        name="keyword"
+        value="{{ keyword or '' }}"
+        placeholder="搜尋卡牌名稱 / PSA卡號 / 鑑定狀態 / 購入方式"
+    >
+
+    <button type="submit">搜尋</button>
+
+    {% if keyword %}
+        <a href="/cards{% if current_status %}?status={{ current_status }}{% if sort %}&sort={{ sort }}{% endif %}{% elif sort %}?sort={{ sort }}{% endif %}" class="btn-clear">
+            清除
+        </a>
+    {% endif %}
+
+</form>
+<div class="filter-tabs">
+    <a href="/cards?{% if keyword %}keyword={{ keyword }}&{% endif %}{% if sort %}sort={{ sort }}{% endif %}"
+       class="{% if not current_status %}active{% endif %}">
+        全部
+    </a>
+
+    <a href="/cards?status=holding{% if keyword %}&keyword={{ keyword }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+       class="{% if current_status == 'holding' %}active{% endif %}">
+        持有中
+    </a>
+
+    <a href="/cards?status=sold{% if keyword %}&keyword={{ keyword }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+       class="{% if current_status == 'sold' %}active{% endif %}">
+        已售出
+    </a>
+</div>
+<form action="/cards" method="get" class="sort-form">
+
+    {% if current_status %}
+        <input type="hidden" name="status" value="{{ current_status }}">
+    {% endif %}
+
+    {% if keyword %}
+        <input type="hidden" name="keyword" value="{{ keyword }}">
+    {% endif %}
+
+    <label>排序方式</label>
+
+    <select name="sort" onchange="this.form.submit()">
+        <option value="" {% if not sort %}selected{% endif %}>預設排序</option>
+
+        <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>
+            購入日期：新到舊
+        </option>
+
+        <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>
+            購入日期：舊到新
+        </option>
+
+        <option value="cost_desc" {% if sort == "cost_desc" %}selected{% endif %}>
+            總成本：高到低
+        </option>
+
+        <option value="cost_asc" {% if sort == "cost_asc" %}selected{% endif %}>
+            總成本：低到高
+        </option>
+
+        <option value="profit_desc" {% if sort == "profit_desc" %}selected{% endif %}>
+            損益：高到低
+        </option>
+
+        <option value="profit_asc" {% if sort == "profit_asc" %}selected{% endif %}>
+            損益：低到高
+        </option>
+
+        <option value="roi_desc" {% if sort == "roi_desc" %}selected{% endif %}>
+            ROI：高到低
+        </option>
+
+        <option value="roi_asc" {% if sort == "roi_asc" %}selected{% endif %}>
+            ROI：低到高
+        </option>
+    </select>
+
+</form>
+
+{% if cards %}
+<table class="card-table">
+    <thead>
+        <tr>
+            <th>圖片</th>
+            <th>卡牌名稱</th>
+            <th>卡號</th>
+            <th>狀態</th>
+            <th>總成本</th>
+            <th>參考價格 / 實際收入</th>
+            <th>損益</th>
+            <th>ROI</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for card in cards %}
+        <tr>
+            <td>
+                {% if card.image_url %}
+                    <img src="{{ card.image_url }}" class="card-img">
+                {% else %}
+                    <div class="no-img">No Image</div>
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="/cards/{{ card.id }}" class="card-name-link">
+                    <strong>{{ card.card_name }}</strong>
+                </a>
+                <div class="sub-text">
+                    {{ card.grade or "" }}
+                </div>
+            </td>
+
+            <td>{{ card.card_number or "-" }}</td>
+
+            <td>
+                {% if card.status == "holding" %}
+                    <span class="status holding">持有中</span>
+                {% else %}
+                    <span class="status sold">已售出</span>
+                {% endif %}
+            </td>
+
+            <td>NT${{ "{:,.0f}".format(card.total_cost or 0) }}</td>
+            <td>
+                {% if card.status == "sold" %}
+                    NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
+                {% else %}
+                    NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
+                {% endif %}
+            </td>
+
+            <td>
+                {% if card.status == "sold" %}
+                    {% if card.realized_profit >= 0 %}
+                        <span class="profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
+                    {% else %}
+                        <span class="loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
+                    {% endif %}
+                {% else %}
+                    {% if card.unrealized_profit >= 0 %}
+                        <span class="profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
+                    {% else %}
+                        <span class="loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
+                    {% endif %}
+                {% endif %}
+            </td>
+
+            <td>
+                {% if card.status == "sold" %}
+                    {% if card.realized_roi >= 0 %}
+                        <span class="profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                    {% else %}
+                        <span class="loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                    {% endif %}
+                {% else %}
+                    {% if card.roi >= 0 %}
+                        <span class="profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                    {% else %}
+                        <span class="loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<div class="empty-box">
+    <h2>目前還沒有卡牌資料</h2>
+    <p>先新增一張卡牌，系統就會自動計算成本、損益和 ROI。</p>
+    <a href="/cards/add" class="btn-add">新增第一張卡牌</a>
+</div>
+{% endif %}
+
+{% endblock %}

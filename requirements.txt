@@ -1,0 +1,8 @@
+Flask
+gunicorn
+line-bot-sdk
+beautifulsoup4
+requests
+Pillow
+lxml
+python-dotenv

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>新增卡牌資料</h1>
+
+<form action="/cards/add" method="post" class="form-card">
+
+    <h2>基本資料</h2>
+
+    <label>卡牌名稱 *</label>
+    <input
+        type="text"
+        name="card_name"
+        value="{{ prefill.card_name or '' }}"
+        required
+    >
+
+    <label>PSA 卡號</label>
+    <input
+        type="text"
+        name="card_number"
+        placeholder="可選填 PSA 卡號"
+        value="{{ prefill.card_number or '' }}"
+    >
+
+    <label>鑑定狀態</label>
+    <input
+        type="text"
+        name="grade"
+        placeholder="例如 PSA10 / PSA9 / RAW"
+        value="{{ prefill.grade or '' }}"
+    >
+
+    <h2>成本資料</h2>
+
+    <label>購入方式</label>
+    <input
+        type="text"
+        name="purchase_method"
+        placeholder="Line / SnkrDunk / 自送..."
+        value="{{ prefill.purchase_method or '' }}"
+    >
+
+    <label>購入日期</label>
+    <input
+        type="date"
+        name="buy_date"
+        value="{{ prefill.buy_date or '' }}"
+    >
+
+    <label>購入價格</label>
+    <input
+        type="number"
+        name="buy_price"
+        step="1"
+        value="{{ prefill.buy_price or 0 }}"
+    >
+
+    <h2>市價資料</h2>
+
+    <label>目前市價</label>
+    <input
+        type="number"
+        name="current_market_price"
+        step="1"
+        value="{{ prefill.current_market_price or 0 }}"
+    >
+
+    <label>備註</label>
+    <textarea name="note" rows="4">{{ prefill.note or '' }}</textarea>
+
+    <button type="submit">新增卡牌</button>
+
+</form>
+
+{% endblock %}
