@@ -631,6 +631,17 @@ a {
     word-break: break-word;
 }
 
+/* 讓 Dashboard 的賺錢 / 虧錢顏色不要被 summary-value 蓋掉 */
+.summary-value.profit,
+.summary-card .profit {
+    color: #16a34a !important;
+}
+
+.summary-value.loss,
+.summary-card .loss {
+    color: #dc2626 !important;
+}
+
 .dashboard-actions {
     display: flex;
     gap: 10px;
@@ -638,7 +649,7 @@ a {
 }
 
 .section-action-row {
-    margin-top: 4px;
+    margin-top: 16px;
 }
 
 
@@ -653,6 +664,10 @@ a {
     margin-bottom: 18px;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+.detail-actions form {
+    display: inline;
 }
 
 .detail-card {
@@ -737,6 +752,7 @@ a {
 .detail-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .detail-table th,
@@ -744,11 +760,18 @@ a {
     padding: 14px;
     border-bottom: 1px solid #e5e7eb;
     text-align: left;
+    vertical-align: middle;
 }
 
 .detail-table th {
     width: 180px;
     color: #6b7280;
+    white-space: nowrap;
+}
+
+.detail-table td {
+    color: #111827;
+    word-break: break-word;
 }
 
 .detail-table tr:last-child th,
@@ -889,6 +912,14 @@ a {
     .detail-img {
         max-width: 220px;
         max-height: 280px;
+    }
+
+    .detail-table {
+        table-layout: auto;
+    }
+
+    .detail-table th {
+        width: 140px;
     }
 }
 

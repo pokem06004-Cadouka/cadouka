@@ -178,10 +178,6 @@
     <table class="detail-table">
         <tr>
             <th>狀態</th>
-            <tr>
-                <th>持有天數</th>
-                <td>{{ card.holding_days or "-" }}</td>
-            </tr>
             <td>
                 {% if card.status == "sold" %}
                     已售出
@@ -192,6 +188,25 @@
                 {% endif %}
             </td>
         </tr>
+
+        <tr>
+            <th>持有天數</th>
+            <td>
+                {% if card.holding_days is not none %}
+                    {{ card.holding_days }} 天
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+
+        {% if card.status == "sold" %}
+        <tr>
+            <th>售出日期</th>
+            <td>{{ card.sell_date or "-" }}</td>
+        </tr>
+        {% endif %}
+
         <tr>
             <th>備註</th>
             <td>{{ card.note or "-" }}</td>
