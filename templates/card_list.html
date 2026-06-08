@@ -9,39 +9,51 @@
     </div>
 
     <div class="page-header-actions">
-        <a href="/cards/add" class="btn-add">新增卡牌</a>
+    <a href="/cards/add" class="btn-add">新增卡牌</a>
 
-        {% if cards %}
-            <button
-                type="button"
-                class="btn-secondary"
-                id="bulkDeleteModeBtn"
-                onclick="enableBulkDeleteMode()"
-            >
-                批量刪除
-            </button>
+    {% if cards %}
+        <button
+            type="button"
+            class="btn-secondary"
+            id="bulkDeleteModeBtn"
+            onclick="enableBulkDeleteMode()"
+        >
+            批量刪除
+        </button>
 
-            <button
-                type="button"
-                class="btn-secondary bulk-cancel-btn"
-                id="bulkCancelBtn"
-                onclick="disableBulkDeleteMode()"
-                style="display: none;"
+        <label
+            class="bulk-select-all-control"
+            id="bulkSelectAllControl"
+            style="display: none;"
+        >
+            <input
+                type="checkbox"
+                id="selectAllCards"
+                onclick="toggleSelectAllCards()"
             >
-                取消
-            </button>
+            全選
+        </label>
 
-            <button
-                type="button"
-                class="btn-danger bulk-delete-submit-btn"
-                id="bulkDeleteSubmitBtn"
-                onclick="submitBulkDelete()"
-                style="display: none;"
-            >
-                刪除選取
-            </button>
-        {% endif %}
-    </div>
+        <button
+            type="button"
+            class="btn-secondary bulk-cancel-btn"
+            id="bulkCancelBtn"
+            onclick="disableBulkDeleteMode()"
+            style="display: none;"
+        >
+            取消
+        </button>
+
+        <button
+            type="button"
+            class="btn-danger bulk-delete-submit-btn"
+            id="bulkDeleteSubmitBtn"
+            onclick="submitBulkDelete()"
+            style="display: none;"
+        >
+            刪除選取
+        </button>
+    {% endif %}
 </div>
 
 <div class="list-summary-bar">
@@ -208,14 +220,6 @@
         <table class="card-table card-table-polished">
             <thead>
                 <tr>
-                    <th class="bulk-select-col">
-                        <input
-                            type="checkbox"
-                            id="selectAllCards"
-                            class="bulk-checkbox"
-                            onclick="toggleSelectAllCards()"
-                        >
-                    </th>
                     <th>圖片</th>
                     <th>卡牌名稱</th>
                     <th>卡號</th>
@@ -240,7 +244,14 @@
                         >
                     </td>
 
-                    <td>
+                    <td class="image-cell-with-checkbox">
+                        <input
+                            type="checkbox"
+                            name="card_ids"
+                            value="{{ card.id }}"
+                            class="bulk-checkbox card-select-checkbox"
+                        >
+
                         <a href="/cards/{{ card.id }}" class="card-image-link">
                             {% if card.image_url %}
                                 <img src="{{ card.image_url }}" class="list-card-img">
@@ -362,11 +373,16 @@
         document.body.classList.add("bulk-delete-mode");
 
         const bulkDeleteModeBtn = document.getElementById("bulkDeleteModeBtn");
+        const bulkSelectAllControl = document.getElementById("bulkSelectAllControl");
         const bulkCancelBtn = document.getElementById("bulkCancelBtn");
         const bulkDeleteSubmitBtn = document.getElementById("bulkDeleteSubmitBtn");
 
         if (bulkDeleteModeBtn) {
             bulkDeleteModeBtn.style.display = "none";
+        }
+
+        if (bulkSelectAllControl) {
+            bulkSelectAllControl.style.display = "inline-flex";
         }
 
         if (bulkCancelBtn) {
@@ -382,6 +398,7 @@
         document.body.classList.remove("bulk-delete-mode");
 
         const bulkDeleteModeBtn = document.getElementById("bulkDeleteModeBtn");
+        const bulkSelectAllControl = document.getElementById("bulkSelectAllControl");
         const bulkCancelBtn = document.getElementById("bulkCancelBtn");
         const bulkDeleteSubmitBtn = document.getElementById("bulkDeleteSubmitBtn");
         const selectAllCards = document.getElementById("selectAllCards");
@@ -389,6 +406,10 @@
 
         if (bulkDeleteModeBtn) {
             bulkDeleteModeBtn.style.display = "inline-flex";
+        }
+
+        if (bulkSelectAllControl) {
+            bulkSelectAllControl.style.display = "none";
         }
 
         if (bulkCancelBtn) {

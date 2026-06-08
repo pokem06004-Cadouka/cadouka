@@ -2253,25 +2253,133 @@ a {
     gap: 10px;
 }
 
-.bulk-select-col {
+.image-cell-with-checkbox {
+    position: relative;
+}
+
+.card-select-checkbox {
     display: none;
-    width: 44px;
-    text-align: center;
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
 }
 
-.bulk-delete-mode .bulk-select-col {
-    display: table-cell;
+.bulk-delete-mode .card-select-checkbox {
+    display: inline-block;
 }
 
-.bulk-checkbox {
+.bulk-checkbox,
+.card-select-checkbox,
+#selectAllCards {
     width: 18px;
     height: 18px;
     cursor: pointer;
     accent-color: #ef4444;
 }
 
+.bulk-delete-mode .image-cell-with-checkbox {
+    padding-left: 36px;
+}
+
+.bulk-select-all-control {
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 800;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+}
+
 .bulk-cancel-btn,
 .bulk-delete-submit-btn {
     align-items: center;
     justify-content: center;
+}
+
+/* =========================
+   Navbar
+========================= */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 28px;
+    background: #0f172a;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.nav-title {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 800;
+    text-decoration: none;
+    letter-spacing: 0.2px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.nav-links a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    transition: opacity 0.2s ease;
+}
+
+.nav-links a:hover {
+    opacity: 0.78;
+}
+
+/* 更新市價按鈕：做成跟 navbar 文字一樣 */
+.nav-update-form {
+    margin: 0;
+}
+
+.nav-link-button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 0;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.nav-link-button:hover {
+    opacity: 0.78;
+}
+
+/* 個人名稱底色 */
+.nav-user-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 800;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.nav-user-pill:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }

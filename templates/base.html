@@ -15,18 +15,12 @@
                     <a href="/dashboard">總覽</a>
                     <a href="/cards">卡牌庫存</a>
 
-                    <form
-                        action="/cards/refresh-all-prices"
-                        method="post"
-                        class="nav-refresh-form"
-                    >
-                        <button type="submit" class="nav-refresh-btn">
-                            更新市價
-                        </button>
+                    <form action="/cards/update-market-prices" method="post" class="nav-update-form">
+                        <button type="submit" class="nav-link-button">更新市價</button>
                     </form>
 
-                    <a href="/profile">
-                        {{ current_user.display_name or current_user.username }}
+                    <a href="/profile" class="nav-user-pill">
+                        {{ display_name or username }}
                     </a>
 
                     <a href="/logout">登出</a>
