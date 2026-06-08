@@ -2303,83 +2303,62 @@ a {
 }
 
 /* =========================
-   Navbar
+   Navbar Safe Patch
 ========================= */
-
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 28px;
-    background: #0f172a;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-}
-
-.nav-title {
-    color: #ffffff;
-    font-size: 20px;
-    font-weight: 800;
-    text-decoration: none;
-    letter-spacing: 0.2px;
-}
 
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 18px;
 }
 
 .nav-links a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
-    transition: opacity 0.2s ease;
+    margin-left: 0;
 }
 
-.nav-links a:hover {
-    opacity: 0.78;
-}
-
-/* 更新市價按鈕：做成跟 navbar 文字一樣 */
 .nav-update-form {
+    display: inline-flex;
+    align-items: center;
     margin: 0;
+    padding: 0;
 }
 
 .nav-link-button {
+    appearance: none;
     background: transparent;
     border: none;
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
+    color: #e5e7eb;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    line-height: 1.2;
     padding: 0;
+    margin: 0;
     cursor: pointer;
-    transition: opacity 0.2s ease;
 }
 
 .nav-link-button:hover {
-    opacity: 0.78;
+    color: #ffffff;
 }
 
-/* 個人名稱底色 */
 .nav-user-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 38px;
-    height: 38px;
-    padding: 0 14px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 13px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
+    background: rgba(59, 130, 246, 0.22);
+    color: #ffffff !important;
     text-decoration: none;
-    font-size: 14px;
-    font-weight: 800;
-    transition: background 0.2s ease, transform 0.2s ease;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+    margin-left: 0 !important;
 }
 
 .nav-user-pill:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
+    background: rgba(59, 130, 246, 0.36);
+    color: #ffffff !important;
 }

@@ -9,51 +9,52 @@
     </div>
 
     <div class="page-header-actions">
-    <a href="/cards/add" class="btn-add">新增卡牌</a>
+        <a href="/cards/add" class="btn-add">新增卡牌</a>
 
-    {% if cards %}
-        <button
-            type="button"
-            class="btn-secondary"
-            id="bulkDeleteModeBtn"
-            onclick="enableBulkDeleteMode()"
-        >
-            批量刪除
-        </button>
-
-        <label
-            class="bulk-select-all-control"
-            id="bulkSelectAllControl"
-            style="display: none;"
-        >
-            <input
-                type="checkbox"
-                id="selectAllCards"
-                onclick="toggleSelectAllCards()"
+        {% if cards %}
+            <button
+                type="button"
+                class="btn-secondary"
+                id="bulkDeleteModeBtn"
+                onclick="enableBulkDeleteMode()"
             >
-            全選
-        </label>
+                批量刪除
+            </button>
 
-        <button
-            type="button"
-            class="btn-secondary bulk-cancel-btn"
-            id="bulkCancelBtn"
-            onclick="disableBulkDeleteMode()"
-            style="display: none;"
-        >
-            取消
-        </button>
+            <label
+                class="bulk-select-all-control"
+                id="bulkSelectAllControl"
+                style="display: none;"
+            >
+                <input
+                    type="checkbox"
+                    id="selectAllCards"
+                    onclick="toggleSelectAllCards()"
+                >
+                全選
+            </label>
 
-        <button
-            type="button"
-            class="btn-danger bulk-delete-submit-btn"
-            id="bulkDeleteSubmitBtn"
-            onclick="submitBulkDelete()"
-            style="display: none;"
-        >
-            刪除選取
-        </button>
-    {% endif %}
+            <button
+                type="button"
+                class="btn-secondary bulk-cancel-btn"
+                id="bulkCancelBtn"
+                onclick="disableBulkDeleteMode()"
+                style="display: none;"
+            >
+                取消
+            </button>
+
+            <button
+                type="button"
+                class="btn-danger bulk-delete-submit-btn"
+                id="bulkDeleteSubmitBtn"
+                onclick="submitBulkDelete()"
+                style="display: none;"
+            >
+                刪除選取
+            </button>
+        {% endif %}
+    </div>
 </div>
 
 <div class="list-summary-bar">
@@ -235,14 +236,6 @@
             <tbody>
                 {% for card in cards %}
                 <tr class="{% if card.status == 'sold' %}sold-row{% else %}holding-row{% endif %}">
-                    <td class="bulk-select-col">
-                        <input
-                            type="checkbox"
-                            name="card_ids"
-                            value="{{ card.id }}"
-                            class="bulk-checkbox card-select-checkbox"
-                        >
-                    </td>
 
                     <td class="image-cell-with-checkbox">
                         <input

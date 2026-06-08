@@ -7,29 +7,29 @@
 </head>
 <body>
 
-        <nav class="navbar">
-            <a href="/dashboard" class="nav-title">Cadouka</a>
+    <nav class="navbar">
+        <a href="/dashboard" class="nav-title">Cadouka</a>
 
-            <div class="nav-links">
-                {% if current_user %}
-                    <a href="/dashboard">總覽</a>
-                    <a href="/cards">卡牌庫存</a>
+        <div class="nav-links">
+            {% if current_user %}
+                <a href="/dashboard">總覽</a>
+                <a href="/cards">卡牌庫存</a>
 
-                    <form action="/cards/update-market-prices" method="post" class="nav-update-form">
-                        <button type="submit" class="nav-link-button">更新市價</button>
-                    </form>
+                <form action="/cards/refresh-all-prices" method="post" class="nav-update-form">
+                    <button type="submit" class="nav-link-button">更新市價</button>
+                </form>
 
-                    <a href="/profile" class="nav-user-pill">
-                        {{ display_name or username }}
-                    </a>
+                <a href="/profile" class="nav-user-pill">
+                    {{ current_user.display_name or current_user.username }}
+                </a>
 
-                    <a href="/logout">登出</a>
-                {% else %}
-                    <a href="/login">登入</a>
-                    <a href="/register">註冊</a>
-                {% endif %}
-            </div>
-        </nav>
+                <a href="/logout">登出</a>
+            {% else %}
+                <a href="/login">登入</a>
+                <a href="/register">註冊</a>
+            {% endif %}
+        </div>
+    </nav>
 
     <main class="container">
 
