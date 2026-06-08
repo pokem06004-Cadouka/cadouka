@@ -1631,3 +1631,137 @@ a {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   Add / Edit Form Beautify
+========================= */
+
+.form-page-header {
+    margin-bottom: 22px;
+}
+
+.form-page-header h1 {
+    margin-bottom: 8px;
+}
+
+.form-card-polished {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+.form-section {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 22px;
+    padding: 26px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.form-section-title {
+    margin-bottom: 20px;
+}
+
+.form-section-title h2 {
+    margin: 0 0 6px 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-size: 20px;
+    color: #111827;
+}
+
+.form-section-title p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.form-field.full {
+    grid-column: 1 / -1;
+}
+
+.form-field label {
+    display: block;
+    margin-top: 0;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #374151;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    background: #fbfdff;
+    color: #111827;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.form-submit-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    align-items: center;
+    margin-top: 6px;
+    margin-bottom: 24px;
+}
+
+.form-submit-row .btn-secondary,
+.form-submit-row .form-submit-btn {
+    width: auto;
+    margin-top: 0;
+}
+
+.form-submit-btn {
+    padding: 11px 18px !important;
+    border-radius: 999px !important;
+}
+
+@media (max-width: 760px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-section {
+        padding: 22px;
+    }
+
+    .form-submit-row {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .form-submit-row .btn-secondary,
+    .form-submit-row .form-submit-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

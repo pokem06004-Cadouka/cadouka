@@ -2,11 +2,17 @@
 
 {% block content %}
 
-<h1>新增卡牌資料</h1>
+<a href="/cards" class="back-link">← 回到卡牌庫存</a>
 
-<form action="/cards/add" method="post" class="form-card">
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Add Card</p>
+        <h1>新增卡牌</h1>
+        <p class="page-subtitle">建立一筆新的卡牌投資紀錄，系統會自動計算損益與 ROI。</p>
+    </div>
+</div>
 
-    <form action="/cards/add" method="post" class="form-card">
+<form action="/cards/add" method="post" class="form-card form-card-polished">
 
     <input
         type="hidden"
@@ -14,71 +20,126 @@
         value="{{ prefill.image_url or '' }}"
     >
 
-    <h2>基本資料</h2>
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>基本資料</h2>
+            <p>輸入卡牌名稱、鑑定卡號與鑑定狀態。</p>
+        </div>
 
-    <label>卡牌名稱 *</label>
-    <input
-        type="text"
-        name="card_name"
-        value="{{ prefill.card_name or '' }}"
-        required
-    >
+        <div class="form-grid">
+            <div class="form-field full">
+                <label>卡牌名稱</label>
+                <input
+                    type="text"
+                    name="card_name"
+                    value="{{ prefill.card_name or '' }}"
+                    required
+                >
+            </div>
 
-    <label>PSA 卡號</label>
-    <input
-        type="text"
-        name="card_number"
-        placeholder="可選填 PSA 卡號"
-        value="{{ prefill.card_number or '' }}"
-    >
+            <div class="form-field">
+                <label>鑑定卡號</label>
+                <input
+                    type="text"
+                    name="card_number"
+                    value="{{ prefill.card_number or '' }}"
+                    placeholder="可選填"
+                >
+            </div>
 
-    <label>鑑定狀態</label>
-    <input
-        type="text"
-        name="grade"
-        placeholder="例如 PSA10 / PSA9 / RAW"
-        value="{{ prefill.grade or '' }}"
-    >
+            <div class="form-field">
+                <label>鑑定狀態</label>
+                <input
+                    type="text"
+                    name="grade"
+                    value="{{ prefill.grade or '' }}"
+                    placeholder="例如：PSA10 / PSA9"
+                >
+            </div>
+        </div>
+    </div>
 
-    <h2>成本資料</h2>
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>購入資料</h2>
+            <p>紀錄購入日期、購入價格與購入方式。</p>
+        </div>
 
-    <label>購入方式</label>
-    <input
-        type="text"
-        name="purchase_method"
-        placeholder="Line / SnkrDunk / 自送..."
-        value="{{ prefill.purchase_method or '' }}"
-    >
+        <div class="form-grid">
+            <div class="form-field">
+                <label>購入日期</label>
+                <input
+                    type="date"
+                    name="buy_date"
+                    value="{{ prefill.buy_date or '' }}"
+                >
+            </div>
 
-    <label>購入日期</label>
-    <input
-        type="date"
-        name="buy_date"
-        value="{{ prefill.buy_date or '' }}"
-    >
+            <div class="form-field">
+                <label>購入價格</label>
+                <input
+                    type="number"
+                    name="buy_price"
+                    step="1"
+                    value="{{ prefill.buy_price or 0 }}"
+                    placeholder="例如：12000"
+                >
+            </div>
 
-    <label>購入價格</label>
-    <input
-        type="number"
-        name="buy_price"
-        step="1"
-        value="{{ prefill.buy_price or 0 }}"
-    >
+            <div class="form-field full">
+                <label>購入方式</label>
+                <input
+                    type="text"
+                    name="purchase_method"
+                    value="{{ prefill.purchase_method or '' }}"
+                    placeholder="Line / SnkrDunk / 自送..."
+                >
+            </div>
+        </div>
+    </div>
 
-    <h2>市價資料</h2>
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>市價資料</h2>
+            <p>填入目前市價，系統會用目前市價與購入價格計算未實現損益。</p>
+        </div>
 
-    <label>目前市價</label>
-    <input
-        type="number"
-        name="current_market_price"
-        step="1"
-        value="{{ prefill.current_market_price or 0 }}"
-    >
+        <div class="form-grid">
+            <div class="form-field">
+                <label>目前市價</label>
+                <input
+                    type="number"
+                    name="current_market_price"
+                    step="1"
+                    value="{{ prefill.current_market_price or 0 }}"
+                    placeholder="例如：15000"
+                >
+            </div>
+        </div>
+    </div>
 
-    <label>備註</label>
-    <textarea name="note" rows="4">{{ prefill.note or '' }}</textarea>
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>備註</h2>
+            <p>可以紀錄購買來源、賣家、特殊狀況或其他補充。</p>
+        </div>
 
-    <button type="submit">新增卡牌</button>
+        <div class="form-grid">
+            <div class="form-field full">
+                <label>備註</label>
+                <textarea
+                    name="note"
+                    rows="4"
+                    placeholder="可選填"
+                >{{ prefill.note or '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-submit-row">
+        <a href="/cards" class="btn-secondary">取消</a>
+        <button type="submit" class="btn-add form-submit-btn">新增卡牌</button>
+    </div>
 
 </form>
 
