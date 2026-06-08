@@ -78,7 +78,7 @@ from models import (
 
 from calculations import calculate_total_cost
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta,timezone
 
 
 app = Flask(__name__)
@@ -666,6 +666,25 @@ def card_list_page():
         per_page=per_page
     )
 
+def format_created_at_taiwan_time(created_at):
+    if not created_at:
+        return ""
+
+    try:
+        if isinstance(created_at, datetime):
+            dt = created_at
+        else:
+            created_at_text = str(created_at).split(".")[0]
+            dt = datetime.strptime(created_at_text, "%Y-%m-%d %H:%M:%S")
+
+        # 資料庫 CURRENT_TIMESTAMP 通常是 UTC
+        dt = dt.replace(tzinfo=timezone.utc)
+        taiwan_time = dt.astimezone(timezone(timedelta(hours=8)))
+
+        return taiwan_time.strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        return str(created_at)
+
 @app.route("/cards/export-excel")
 @login_required
 def export_cards_excel_page():
@@ -746,7 +765,7 @@ def export_cards_excel_page():
             holding_days,
             card_dict.get("product_url") or "",
             card_dict.get("note") or "",
-            card_dict.get("created_at") or ""
+            format_created_at_taiwan_time(card_dict.get("created_at"))
         ]
 
         ws.append(row)
