@@ -102,6 +102,7 @@ def init_db():
             buy_date TEXT,
             sell_date TEXT,
             image_url TEXT,
+            product_url TEXT,
             note TEXT,
 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -160,6 +161,7 @@ def init_db():
             buy_date TEXT,
             sell_date TEXT,
             image_url TEXT,
+            product_url TEXT,
             note TEXT,
 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -430,9 +432,10 @@ def add_card(card_data):
         status,
         buy_date,
         image_url,
+        product_url,
         note
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     params = [
@@ -459,6 +462,7 @@ def add_card(card_data):
         card_data.get("status", "holding"),
         card_data.get("buy_date", ""),
         card_data.get("image_url", ""),
+        card_data.get("product_url", ""),
         card_data.get("note", "")
     ]
 
@@ -495,6 +499,7 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
                     OR card_number ILIKE ?
                     OR grade ILIKE ?
                     OR purchase_method ILIKE ?
+                    OR product_url ILIKE ?
                     OR note ILIKE ?
                 )
             """
@@ -505,12 +510,14 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
                     OR card_number LIKE ?
                     OR grade LIKE ?
                     OR purchase_method LIKE ?
+                    OR product_url LIKE ?
                     OR note LIKE ?
                 )
             """
 
         search_keyword = f"%{keyword}%"
         params.extend([
+            search_keyword,
             search_keyword,
             search_keyword,
             search_keyword,
@@ -617,6 +624,7 @@ def update_card(card_id, card_data, user_id=None):
 
         buy_date = ?,
         image_url = ?,
+        product_url = ?,
         note = ?
     WHERE id = ?
     """
@@ -642,6 +650,7 @@ def update_card(card_id, card_data, user_id=None):
 
         card_data.get("buy_date", ""),
         card_data.get("image_url", ""),
+        card_data.get("product_url", ""),
         card_data.get("note", ""),
 
         card_id
@@ -763,6 +772,7 @@ def migrate_db():
     add_column_if_not_exists("user_id", "INTEGER")
 
     add_column_if_not_exists("purchase_method", "TEXT")
+    add_column_if_not_exists("product_url", "TEXT")
 
     add_column_if_not_exists("sell_fee", "REAL DEFAULT 0")
     add_column_if_not_exists("sell_shipping_fee", "REAL DEFAULT 0")

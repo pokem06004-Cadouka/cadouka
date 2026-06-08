@@ -248,6 +248,29 @@ def calculate_market_price_from_prices(prices, jpy_rate):
 
     return round(average_jpy * jpy_rate)
 
+def get_market_price_by_product_url(product_url):
+    """
+    用 SNKRDUNK 商品網址抓最新 PSA10 平均成交價，並換算成台幣。
+    """
+    if not product_url:
+        return 0
+
+    product_id = get_product_id(product_url)
+
+    if not product_id:
+        return 0
+
+    price_url = build_sales_history_url(product_id)
+
+    prices = getprice(price_url)
+    jpy_rate = get_jpy_spot_sell()
+
+    current_market_price = calculate_market_price_from_prices(
+        prices,
+        jpy_rate
+    )
+
+    return current_market_price
 
 # =========================
 # Auth Routes
@@ -613,6 +636,7 @@ def add_card_page():
         buy_price = float(request.form.get("buy_price") or 0)
         current_market_price = float(request.form.get("current_market_price") or 0)
 
+        product_url = request.form.get("product_url", "").strip()
         note = request.form.get("note", "").strip()
 
         # 目前表單已簡化，所以這些成本固定為 0
@@ -661,6 +685,7 @@ def add_card_page():
             "status": "holding",
             "buy_date": buy_date,
             "image_url": image_url,
+            "product_url": product_url,
             "note": note
         }
 
@@ -678,6 +703,7 @@ def add_card_page():
         "buy_price": request.args.get("buy_price", "").strip(),
         "current_market_price": request.args.get("current_market_price", "").strip(),
         "image_url": request.args.get("image_url", "").strip(),
+        "product_url": request.args.get("product_url", "").strip(),
         "note": request.args.get("note", "").strip()
     }
 
@@ -720,6 +746,7 @@ def edit_card_page(card_id):
         buy_price = float(request.form.get("buy_price") or 0)
         current_market_price = float(request.form.get("current_market_price") or 0)
 
+        product_url = request.form.get("product_url", "").strip()
         note = request.form.get("note", "").strip()
 
         # 目前表單已簡化，所以這些成本固定為 0
@@ -765,6 +792,7 @@ def edit_card_page(card_id):
 
             "buy_date": buy_date,
             "image_url": image_url,
+            "product_url": product_url,
             "note": note
         }
 
@@ -884,6 +912,94 @@ def unsell_card_page(card_id):
     flash("已標記回持有中", "success")
     return redirect(f"/cards/{card_id}")
 
+@app.route("/cards/refresh-all-prices", methods=["POST"])
+@login_required
+def refresh_all_card_prices_page():
+    user_id = current_user_id()
+
+    cards = get_all_cards(
+        status="holding",
+        keyword=None,
+        sort=None,
+        user_id=user_id
+    )
+
+    if not cards:
+        flash("目前沒有持有中的卡牌可以更新", "warning")
+        return redirect(request.referrer or "/cards")
+
+    success_count = 0
+    fail_count = 0
+    skipped_count = 0
+
+    for card in cards:
+        try:
+            product_url = card["product_url"] or ""
+
+            # 沒有商品網址就跳過，不算錯誤
+            if not product_url:
+                skipped_count += 1
+                continue
+
+            current_market_price = get_market_price_by_product_url(product_url)
+
+            if current_market_price <= 0:
+                fail_count += 1
+                continue
+
+            buy_price = card["buy_price"] or 0
+
+            unrealized_profit, roi = calculate_unrealized_by_buy_price(
+                current_market_price,
+                buy_price
+            )
+
+            card_data = {
+                "card_name": card["card_name"],
+                "card_number": card["card_number"] or "",
+                "series_name": card["series_name"] or "",
+                "rarity": card["rarity"] or "",
+                "grade": card["grade"] or "",
+                "purchase_method": card["purchase_method"] or "",
+
+                "buy_price": buy_price,
+                "shipping_fee": card["shipping_fee"] or 0,
+                "tax_fee": card["tax_fee"] or 0,
+                "platform_fee": card["platform_fee"] or 0,
+                "other_fee": card["other_fee"] or 0,
+
+                "total_cost": card["total_cost"] or 0,
+                "current_market_price": current_market_price,
+                "unrealized_profit": unrealized_profit,
+                "roi": roi,
+
+                "buy_date": card["buy_date"] or "",
+                "image_url": card["image_url"] or "",
+                "product_url": product_url,
+                "note": card["note"] or ""
+            }
+
+            update_card(card["id"], card_data, user_id=user_id)
+            success_count += 1
+
+        except Exception as e:
+            print("更新單張市價錯誤：", e)
+            traceback.print_exc()
+            fail_count += 1
+            continue
+
+    if success_count > 0:
+        flash(
+            f"已更新 {success_count} 張卡牌，{skipped_count} 張沒有商品網址已跳過，{fail_count} 張更新失敗",
+            "success" if fail_count == 0 else "warning"
+        )
+    else:
+        flash(
+            f"沒有成功更新任何卡牌，{skipped_count} 張沒有商品網址已跳過，{fail_count} 張更新失敗",
+            "warning"
+        )
+
+    return redirect(request.referrer or "/cards")
 
 # =========================
 # LINE Callback / Image Tools
@@ -1243,6 +1359,7 @@ def handle_postback(event):
                 "status": "holding",
                 "buy_date": "",
                 "image_url": image_url,
+                "product_url": product_url,
                 "note": ""
             }
 

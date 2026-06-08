@@ -120,6 +120,25 @@
 
     <div class="form-section">
         <div class="form-section-title">
+            <h2>商品網址</h2>
+            <p>可貼上 SNKRDUNK 商品網址，之後更新市價時會優先用這個網址更新。</p>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-field full">
+                <label>商品網址</label>
+                <input
+                    type="url"
+                    name="product_url"
+                    value="{{ prefill.product_url or '' }}"
+                    placeholder="可選填"
+                >
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <div class="form-section-title">
             <h2>備註</h2>
             <p>可以紀錄購買來源、賣家、特殊狀況或其他補充。</p>
         </div>

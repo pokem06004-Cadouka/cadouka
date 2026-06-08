@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="detail-actions">
+<div class="detail-actions detail-actions-polished">
     <a href="/cards" class="back-link">← 回到卡牌庫存</a>
 
     <div class="detail-action-buttons">
@@ -36,43 +36,49 @@
     </div>
 </div>
 
-<div class="detail-card">
+<div class="detail-card detail-card-polished">
 
-    <div class="detail-image-box">
+    <div class="detail-image-box detail-image-box-polished">
         {% if card.image_url %}
-            <img src="{{ card.image_url }}" class="detail-img">
+            <img src="{{ card.image_url }}" class="detail-img detail-img-polished">
         {% else %}
             <div class="detail-no-img">No Image</div>
         {% endif %}
     </div>
 
-    <div class="detail-info">
-        <h1>{{ card.card_name }}</h1>
-
-        <div class="detail-meta">
-            <span>{{ card.card_number or "未填 PSA 卡號" }}</span>
-            <span>{{ card.grade or "無鑑定狀態" }}</span>
+    <div class="detail-info detail-info-polished">
+        <div class="detail-title-row">
+            <div>
+                <p class="eyebrow">Card Detail</p>
+                <h1>{{ card.card_name }}</h1>
+            </div>
 
             {% if card.status == "sold" %}
-                <span class="status sold">已售出</span>
+                <span class="detail-status-badge sold">已售出</span>
             {% else %}
-                <span class="status holding">持有中</span>
+                <span class="detail-status-badge holding">持有中</span>
             {% endif %}
         </div>
 
-        <div class="detail-summary">
-            <div>
+        <div class="detail-meta detail-meta-polished">
+            <span>{{ card.card_number or "未填 PSA 卡號" }}</span>
+            <span>{{ card.grade or "無鑑定狀態" }}</span>
+            <span>{{ card.holding_days or "-" }}</span>
+        </div>
+
+        <div class="detail-summary detail-summary-polished">
+            <div class="summary-card mini-summary-card">
                 <div class="summary-title">購入價格</div>
                 <div class="summary-value">NT${{ "{:,.0f}".format(card.buy_price or 0) }}</div>
             </div>
 
             {% if card.status == "sold" %}
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">實際收入</div>
                     <div class="summary-value">NT${{ "{:,.0f}".format(card.net_revenue or 0) }}</div>
                 </div>
 
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">已實現損益</div>
                     {% if card.realized_profit >= 0 %}
                         <div class="summary-value profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</div>
@@ -81,7 +87,7 @@
                     {% endif %}
                 </div>
 
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">已實現 ROI</div>
                     {% if card.realized_roi >= 0 %}
                         <div class="summary-value profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</div>
@@ -90,12 +96,12 @@
                     {% endif %}
                 </div>
             {% else %}
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">目前市價</div>
                     <div class="summary-value">NT${{ "{:,.0f}".format(card.current_market_price or 0) }}</div>
                 </div>
 
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">未實現損益</div>
                     {% if card.unrealized_profit >= 0 %}
                         <div class="summary-value profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</div>
@@ -104,7 +110,7 @@
                     {% endif %}
                 </div>
 
-                <div>
+                <div class="summary-card mini-summary-card">
                     <div class="summary-title">未實現 ROI</div>
                     {% if card.roi >= 0 %}
                         <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
@@ -118,31 +124,95 @@
 
 </div>
 
-<div class="cost-breakdown">
-    <h2>購入資料</h2>
+<div class="detail-section-grid">
+
+    <div class="cost-breakdown detail-section-card">
+        <h2>購入資料</h2>
+
+        <table class="detail-table">
+            <tr>
+                <th>購入方式</th>
+                <td>{{ card.purchase_method or "-" }}</td>
+            </tr>
+            <tr>
+                <th>購入日期</th>
+                <td>{{ card.buy_date or "-" }}</td>
+            </tr>
+            <tr>
+                <th>購入價格</th>
+                <td>NT${{ "{:,.0f}".format(card.buy_price or 0) }}</td>
+            </tr>
+            <tr class="total-row">
+                <th>總成本</th>
+                <td>NT${{ "{:,.0f}".format(card.total_cost or 0) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="cost-breakdown detail-section-card">
+        <h2>其他資料</h2>
+
+        <table class="detail-table">
+            <tr>
+                <th>狀態</th>
+                <td>
+                    {% if card.status == "sold" %}
+                        已售出
+                    {% elif card.status == "holding" %}
+                        持有中
+                    {% else %}
+                        {{ card.status }}
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>持有天數</th>
+                <td>{{ card.holding_days or "-" }}</td>
+            </tr>
+
+            {% if card.status == "sold" %}
+            <tr>
+                <th>售出日期</th>
+                <td>{{ card.sell_date or "-" }}</td>
+            </tr>
+            {% endif %}
+
+            <tr>
+                <th>備註</th>
+                <td>{{ card.note or "-" }}</td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+
+<div class="cost-breakdown detail-section-card">
+    <h2>商品網址</h2>
 
     <table class="detail-table">
         <tr>
-            <th>購入方式</th>
-            <td>{{ card.purchase_method or "-" }}</td>
-        </tr>
-        <tr>
-            <th>購入日期</th>
-            <td>{{ card.buy_date or "-" }}</td>
-        </tr>
-        <tr>
-            <th>購入價格</th>
-            <td>NT${{ "{:,.0f}".format(card.buy_price or 0) }}</td>
-        </tr>
-        <tr class="total-row">
-            <th>總成本</th>
-            <td>NT${{ "{:,.0f}".format(card.total_cost or 0) }}</td>
+            <th>商品網址</th>
+            <td>
+                {% if card.product_url %}
+                    <a
+                        href="{{ card.product_url }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="product-url-link"
+                    >
+                        查看商品網址
+                    </a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
         </tr>
     </table>
 </div>
 
 {% if card.status == "sold" %}
-<div class="cost-breakdown">
+<div class="cost-breakdown detail-section-card">
     <h2>售出結果</h2>
 
     <table class="detail-table">
@@ -177,41 +247,5 @@
     </table>
 </div>
 {% endif %}
-
-<div class="cost-breakdown">
-    <h2>其他資料</h2>
-
-    <table class="detail-table">
-        <tr>
-            <th>狀態</th>
-            <td>
-                {% if card.status == "sold" %}
-                    已售出
-                {% elif card.status == "holding" %}
-                    持有中
-                {% else %}
-                    {{ card.status }}
-                {% endif %}
-            </td>
-        </tr>
-
-        <tr>
-            <th>持有天數</th>
-            <td>{{ card.holding_days or "-" }}</td>
-        </tr>
-
-        {% if card.status == "sold" %}
-        <tr>
-            <th>售出日期</th>
-            <td>{{ card.sell_date or "-" }}</td>
-        </tr>
-        {% endif %}
-
-        <tr>
-            <th>備註</th>
-            <td>{{ card.note or "-" }}</td>
-        </tr>
-    </table>
-</div>
 
 {% endblock %}
