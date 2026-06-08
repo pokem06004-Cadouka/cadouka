@@ -1249,7 +1249,7 @@ def handle_message(event):
                     "【如何查價】\n"
                     "1. 直接輸入卡號或關鍵字。\n"
                     "2. 點選商品圖片，可以查看 PSA10 最近成交價格。\n"
-                    "3. 按「加入 Cadouka」，可以直接新增到你的卡牌庫存。\n\n"
+                    "3. 按「加入 Cadouka」，可以直接新增到你倉庫。\n\n"
                     "【常用指令】\n"
                     "綁定狀態：查看目前是否已綁定\n"
                     "解除綁定：解除目前 LINE 綁定，需再次輸入確認解除綁定"
@@ -1429,7 +1429,7 @@ def handle_postback(event):
                 event.reply_token,
                 TextSendMessage(
                     text=(
-                        "已新增到 Cadouka 庫存！\n"
+                        "已新增到卡牌倉庫！\n"
                         f"帳號：{display_name}\n"
                         f"卡牌：{product_name}\n"
                         f"目前市價：NT${current_market_price:,}\n\n"
