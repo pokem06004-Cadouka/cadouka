@@ -79,12 +79,10 @@ def calculate_price_stats(prices):
 
 def create_cadouka_add_url(product_name, price_stats, jpy_rate, image_url=""):
     """
-    產生 Cadouka 新增卡牌頁網址。
-    自動帶入：
-    - card_name
-    - grade = PSA10
-    - current_market_price = 平均成交價換算台幣
-    - image_url = SNKRDUNK 抓到的商品圖片
+    舊版用：產生 Cadouka 新增卡牌頁網址。
+
+    目前 LINE 新增會改走 Postback 後端直接新增，
+    這個 function 先保留，避免其他地方如果還有用到會壞掉。
     """
     market_price = 0
 
@@ -170,21 +168,21 @@ def create_price_stat_box(price_stats, jpy_rate=None):
     )
 
 
-def create_price_flex(product, prices, jpy_rate=None):
+def create_price_flex(product, prices, jpy_rate=None, product_index=None):
+    """
+    建立 PSA10 成交價格 Flex。
+
+    product_index：
+    - LINE 使用者點選商品時的 index
+    - 之後按「加入 Cadouka 庫存」會把 index 傳回 app.py
+    - app.py 再用這個 index 從 user_products[line_user_id] 找到原商品資料
+    """
     product_name = product["name"] if product["name"] else "未命名商品"
     product_url = product["url"]
     image_url = safe_image_url(product["image"])
 
     # 最高、平均、最低會用全部抓到的 prices 去計算
     price_stats = calculate_price_stats(prices) if prices else None
-
-    # Cadouka 新增卡牌頁網址
-    cadouka_add_url = create_cadouka_add_url(
-    product_name,
-    price_stats,
-    jpy_rate,
-    image_url
-    )
 
     price_contents = []
 
@@ -377,6 +375,13 @@ def create_price_flex(product, prices, jpy_rate=None):
         )
     )
 
+    # 加入 Cadouka 庫存按鈕：
+    # 改成 PostbackAction，讓 LINE 後端直接新增，不再打開網站新增頁。
+    if product_index is not None:
+        add_card_action_data = f"action=add_card&index={product_index}"
+    else:
+        add_card_action_data = "action=add_card"
+
     bubble = BubbleContainer(
         hero=ImageComponent(
             url=image_url,
@@ -395,9 +400,10 @@ def create_price_flex(product, prices, jpy_rate=None):
             contents=[
                 ButtonComponent(
                     style="primary",
-                    action=URIAction(
-                        label="新增到 Cadouka",
-                        uri=cadouka_add_url
+                    action=PostbackAction(
+                        label="加入 Cadouka 庫存",
+                        data=add_card_action_data,
+                        display_text="加入 Cadouka 庫存"
                     )
                 ),
                 ButtonComponent(

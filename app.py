@@ -108,6 +108,7 @@ def current_user():
 
     return get_user_by_id(user_id)
 
+
 def generate_line_bind_code():
     characters = string.ascii_uppercase + string.digits
 
@@ -120,6 +121,7 @@ def generate_line_bind_code():
             return bind_code
 
     return "".join(random.choice(characters) for _ in range(10))
+
 
 def login_required(view_func):
     @wraps(view_func)
@@ -211,6 +213,40 @@ def calculate_realized_by_buy_price(net_revenue, buy_price):
         realized_roi = (realized_profit / buy_price) * 100
 
     return realized_profit, realized_roi
+
+
+def format_jpy_price_for_card(price):
+    """
+    LINE 後端新增卡牌時，用來把 SNKRDUNK 成交價轉成數字。
+    """
+    try:
+        return int(float(str(price).replace(",", "")))
+    except:
+        return None
+
+
+def calculate_market_price_from_prices(prices, jpy_rate):
+    """
+    用 PSA10 成交紀錄平均價 * 日圓匯率，算出目前市價。
+    沒有資料或匯率失敗時回傳 0。
+    """
+    if not prices or not jpy_rate:
+        return 0
+
+    valid_prices = []
+
+    for p in prices:
+        jpy_price = format_jpy_price_for_card(p.get("price"))
+
+        if jpy_price is not None:
+            valid_prices.append(jpy_price)
+
+    if not valid_prices:
+        return 0
+
+    average_jpy = round(sum(valid_prices) / len(valid_prices))
+
+    return round(average_jpy * jpy_rate)
 
 
 # =========================
@@ -350,6 +386,7 @@ def update_display_name_page():
 
     return redirect("/profile")
 
+
 @app.route("/profile/generate-line-bind-code", methods=["POST"])
 @login_required
 def generate_line_bind_code_page():
@@ -366,6 +403,7 @@ def generate_line_bind_code_page():
 
     flash("LINE 綁定碼已產生，請在 10 分鐘內到 LINE 輸入綁定指令", "success")
     return redirect("/profile")
+
 
 @app.route("/profile/change-password", methods=["POST"])
 @login_required
@@ -902,7 +940,7 @@ def handle_message(event):
     card_id = event.message.text.strip()
     line_user_id = event.source.user_id
 
-        # =========================
+    # =========================
     # LINE Account Binding Commands
     # =========================
 
@@ -1067,11 +1105,111 @@ def handle_postback(event):
 
             jpy_rate = get_jpy_spot_sell()
 
-            price_flex_message = create_price_flex(product, prices, jpy_rate)
+            price_flex_message = create_price_flex(
+                product,
+                prices,
+                jpy_rate,
+                index
+            )
 
             line_bot_api.reply_message(
                 event.reply_token,
                 price_flex_message
+            )
+            return
+
+        if action == "add_card":
+            index = int(params.get("index", [0])[0])
+
+            if index >= len(products):
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="商品選擇錯誤，請重新搜尋。")
+                )
+                return
+
+            user = get_user_by_line_user_id(line_user_id)
+
+            if not user:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text=(
+                            "你尚未綁定 Cadouka 帳號。\n"
+                            "請先登入 Cadouka，進入個人資料頁產生 LINE 綁定碼，"
+                            "再回到 LINE 輸入綁定指令。"
+                        )
+                    )
+                )
+                return
+
+            product = products[index]
+            product_name = product["name"] if product.get("name") else "未命名商品"
+            image_url = product.get("image") or ""
+
+            product_url = product["url"]
+
+            product_id = get_product_id(product_url)
+            price_url = build_sales_history_url(product_id)
+
+            prices = getprice(price_url)
+            jpy_rate = get_jpy_spot_sell()
+
+            current_market_price = calculate_market_price_from_prices(
+                prices,
+                jpy_rate
+            )
+
+            buy_price = 0
+            total_cost = 0
+
+            unrealized_profit, roi = calculate_unrealized_by_buy_price(
+                current_market_price,
+                buy_price
+            )
+
+            card_data = {
+                "user_id": user["id"],
+
+                "card_name": product_name,
+                "card_number": "",
+                "series_name": "",
+                "rarity": "",
+                "grade": "",
+                "purchase_method": "LINE",
+
+                "buy_price": buy_price,
+                "shipping_fee": 0,
+                "tax_fee": 0,
+                "platform_fee": 0,
+                "other_fee": 0,
+
+                "total_cost": total_cost,
+                "current_market_price": current_market_price,
+                "unrealized_profit": unrealized_profit,
+                "roi": roi,
+
+                "status": "holding",
+                "buy_date": "",
+                "image_url": image_url,
+                "note": ""
+            }
+
+            add_card(card_data)
+
+            display_name = user["display_name"] or user["username"]
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=(
+                        "已新增到 Cadouka 庫存！\n"
+                        f"帳號：{display_name}\n"
+                        f"卡牌：{product_name}\n"
+                        f"目前市價：NT${current_market_price:,}\n\n"
+                        "之後可到網站編輯購入價格、購入日期、鑑定卡號與鑑定狀態。"
+                    )
+                )
             )
             return
 
