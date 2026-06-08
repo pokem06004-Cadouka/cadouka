@@ -14,13 +14,22 @@
                 {% if current_user %}
                     <a href="/dashboard">總覽</a>
                     <a href="/cards">卡牌庫存</a>
-                    <a href="/cards/add">新增卡牌</a>
 
-                    <a href="/profile" class="nav-user">
+                    <form
+                        action="/cards/refresh-all-prices"
+                        method="post"
+                        class="nav-refresh-form"
+                    >
+                        <button type="submit" class="nav-refresh-btn">
+                            更新市價
+                        </button>
+                    </form>
+
+                    <a href="/profile">
                         {{ current_user.display_name or current_user.username }}
                     </a>
 
-                    <a href="/logout" class="nav-logout">登出</a>
+                    <a href="/logout">登出</a>
                 {% else %}
                     <a href="/login">登入</a>
                     <a href="/register">註冊</a>
