@@ -364,7 +364,7 @@ def generate_line_bind_code_page():
 
     update_user_line_bind_code(user["id"], bind_code, expires_at)
 
-    flash("LINE 綁定碼已產生，請在 10 分鐘內到 LINE Bot 輸入綁定指令", "success")
+    flash("LINE 綁定碼已產生，請在 10 分鐘內到 LINE 輸入綁定指令", "success")
     return redirect("/profile")
 
 @app.route("/profile/change-password", methods=["POST"])

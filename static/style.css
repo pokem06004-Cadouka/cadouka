@@ -2156,3 +2156,37 @@ a {
     margin-top: 12px;
     width: 100%;
 }
+
+/* =========================
+   LINE Binding Copy Button
+========================= */
+
+.line-bind-code-box {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    margin: 14px 0 10px 0;
+}
+
+.line-bind-code-box .line-bind-code {
+    flex: 1;
+    margin: 0;
+}
+
+.copy-line-code-btn {
+    white-space: nowrap;
+    border-radius: 16px;
+    padding: 0 18px;
+    font-weight: 900;
+}
+
+@media (max-width: 600px) {
+    .line-bind-code-box {
+        flex-direction: column;
+    }
+
+    .copy-line-code-btn {
+        width: 100%;
+        padding: 12px 16px;
+    }
+}
