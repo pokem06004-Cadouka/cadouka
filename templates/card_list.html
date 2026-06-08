@@ -11,6 +11,89 @@
     <a href="/cards/add" class="btn-add">新增卡牌</a>
 </div>
 
+<div class="list-summary-bar">
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">
+            {% if current_status == "holding" %}
+                目前顯示
+            {% elif current_status == "sold" %}
+                目前顯示
+            {% else %}
+                目前顯示
+            {% endif %}
+        </div>
+
+        <div class="list-summary-value">
+            {% if current_status == "holding" %}
+                持有中
+            {% elif current_status == "sold" %}
+                已售出
+            {% else %}
+                全部卡牌
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">總張數</div>
+        <div class="list-summary-value">{{ list_summary.total_cards or 0 }} 張</div>
+    </div>
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">持有中</div>
+        <div class="list-summary-value">{{ list_summary.holding_cards or 0 }} 張</div>
+    </div>
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">已售出</div>
+        <div class="list-summary-value">{{ list_summary.sold_cards or 0 }} 張</div>
+    </div>
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">購入價格合計</div>
+        <div class="list-summary-value">
+            NT${{ "{:,.0f}".format(list_summary.total_cost or 0) }}
+        </div>
+    </div>
+
+    <div class="list-summary-item">
+        <div class="list-summary-label">市價 / 實收合計</div>
+        <div class="list-summary-value">
+            NT${{ "{:,.0f}".format(list_summary.market_or_revenue or 0) }}
+        </div>
+    </div>
+
+    <div class="list-summary-item highlight">
+        <div class="list-summary-label">總損益</div>
+
+        {% if list_summary.total_profit >= 0 %}
+            <div class="list-summary-value profit">
+                +NT${{ "{:,.0f}".format(list_summary.total_profit or 0) }}
+            </div>
+        {% else %}
+            <div class="list-summary-value loss">
+                -NT${{ "{:,.0f}".format((list_summary.total_profit or 0) * -1) }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="list-summary-item highlight">
+        <div class="list-summary-label">ROI</div>
+
+        {% if list_summary.total_roi >= 0 %}
+            <div class="list-summary-value profit">
+                +{{ "{:.2f}".format(list_summary.total_roi or 0) }}%
+            </div>
+        {% else %}
+            <div class="list-summary-value loss">
+                {{ "{:.2f}".format(list_summary.total_roi or 0) }}%
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
 <div class="list-tools">
 
     <form action="/cards" method="get" class="search-form">

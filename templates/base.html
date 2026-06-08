@@ -36,5 +36,19 @@
         {% block content %}{% endblock %}
     </main>
 
+    <script>
+        setTimeout(function () {
+            const flashMessages = document.querySelectorAll(".flash-message");
+
+            flashMessages.forEach(function (message) {
+                message.classList.add("flash-hide");
+
+                setTimeout(function () {
+                    message.remove();
+                }, 250);
+            });
+        }, 2000);
+    </script>
+
 </body>
 </html>

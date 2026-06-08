@@ -217,17 +217,60 @@ def card_list_page():
 
     card_list = []
 
+    list_total_cards = 0
+    list_holding_cards = 0
+    list_sold_cards = 0
+    list_total_cost = 0
+    list_market_or_revenue = 0
+    list_total_profit = 0
+
     for card in cards:
         card_dict = dict(card)
         card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
         card_list.append(card_dict)
+
+        list_total_cards += 1
+
+        buy_price = card_dict.get("buy_price") or 0
+        list_total_cost += buy_price
+
+        if card_dict.get("status") == "sold":
+            list_sold_cards += 1
+            net_revenue = card_dict.get("net_revenue") or 0
+            realized_profit = card_dict.get("realized_profit") or 0
+
+            list_market_or_revenue += net_revenue
+            list_total_profit += realized_profit
+        else:
+            list_holding_cards += 1
+            current_market_price = card_dict.get("current_market_price") or 0
+            unrealized_profit = card_dict.get("unrealized_profit") or 0
+
+            list_market_or_revenue += current_market_price
+            list_total_profit += unrealized_profit
+
+    if list_total_cost == 0:
+        list_total_roi = 0
+    else:
+        list_total_roi = (list_total_profit / list_total_cost) * 100
+
+    list_summary = {
+        "total_cards": list_total_cards,
+        "holding_cards": list_holding_cards,
+        "sold_cards": list_sold_cards,
+        "total_cost": list_total_cost,
+        "market_or_revenue": list_market_or_revenue,
+        "total_profit": list_total_profit,
+        "total_roi": list_total_roi
+    }
 
     return render_template(
         "card_list.html",
         cards=card_list,
         current_status=status,
         keyword=keyword,
-        sort=sort
+        sort=sort,
+        list_summary=list_summary
     )
 
 

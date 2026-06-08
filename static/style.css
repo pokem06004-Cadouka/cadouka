@@ -1838,3 +1838,70 @@ a {
         transform: translateY(0);
     }
 }
+
+/* =========================
+   Card List Summary Bar
+========================= */
+
+.list-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.list-summary-item {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.list-summary-item.highlight {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    border-color: #dbeafe;
+}
+
+.list-summary-label {
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.list-summary-value {
+    color: #111827;
+    font-size: 18px;
+    font-weight: 900;
+    word-break: break-word;
+}
+
+.list-summary-value.profit {
+    color: #059669;
+}
+
+.list-summary-value.loss {
+    color: #dc2626;
+}
+
+@media (max-width: 1100px) {
+    .list-summary-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .list-summary-bar {
+        grid-template-columns: 1fr;
+    }
+}
+
+.flash-message {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.flash-message.flash-hide {
+    opacity: 0;
+    transform: translateY(-6px);
+}
