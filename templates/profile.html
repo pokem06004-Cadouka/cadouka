@@ -64,15 +64,29 @@
 
             {% if user.line_user_id %}
                 <p>你的 Cadouka 帳號目前已經綁定 LINE。</p>
-                <p class="sub-text">如果要解除綁定，請到 LINE Bot 輸入：解除綁定</p>
-                <p class="sub-text">如果要查看狀態，請到 LINE Bot 輸入：綁定狀態</p>
+                <p class="sub-text">如果要解除綁定，請到 LINE 輸入：解除綁定</p>
+                <p class="sub-text">如果要查看狀態，請到 LINE 輸入：綁定狀態</p>
             {% else %}
-                <p>產生綁定碼後，請到 LINE Bot 輸入下方指令：</p>
+                <p>產生綁定碼後，請到 LINE 輸入下方指令：</p>
 
                 {% if user.line_bind_code %}
-                    <div class="line-bind-code">
-                        綁定 {{ user.line_bind_code }}
+                    <div class="line-bind-code-box">
+                        <div class="line-bind-code" id="lineBindCommand">
+                            綁定 {{ user.line_bind_code }}
+                        </div>
+
+                        <button
+                            type="button"
+                            class="btn-secondary copy-line-code-btn"
+                            onclick="copyLineBindCommand('綁定 {{ user.line_bind_code }}')"
+                        >
+                            複製
+                        </button>
                     </div>
+
+                    <p class="sub-text">
+                        複製上方指令，到 LINE 貼上即可完成綁定。
+                    </p>
 
                     <p class="sub-text">
                         綁定碼將於 {{ user.line_bind_code_expires_at or "-" }} 過期。
@@ -127,5 +141,30 @@
     </div>
 
 </div>
+
+<script>
+    function copyLineBindCommand(command) {
+        navigator.clipboard.writeText(command).then(function () {
+            const button = document.querySelector(".copy-line-code-btn");
+
+            if (button) {
+                const originalText = button.innerText;
+                button.innerText = "已複製";
+                button.disabled = true;
+
+                setTimeout(function () {
+                    button.innerText = originalText;
+                    button.disabled = false;
+                }, 1200);
+            }
+        }).catch(function () {
+            const button = document.querySelector(".copy-line-code-btn");
+
+            if (button) {
+                button.innerText = "複製失敗";
+            }
+        });
+    }
+</script>
 
 {% endblock %}
