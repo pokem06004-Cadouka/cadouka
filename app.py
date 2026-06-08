@@ -538,6 +538,16 @@ def card_list_page():
     keyword = request.args.get("keyword", "").strip()
     sort = request.args.get("sort", "").strip()
 
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 10
+
     if status not in ["holding", "sold"]:
         status = None
 
@@ -555,14 +565,16 @@ def card_list_page():
     if sort not in allowed_sorts:
         sort = ""
 
-    cards = get_all_cards(
+    all_cards = get_all_cards(
         status=status,
         keyword=keyword,
         sort=sort,
         user_id=user_id
     )
 
-    card_list = []
+    # =========================
+    # Summary：用全部符合條件的卡牌計算
+    # =========================
 
     list_total_cards = 0
     list_holding_cards = 0
@@ -571,10 +583,8 @@ def card_list_page():
     list_market_or_revenue = 0
     list_total_profit = 0
 
-    for card in cards:
+    for card in all_cards:
         card_dict = dict(card)
-        card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
-        card_list.append(card_dict)
 
         list_total_cards += 1
 
@@ -611,13 +621,44 @@ def card_list_page():
         "total_roi": list_total_roi
     }
 
+    # =========================
+    # Pagination：每頁 10 張
+    # =========================
+
+    total_items = len(all_cards)
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+
+    page_cards = all_cards[start_index:end_index]
+
+    card_list = []
+
+    for card in page_cards:
+        card_dict = dict(card)
+        card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
+        card_list.append(card_dict)
+
     return render_template(
         "card_list.html",
         cards=card_list,
         current_status=status,
         keyword=keyword,
         sort=sort,
-        list_summary=list_summary
+        list_summary=list_summary,
+
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
     )
 
 
@@ -822,7 +863,7 @@ def edit_card_page(card_id):
             mark_card_as_sold(card_id, sell_data, user_id=user_id)
 
         flash("卡牌資料已更新", "success")
-        return redirect(f"/cards/{card_id}")
+        return redirect("/cards")
 
     return render_template("edit_card.html", card=card)
 

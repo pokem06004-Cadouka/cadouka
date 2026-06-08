@@ -347,6 +347,39 @@
 
 </form>
 
+{% if total_pages > 1 %}
+<div class="pagination-bar">
+
+    {% if current_page > 1 %}
+        <a
+            class="pagination-btn"
+            href="/cards?page={{ current_page - 1 }}{% if current_status %}&status={{ current_status }}{% endif %}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+        >
+            ← 上一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">← 上一頁</span>
+    {% endif %}
+
+    <div class="pagination-info">
+        第 {{ current_page }} / {{ total_pages }} 頁
+        <span>共 {{ total_items }} 張</span>
+    </div>
+
+    {% if current_page < total_pages %}
+        <a
+            class="pagination-btn"
+            href="/cards?page={{ current_page + 1 }}{% if current_status %}&status={{ current_status }}{% endif %}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+        >
+            下一頁 →
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">下一頁 →</span>
+    {% endif %}
+
+</div>
+{% endif %}
+
 {% else %}
 <div class="empty-box">
     <h2>目前沒有符合條件的卡牌</h2>
