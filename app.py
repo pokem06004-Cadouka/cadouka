@@ -55,12 +55,13 @@ from models import (
     delete_card,
     mark_card_as_sold,
     mark_card_as_holding,
-
     create_user,
     get_user_by_username,
     get_user_by_id,
     get_first_user,
-    assign_unowned_cards_to_user
+    assign_unowned_cards_to_user,
+    update_user_password,
+    update_user_display_name
 )
 
 from calculations import calculate_total_cost
@@ -219,6 +220,10 @@ def register_page():
             flash("請輸入帳號與密碼", "warning")
             return redirect("/register")
 
+        if len(password) < 6:
+            flash("密碼至少需要 6 碼", "warning")
+            return redirect("/register")
+
         if password != confirm_password:
             flash("兩次輸入的密碼不一致", "warning")
             return redirect("/register")
@@ -288,6 +293,84 @@ def logout_page():
     session.clear()
     flash("已登出", "success")
     return redirect("/login")
+
+
+@app.route("/profile")
+@login_required
+def profile_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    return render_template("profile.html", user=user)
+
+
+@app.route("/profile/update-display-name", methods=["POST"])
+@login_required
+def update_display_name_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    display_name = request.form.get("display_name", "").strip()
+
+    if len(display_name) > 30:
+        flash("暱稱最多 30 個字", "warning")
+        return redirect("/profile")
+
+    update_user_display_name(user["id"], display_name)
+
+    if display_name:
+        flash("暱稱已更新", "success")
+    else:
+        flash("已清除暱稱", "success")
+
+    return redirect("/profile")
+
+
+@app.route("/profile/change-password", methods=["POST"])
+@login_required
+def change_password_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    current_password = request.form.get("current_password", "").strip()
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if not current_password or not new_password or not confirm_password:
+        flash("請完整填寫密碼欄位", "warning")
+        return redirect("/profile")
+
+    if not check_password_hash(user["password_hash"], current_password):
+        flash("目前密碼錯誤", "warning")
+        return redirect("/profile")
+
+    if len(new_password) < 6:
+        flash("新密碼至少需要 6 碼", "warning")
+        return redirect("/profile")
+
+    if new_password != confirm_password:
+        flash("兩次輸入的新密碼不一致", "warning")
+        return redirect("/profile")
+
+    password_hash = generate_password_hash(new_password)
+    update_user_password(user["id"], password_hash)
+
+    flash("密碼已成功更新", "success")
+    return redirect("/profile")
+
+
+@app.route("/forgot-password")
+def forgot_password_page():
+    return render_template("forgot_password.html")
 
 
 # =========================

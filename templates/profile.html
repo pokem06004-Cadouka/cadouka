@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/dashboard" class="back-link">← 回到總覽</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Account</p>
+        <h1>個人資料</h1>
+        <p class="page-subtitle">管理你的 Cadouka 帳號、暱稱與密碼。</p>
+    </div>
+</div>
+
+<div class="detail-section-grid">
+
+    <div class="cost-breakdown detail-section-card">
+        <h2>帳號資訊</h2>
+
+        <table class="detail-table">
+            <tr>
+                <th>帳號名稱</th>
+                <td>{{ user.username }}</td>
+            </tr>
+            <tr>
+                <th>暱稱</th>
+                <td>{{ user.display_name or "尚未設定" }}</td>
+            </tr>
+            <tr>
+                <th>建立時間</th>
+                <td>{{ user.created_at or "-" }}</td>
+            </tr>
+        </table>
+
+        <form action="/profile/update-display-name" method="post" class="profile-password-form profile-display-form">
+            <label>修改暱稱</label>
+            <input
+                type="text"
+                name="display_name"
+                value="{{ user.display_name or '' }}"
+                maxlength="30"
+            >
+
+            <button type="submit" class="btn-add profile-submit-btn">
+                儲存暱稱
+            </button>
+        </form>
+    </div>
+
+    <div class="cost-breakdown detail-section-card">
+        <h2>修改密碼</h2>
+
+        <form action="/profile/change-password" method="post" class="profile-password-form">
+
+            <label>目前密碼</label>
+            <input
+                type="password"
+                name="current_password"
+                placeholder="請輸入目前密碼"
+                required
+            >
+
+            <label>新密碼</label>
+            <input
+                type="password"
+                name="new_password"
+                placeholder="至少 6 碼"
+                required
+            >
+
+            <label>確認新密碼</label>
+            <input
+                type="password"
+                name="confirm_password"
+                placeholder="請再次輸入新密碼"
+                required
+            >
+
+            <button type="submit" class="btn-add profile-submit-btn">
+                更新密碼
+            </button>
+
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

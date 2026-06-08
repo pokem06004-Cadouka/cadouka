@@ -2023,3 +2023,94 @@ a {
         font-size: 26px;
     }
 }
+
+/* =========================
+   Profile / Forgot Password
+========================= */
+
+.nav-user {
+    text-decoration: none;
+}
+
+.nav-user:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.profile-password-form label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #374151;
+}
+
+.profile-password-form input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    background: #fbfdff;
+    color: #111827;
+}
+
+.profile-password-form input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+}
+
+.profile-submit-btn {
+    margin-top: 20px;
+    width: 100%;
+    border-radius: 999px;
+    padding: 13px 18px;
+}
+
+.auth-small-link {
+    text-align: right;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+.auth-small-link a {
+    color: #2563eb;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.auth-small-link a:hover {
+    text-decoration: underline;
+}
+
+.forgot-box {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 18px;
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.forgot-box p {
+    margin-top: 0;
+}
+
+.forgot-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* =========================
+   Profile Nickname
+========================= */
+
+.profile-display-form {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}

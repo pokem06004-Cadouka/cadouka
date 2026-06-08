@@ -55,6 +55,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            display_name TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -109,6 +110,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            display_name TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -217,6 +219,44 @@ def get_user_by_id(user_id):
 
     conn.close()
     return user
+
+
+def update_user_password(user_id, password_hash):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET password_hash = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        password_hash,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def update_user_display_name(user_id, display_name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET display_name = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        display_name,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
 
 
 def get_first_user():
@@ -575,11 +615,47 @@ def add_column_if_not_exists(column_name, column_definition):
     conn.close()
 
 
+def add_user_column_if_not_exists(column_name, column_definition):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'users'
+        """)
+
+        columns = cursor.fetchall()
+        existing_columns = [col["column_name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE users ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
+
+    else:
+        cursor.execute("PRAGMA table_info(users)")
+        columns = cursor.fetchall()
+        existing_columns = [col["name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE users ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
+
+    conn.close()
+
+
 def migrate_db():
     """
     舊資料庫升級用。
     PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
+    add_user_column_if_not_exists("display_name", "TEXT")
+
     add_column_if_not_exists("user_id", "INTEGER")
 
     add_column_if_not_exists("purchase_method", "TEXT")
