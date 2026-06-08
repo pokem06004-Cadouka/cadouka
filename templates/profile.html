@@ -8,7 +8,7 @@
     <div>
         <p class="eyebrow">Account</p>
         <h1>個人資料</h1>
-        <p class="page-subtitle">管理你的 Cadouka 帳號、暱稱與密碼。</p>
+        <p class="page-subtitle">管理你的 Cadouka 帳號、暱稱、密碼與 LINE 綁定。</p>
     </div>
 </div>
 
@@ -22,10 +22,23 @@
                 <th>帳號名稱</th>
                 <td>{{ user.username }}</td>
             </tr>
+
             <tr>
                 <th>暱稱</th>
                 <td>{{ user.display_name or "尚未設定" }}</td>
             </tr>
+
+            <tr>
+                <th>LINE 綁定狀態</th>
+                <td>
+                    {% if user.line_user_id %}
+                        <span class="status holding">已綁定</span>
+                    {% else %}
+                        <span class="status sold">尚未綁定</span>
+                    {% endif %}
+                </td>
+            </tr>
+
             <tr>
                 <th>建立時間</th>
                 <td>{{ user.created_at or "-" }}</td>
@@ -45,6 +58,36 @@
                 儲存暱稱
             </button>
         </form>
+
+        <div class="line-bind-box">
+            <h3>LINE 帳號綁定</h3>
+
+            {% if user.line_user_id %}
+                <p>你的 Cadouka 帳號目前已經綁定 LINE。</p>
+                <p class="sub-text">如果要解除綁定，請到 LINE Bot 輸入：解除綁定</p>
+                <p class="sub-text">如果要查看狀態，請到 LINE Bot 輸入：綁定狀態</p>
+            {% else %}
+                <p>產生綁定碼後，請到 LINE Bot 輸入下方指令：</p>
+
+                {% if user.line_bind_code %}
+                    <div class="line-bind-code">
+                        綁定 {{ user.line_bind_code }}
+                    </div>
+
+                    <p class="sub-text">
+                        綁定碼將於 {{ user.line_bind_code_expires_at or "-" }} 過期。
+                    </p>
+                {% else %}
+                    <p class="sub-text">目前尚未產生綁定碼。</p>
+                {% endif %}
+
+                <form action="/profile/generate-line-bind-code" method="post">
+                    <button type="submit" class="btn-secondary line-bind-btn">
+                        產生 LINE 綁定碼
+                    </button>
+                </form>
+            {% endif %}
+        </div>
     </div>
 
     <div class="cost-breakdown detail-section-card">

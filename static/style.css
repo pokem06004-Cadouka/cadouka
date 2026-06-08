@@ -2114,3 +2114,45 @@ a {
     padding-top: 18px;
     border-top: 1px solid #e5e7eb;
 }
+
+/* =========================
+   LINE Binding
+========================= */
+
+.line-bind-box {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.line-bind-box h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 17px;
+    color: #111827;
+}
+
+.line-bind-box p {
+    margin: 8px 0;
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.line-bind-code {
+    margin: 14px 0 10px 0;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: center;
+    border: 1px solid #bfdbfe;
+}
+
+.line-bind-btn {
+    margin-top: 12px;
+    width: 100%;
+}

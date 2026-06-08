@@ -56,6 +56,9 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
+            line_user_id TEXT,
+            line_bind_code TEXT,
+            line_bind_code_expires_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -111,6 +114,9 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
+            line_user_id TEXT,
+            line_bind_code TEXT,
+            line_bind_code_expires_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -254,6 +260,101 @@ def update_user_display_name(user_id, display_name):
         display_name,
         user_id
     ])
+
+    conn.commit()
+    conn.close()
+
+
+def update_user_line_bind_code(user_id, bind_code, expires_at):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET
+            line_bind_code = ?,
+            line_bind_code_expires_at = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        bind_code,
+        expires_at,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def get_user_by_line_bind_code(bind_code):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM users
+        WHERE line_bind_code = ?
+    """
+
+    execute_sql(cursor, sql, [bind_code])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def get_user_by_line_user_id(line_user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM users
+        WHERE line_user_id = ?
+    """
+
+    execute_sql(cursor, sql, [line_user_id])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def bind_line_user_to_account(user_id, line_user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET
+            line_user_id = ?,
+            line_bind_code = '',
+            line_bind_code_expires_at = ''
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        line_user_id,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def unbind_line_user(line_user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET
+            line_user_id = '',
+            line_bind_code = '',
+            line_bind_code_expires_at = ''
+        WHERE line_user_id = ?
+    """
+
+    execute_sql(cursor, sql, [line_user_id])
 
     conn.commit()
     conn.close()
@@ -655,6 +756,9 @@ def migrate_db():
     PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
     add_user_column_if_not_exists("display_name", "TEXT")
+    add_user_column_if_not_exists("line_user_id", "TEXT")
+    add_user_column_if_not_exists("line_bind_code", "TEXT")
+    add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")
 
     add_column_if_not_exists("user_id", "INTEGER")
 

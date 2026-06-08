@@ -23,6 +23,8 @@ from urllib.parse import parse_qs, unquote
 import urllib.request as req
 import traceback
 import os
+import random
+import string
 from functools import wraps
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -61,12 +63,17 @@ from models import (
     get_first_user,
     assign_unowned_cards_to_user,
     update_user_password,
-    update_user_display_name
+    update_user_display_name,
+    update_user_line_bind_code,
+    get_user_by_line_bind_code,
+    get_user_by_line_user_id,
+    bind_line_user_to_account,
+    unbind_line_user
 )
 
 from calculations import calculate_total_cost
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 
 app = Flask(__name__)
@@ -101,6 +108,18 @@ def current_user():
 
     return get_user_by_id(user_id)
 
+def generate_line_bind_code():
+    characters = string.ascii_uppercase + string.digits
+
+    for _ in range(20):
+        bind_code = "".join(random.choice(characters) for _ in range(6))
+
+        existing_user = get_user_by_line_bind_code(bind_code)
+
+        if not existing_user:
+            return bind_code
+
+    return "".join(random.choice(characters) for _ in range(10))
 
 def login_required(view_func):
     @wraps(view_func)
@@ -331,6 +350,22 @@ def update_display_name_page():
 
     return redirect("/profile")
 
+@app.route("/profile/generate-line-bind-code", methods=["POST"])
+@login_required
+def generate_line_bind_code_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    bind_code = generate_line_bind_code()
+    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+    update_user_line_bind_code(user["id"], bind_code, expires_at)
+
+    flash("LINE 綁定碼已產生，請在 10 分鐘內到 LINE Bot 輸入綁定指令", "success")
+    return redirect("/profile")
 
 @app.route("/profile/change-password", methods=["POST"])
 @login_required
@@ -866,6 +901,103 @@ def crop_image():
 def handle_message(event):
     card_id = event.message.text.strip()
     line_user_id = event.source.user_id
+
+        # =========================
+    # LINE Account Binding Commands
+    # =========================
+
+    if card_id.startswith("綁定 "):
+        bind_code = card_id.replace("綁定 ", "", 1).strip().upper()
+
+        if not bind_code:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="請輸入綁定碼，例如：綁定 A8K29Q")
+            )
+            return
+
+        user = get_user_by_line_bind_code(bind_code)
+
+        if not user:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="找不到這組綁定碼，請確認是否輸入正確。")
+            )
+            return
+
+        expires_at_text = user["line_bind_code_expires_at"]
+
+        if expires_at_text:
+            try:
+                expires_at = datetime.strptime(expires_at_text, "%Y-%m-%d %H:%M:%S")
+
+                if datetime.now() > expires_at:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。")
+                    )
+                    return
+            except:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="綁定碼狀態異常，請回 Cadouka 個人資料頁重新產生。")
+                )
+                return
+
+        existing_line_user = get_user_by_line_user_id(line_user_id)
+
+        if existing_line_user and existing_line_user["id"] != user["id"]:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="這個 LINE 帳號已經綁定其他 Cadouka 帳號，請先解除綁定。")
+            )
+            return
+
+        bind_line_user_to_account(user["id"], line_user_id)
+
+        display_name = user["display_name"] or user["username"]
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"綁定成功！你的 LINE 已綁定 Cadouka 帳號：{display_name}")
+        )
+        return
+
+    if card_id == "綁定狀態":
+        user = get_user_by_line_user_id(line_user_id)
+
+        if not user:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="你目前尚未綁定 Cadouka 帳號。")
+            )
+            return
+
+        display_name = user["display_name"] or user["username"]
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"你目前已綁定 Cadouka 帳號：{display_name}")
+        )
+        return
+
+    if card_id == "解除綁定":
+        user = get_user_by_line_user_id(line_user_id)
+
+        if not user:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="你目前沒有綁定任何 Cadouka 帳號。")
+            )
+            return
+
+        unbind_line_user(line_user_id)
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="已解除 LINE 與 Cadouka 帳號的綁定。")
+        )
+        return
 
     try:
         products = search_products(card_id)
