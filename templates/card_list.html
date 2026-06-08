@@ -186,43 +186,39 @@
         </a>
     </div>
 
-    <form action="/cards" method="get" class="sort-form">
-
-        {% if current_status %}
-            <input type="hidden" name="status" value="{{ current_status }}">
         <div class="list-bottom-tools">
 
-    <form action="/cards" method="get" class="sort-form">
+        <form action="/cards" method="get" class="sort-form">
 
-        {% if current_status %}
-            <input type="hidden" name="status" value="{{ current_status }}">
-        {% endif %}
+            {% if current_status %}
+                <input type="hidden" name="status" value="{{ current_status }}">
+            {% endif %}
 
-        {% if keyword %}
-            <input type="hidden" name="keyword" value="{{ keyword }}">
-        {% endif %}
+            {% if keyword %}
+                <input type="hidden" name="keyword" value="{{ keyword }}">
+            {% endif %}
 
-        <label>排序方式</label>
+            <label>排序方式</label>
 
-        <select name="sort" onchange="this.form.submit()">
-            <option value="" {% if not sort %}selected{% endif %}>預設排序</option>
-            <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>購入日期：新到舊</option>
-            <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>購入日期：舊到新</option>
-            <option value="cost_desc" {% if sort == "cost_desc" %}selected{% endif %}>總成本：高到低</option>
-            <option value="cost_asc" {% if sort == "cost_asc" %}selected{% endif %}>總成本：低到高</option>
-            <option value="profit_desc" {% if sort == "profit_desc" %}selected{% endif %}>損益：高到低</option>
-            <option value="profit_asc" {% if sort == "profit_asc" %}selected{% endif %}>損益：低到高</option>
-            <option value="roi_desc" {% if sort == "roi_desc" %}selected{% endif %}>ROI：高到低</option>
-            <option value="roi_asc" {% if sort == "roi_asc" %}selected{% endif %}>ROI：低到高</option>
-        </select>
+            <select name="sort" onchange="this.form.submit()">
+                <option value="" {% if not sort %}selected{% endif %}>預設排序</option>
+                <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>購入日期：新到舊</option>
+                <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>購入日期：舊到新</option>
+                <option value="cost_desc" {% if sort == "cost_desc" %}selected{% endif %}>總成本：高到低</option>
+                <option value="cost_asc" {% if sort == "cost_asc" %}selected{% endif %}>總成本：低到高</option>
+                <option value="profit_desc" {% if sort == "profit_desc" %}selected{% endif %}>損益：高到低</option>
+                <option value="profit_asc" {% if sort == "profit_asc" %}selected{% endif %}>損益：低到高</option>
+                <option value="roi_desc" {% if sort == "roi_desc" %}selected{% endif %}>ROI：高到低</option>
+                <option value="roi_asc" {% if sort == "roi_asc" %}selected{% endif %}>ROI：低到高</option>
+            </select>
 
-    </form>
+        </form>
 
-    <a href="/cards/export-excel" class="btn-secondary export-excel-btn">
-        匯出Excel
-    </a>
+        <a href="/cards/export-excel" class="btn-secondary export-excel-btn">
+            匯出Excel
+        </a>
 
-</div>
+    </div>
 
 </div>
 
