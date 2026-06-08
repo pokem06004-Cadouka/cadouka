@@ -934,7 +934,6 @@ def crop_image():
         traceback.print_exc()
         return "Image processing error", 500
 
-
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     card_id = event.message.text.strip()
@@ -1019,6 +1018,7 @@ def handle_message(event):
         )
         return
 
+    # 第一次輸入解除綁定，只做確認，不直接解除
     if card_id == "解除綁定":
         user = get_user_by_line_user_id(line_user_id)
 
@@ -1029,29 +1029,28 @@ def handle_message(event):
             )
             return
 
-            if card_id == "使用教學":
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(
-                        text=(
-                            "Cakouka 使用教學\n\n"
-                            "【如何綁定 LINE】\n"
-                            "1. 先登入 Cadouka 網站。\n"
-                            "2. 點右上角帳號名稱，進入個人資料。\n"
-                            "3. 在 LINE 帳號綁定區，按「產生 LINE 綁定碼」。\n"
-                            "4. 複製畫面上的綁定代碼，例如：綁定 123456。\n"
-                            "5. 回到 LINE 貼上並送出，即可完成綁定。\n\n"
-                            "【如何查價】\n"
-                            "1. 直接輸入卡號或關鍵字。\n"
-                            "2. 點選商品圖片，可以查看 PSA10 最近成交價格。\n"
-                            "3. 按「加入 Cadouka」，可以直接新增到你的卡牌庫存。\n\n"
-                            "【常用指令】\n"
-                            "綁定狀態：查看目前是否已綁定\n"
-                            "解除綁定：解除目前 LINE 綁定"
-                        )
-                    )
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "你確定要解除 LINE 與 Cadouka 帳號的綁定嗎？\n\n"
+                    "解除後，將無法從 LINE 直接加入 Cadouka。\n"
+                    "若確定解除，請輸入：確認解除綁定"
                 )
-                return
+            )
+        )
+        return
+
+    # 第二次確認，才真正解除綁定
+    if card_id == "確認解除綁定":
+        user = get_user_by_line_user_id(line_user_id)
+
+        if not user:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="你目前沒有綁定任何 Cadouka 帳號。")
+            )
+            return
 
         unbind_line_user(line_user_id)
 
@@ -1060,6 +1059,34 @@ def handle_message(event):
             TextSendMessage(text="已解除 LINE 與 Cadouka 帳號的綁定。")
         )
         return
+
+    if card_id == "使用教學":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "Cadouka 使用教學\n\n"
+                    "【如何綁定 LINE】\n"
+                    "1. 先登入 Cadouka 網站。\n"
+                    "2. 點右上角帳號名稱，進入個人資料。\n"
+                    "3. 在 LINE 帳號綁定區，按「產生 LINE 綁定碼」。\n"
+                    "4. 複製畫面上的綁定代碼，例如：綁定 A8K29Q。\n"
+                    "5. 回到 LINE 貼上並送出，即可完成綁定。\n\n"
+                    "【如何查價】\n"
+                    "1. 直接輸入卡號或關鍵字。\n"
+                    "2. 點選商品圖片，可以查看 PSA10 最近成交價格。\n"
+                    "3. 按「加入 Cadouka」，可以直接新增到你的卡牌庫存。\n\n"
+                    "【常用指令】\n"
+                    "綁定狀態：查看目前是否已綁定\n"
+                    "解除綁定：解除目前 LINE 綁定，需再次輸入確認解除綁定"
+                )
+            )
+        )
+        return
+
+    # =========================
+    # Search SNKRDUNK Products
+    # =========================
 
     try:
         products = search_products(card_id)
