@@ -174,7 +174,7 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
 
     product_index：
     - LINE 使用者點選商品時的 index
-    - 之後按「加入 Cadouka 庫存」會把 index 傳回 app.py
+    - 之後按「加入 Cadouka 」會把 index 傳回 app.py
     - app.py 再用這個 index 從 user_products[line_user_id] 找到原商品資料
     """
     product_name = product["name"] if product["name"] else "未命名商品"
@@ -375,7 +375,7 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
         )
     )
 
-    # 加入 Cadouka 庫存按鈕：
+    # 加入 Cadouka 按鈕：
     # 改成 PostbackAction，讓 LINE 後端直接新增，不再打開網站新增頁。
     if product_index is not None:
         add_card_action_data = f"action=add_card&index={product_index}"
@@ -401,9 +401,9 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
                 ButtonComponent(
                     style="primary",
                     action=PostbackAction(
-                        label="加入 Cadouka 庫存",
+                        label="加入 Cadouka",
                         data=add_card_action_data,
-                        display_text="加入 Cadouka 庫存"
+                        display_text="加入 Cadouka"
                     )
                 ),
                 ButtonComponent(

@@ -1029,6 +1029,30 @@ def handle_message(event):
             )
             return
 
+            if card_id == "使用教學":
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text=(
+                            "Cakouka 使用教學\n\n"
+                            "【如何綁定 LINE】\n"
+                            "1. 先登入 Cadouka 網站。\n"
+                            "2. 點右上角帳號名稱，進入個人資料。\n"
+                            "3. 在 LINE 帳號綁定區，按「產生 LINE 綁定碼」。\n"
+                            "4. 複製畫面上的綁定代碼，例如：綁定 123456。\n"
+                            "5. 回到 LINE 貼上並送出，即可完成綁定。\n\n"
+                            "【如何查價】\n"
+                            "1. 直接輸入卡號或關鍵字。\n"
+                            "2. 點選商品圖片，可以查看 PSA10 最近成交價格。\n"
+                            "3. 按「加入 Cadouka」，可以直接新增到你的卡牌庫存。\n\n"
+                            "【常用指令】\n"
+                            "綁定狀態：查看目前是否已綁定\n"
+                            "解除綁定：解除目前 LINE 綁定"
+                        )
+                    )
+                )
+                return
+
         unbind_line_user(line_user_id)
 
         line_bot_api.reply_message(
@@ -1176,7 +1200,7 @@ def handle_postback(event):
                 "series_name": "",
                 "rarity": "",
                 "grade": "",
-                "purchase_method": "LINE",
+                "purchase_method": "",
 
                 "buy_price": buy_price,
                 "shipping_fee": 0,
