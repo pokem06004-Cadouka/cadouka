@@ -190,6 +190,12 @@
 
         {% if current_status %}
             <input type="hidden" name="status" value="{{ current_status }}">
+        <div class="list-bottom-tools">
+
+    <form action="/cards" method="get" class="sort-form">
+
+        {% if current_status %}
+            <input type="hidden" name="status" value="{{ current_status }}">
         {% endif %}
 
         {% if keyword %}
@@ -211,6 +217,12 @@
         </select>
 
     </form>
+
+    <a href="/cards/export-excel" class="btn-secondary export-excel-btn">
+        匯出Excel
+    </a>
+
+</div>
 
 </div>
 

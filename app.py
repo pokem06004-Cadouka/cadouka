@@ -27,6 +27,11 @@ import random
 import string
 from functools import wraps
 
+from io import BytesIO
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, headers
@@ -661,6 +666,149 @@ def card_list_page():
         per_page=per_page
     )
 
+@app.route("/cards/export-excel")
+@login_required
+def export_cards_excel_page():
+    user_id = current_user_id()
+
+    cards = get_all_cards(
+        status=None,
+        keyword=None,
+        sort=None,
+        user_id=user_id
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "卡牌倉庫"
+
+    headers = [
+        "卡牌名稱",
+        "鑑定卡號",
+        "鑑定狀態",
+        "狀態",
+        "購入日期",
+        "購入方式",
+        "購入價格",
+        "目前市價",
+        "未實現損益",
+        "未實現 ROI",
+        "售出日期",
+        "實際收入",
+        "已實現損益",
+        "已實現 ROI",
+        "持有天數",
+        "商品網址",
+        "備註",
+        "建立時間"
+    ]
+
+    ws.append(headers)
+
+    header_fill = PatternFill("solid", fgColor="DBEAFE")
+    header_font = Font(bold=True, color="111827")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    for card in cards:
+        card_dict = dict(card)
+
+        status_text = "持有中"
+
+        if card_dict.get("status") == "sold":
+            status_text = "已售出"
+        elif card_dict.get("status") == "holding":
+            status_text = "持有中"
+        elif card_dict.get("status"):
+            status_text = card_dict.get("status")
+
+        holding_days = calculate_holding_days_for_card(card_dict)
+
+        row = [
+            card_dict.get("card_name") or "",
+            card_dict.get("card_number") or "",
+            card_dict.get("grade") or "",
+            status_text,
+            card_dict.get("buy_date") or "",
+            card_dict.get("purchase_method") or "",
+            card_dict.get("buy_price") or 0,
+            card_dict.get("current_market_price") or 0,
+            card_dict.get("unrealized_profit") or 0,
+            card_dict.get("roi") or 0,
+            card_dict.get("sell_date") or "",
+            card_dict.get("net_revenue") or 0,
+            card_dict.get("realized_profit") or 0,
+            card_dict.get("realized_roi") or 0,
+            holding_days,
+            card_dict.get("product_url") or "",
+            card_dict.get("note") or "",
+            card_dict.get("created_at") or ""
+        ]
+
+        ws.append(row)
+
+    # 欄寬設定
+    column_widths = {
+        "A": 34,  # 卡牌名稱
+        "B": 18,  # 鑑定卡號
+        "C": 14,  # 鑑定狀態
+        "D": 12,  # 狀態
+        "E": 14,  # 購入日期
+        "F": 18,  # 購入方式
+        "G": 14,  # 購入價格
+        "H": 14,  # 目前市價
+        "I": 16,  # 未實現損益
+        "J": 14,  # 未實現 ROI
+        "K": 14,  # 售出日期
+        "L": 14,  # 實際收入
+        "M": 16,  # 已實現損益
+        "N": 14,  # 已實現 ROI
+        "O": 12,  # 持有天數
+        "P": 42,  # 商品網址
+        "Q": 30,  # 備註
+        "R": 22   # 建立時間
+    }
+
+    for column_letter, width in column_widths.items():
+        ws.column_dimensions[column_letter].width = width
+
+    # 數字格式
+    money_columns = ["G", "H", "I", "L", "M"]
+
+    for column_letter in money_columns:
+        for cell in ws[column_letter][1:]:
+            cell.number_format = '#,##0'
+
+    percent_columns = ["J", "N"]
+
+    for column_letter in percent_columns:
+        for cell in ws[column_letter][1:]:
+            cell.number_format = '0.00'
+
+    # 文字垂直置中
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(vertical="center")
+
+    # 凍結表頭
+    ws.freeze_panes = "A2"
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"cadouka_cards_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @app.route("/cards/add", methods=["GET", "POST"])
 @login_required
