@@ -513,6 +513,40 @@ def dashboard_page():
     else:
         total_roi = (total_profit / total_cost) * 100
 
+        # =========================
+    # Holding Overview Top 3
+    # =========================
+
+    holding_card_list = get_all_cards(
+        status="holding",
+        keyword=None,
+        sort=None,
+        user_id=user_id
+    )
+
+    holding_card_dicts = []
+
+    for card in holding_card_list:
+        card_dict = dict(card)
+        holding_card_dicts.append(card_dict)
+
+    top_profit_cards = sorted(
+        [
+            card for card in holding_card_dicts
+            if (card.get("unrealized_profit") or 0) > 0
+        ],
+        key=lambda card: card.get("unrealized_profit") or 0,
+        reverse=True
+    )[:3]
+
+    top_loss_cards = sorted(
+        [
+            card for card in holding_card_dicts
+            if (card.get("unrealized_profit") or 0) < 0
+        ],
+        key=lambda card: card.get("unrealized_profit") or 0
+    )[:3]
+
     return render_template(
         "dashboard.html",
 
@@ -530,7 +564,9 @@ def dashboard_page():
 
         total_cost=total_cost,
         total_profit=total_profit,
-        total_roi=total_roi
+        total_roi=total_roi,
+        top_profit_cards=top_profit_cards,
+        top_loss_cards=top_loss_cards
     )
 
 

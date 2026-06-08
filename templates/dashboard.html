@@ -5,7 +5,7 @@
 <div class="dashboard-hero">
     <div>
         <p class="eyebrow">Cadouka Portfolio</p>
-        <h1>總覽</h1>
+        <h1>首頁</h1>
         <p class="page-subtitle">追蹤卡牌持有、售出與整體投資表現</p>
     </div>
 
@@ -58,7 +58,87 @@
     </div>
 
     <div class="section-action-row">
-        <a href="/cards" class="btn-secondary">查看全部庫存</a>
+        <a href="/cards" class="btn-secondary">查看全部倉庫</a>
+    </div>
+</div>
+
+<div class="dashboard-section holding-overview-section" id="holdingOverviewSection">
+    <div class="section-heading with-badge">
+        <div>
+            <h2>持有概況</h2>
+            <p>查看持有中卡牌排行。</p>
+        </div>
+
+        <button
+            type="button"
+            class="overview-toggle-btn"
+            id="holdingOverviewToggleBtn"
+            onclick="toggleHoldingOverview()"
+        >
+            隱藏
+        </button>
+    </div>
+
+    <div class="holding-overview-body" id="holdingOverviewBody">
+        <div class="holding-overview-grid">
+
+            <div class="holding-overview-card">
+                <div class="holding-overview-title">獲利最高</div>
+
+                {% if top_profit_cards %}
+                    <div class="holding-rank-row">
+                        {% for card in top_profit_cards %}
+                            <a href="/cards/{{ card.id }}" class="holding-rank-item">
+                                <div class="holding-rank-image-box">
+                                    {% if card.image_url %}
+                                        <img src="{{ card.image_url }}" class="holding-rank-img">
+                                    {% else %}
+                                        <div class="holding-rank-no-img">No Image</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="holding-rank-profit profit">
+                                    +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="holding-rank-empty">
+                        目前沒有獲利中的卡牌
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="holding-overview-card">
+                <div class="holding-overview-title">虧損最高</div>
+
+                {% if top_loss_cards %}
+                    <div class="holding-rank-row">
+                        {% for card in top_loss_cards %}
+                            <a href="/cards/{{ card.id }}" class="holding-rank-item">
+                                <div class="holding-rank-image-box">
+                                    {% if card.image_url %}
+                                        <img src="{{ card.image_url }}" class="holding-rank-img">
+                                    {% else %}
+                                        <div class="holding-rank-no-img">No Image</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="holding-rank-profit loss">
+                                    -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="holding-rank-empty">
+                        目前沒有虧損中的卡牌
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -193,5 +273,41 @@
         <a href="/cards?status=sold" class="btn-secondary">查看已售出卡牌</a>
     </div>
 </div>
+
+<script>
+    function applyHoldingOverviewState() {
+        const section = document.getElementById("holdingOverviewSection");
+        const button = document.getElementById("holdingOverviewToggleBtn");
+
+        if (!section || !button) {
+            return;
+        }
+
+        const hidden = localStorage.getItem("cadoukaHoldingOverviewHidden") === "true";
+
+        if (hidden) {
+            section.classList.add("is-hidden");
+            button.textContent = "顯示";
+        } else {
+            section.classList.remove("is-hidden");
+            button.textContent = "隱藏";
+        }
+    }
+
+    function toggleHoldingOverview() {
+        const section = document.getElementById("holdingOverviewSection");
+
+        if (!section) {
+            return;
+        }
+
+        const isHidden = section.classList.contains("is-hidden");
+        localStorage.setItem("cadoukaHoldingOverviewHidden", isHidden ? "false" : "true");
+
+        applyHoldingOverviewState();
+    }
+
+    applyHoldingOverviewState();
+</script>
 
 {% endblock %}
