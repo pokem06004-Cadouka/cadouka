@@ -41,14 +41,29 @@ def execute_sql(cursor, sql, params=None):
     cursor.execute(sql, params)
 
 
+# =========================
+# Database Init
+# =========================
+
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
     if is_postgres():
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
             id SERIAL PRIMARY KEY,
+
+            user_id INTEGER,
 
             card_name TEXT NOT NULL,
             card_number TEXT,
@@ -90,8 +105,19 @@ def init_db():
         """)
     else:
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER,
 
             card_name TEXT NOT NULL,
             card_number TEXT,
@@ -136,12 +162,112 @@ def init_db():
     conn.close()
 
 
+# =========================
+# User Functions
+# =========================
+
+def create_user(username, password_hash):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        INSERT INTO users (
+            username,
+            password_hash
+        )
+        VALUES (?, ?)
+    """
+
+    execute_sql(cursor, sql, [
+        username,
+        password_hash
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def get_user_by_username(username):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM users
+        WHERE username = ?
+    """
+
+    execute_sql(cursor, sql, [username])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def get_user_by_id(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM users
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [user_id])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def get_first_user():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM users
+        ORDER BY id ASC
+        LIMIT 1
+    """)
+
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def assign_unowned_cards_to_user(user_id):
+    """
+    舊資料處理用：
+    帳號系統上線前已存在的卡牌，user_id 會是 NULL。
+    這個 function 可以把舊卡牌歸到指定使用者名下。
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE cards
+        SET user_id = ?
+        WHERE user_id IS NULL
+    """
+
+    execute_sql(cursor, sql, [user_id])
+
+    conn.commit()
+    conn.close()
+
+
+# =========================
+# Card Functions
+# =========================
+
 def add_card(card_data):
     conn = get_connection()
     cursor = conn.cursor()
 
     sql = """
     INSERT INTO cards (
+        user_id,
+
         card_name,
         card_number,
         series_name,
@@ -165,10 +291,12 @@ def add_card(card_data):
         image_url,
         note
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     params = [
+        card_data.get("user_id"),
+
         card_data["card_name"],
         card_data.get("card_number", ""),
         card_data.get("series_name", ""),
@@ -199,7 +327,7 @@ def add_card(card_data):
     conn.close()
 
 
-def get_all_cards(status=None, keyword=None, sort=None):
+def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -209,6 +337,10 @@ def get_all_cards(status=None, keyword=None, sort=None):
     """
 
     params = []
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
 
     if status:
         sql += " AND status = ?"
@@ -295,7 +427,7 @@ def get_all_cards(status=None, keyword=None, sort=None):
     return cards
 
 
-def get_card_by_id(card_id):
+def get_card_by_id(card_id, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -304,14 +436,20 @@ def get_card_by_id(card_id):
         WHERE id = ?
     """
 
-    execute_sql(cursor, sql, [card_id])
+    params = [card_id]
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
+    execute_sql(cursor, sql, params)
     card = cursor.fetchone()
 
     conn.close()
     return card
 
 
-def update_card(card_id, card_data):
+def update_card(card_id, card_data, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -368,13 +506,17 @@ def update_card(card_id, card_data):
         card_id
     ]
 
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
     execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
 
 
-def delete_card(card_id):
+def delete_card(card_id, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -383,11 +525,21 @@ def delete_card(card_id):
         WHERE id = ?
     """
 
-    execute_sql(cursor, sql, [card_id])
+    params = [card_id]
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
 
+
+# =========================
+# Migration Helpers
+# =========================
 
 def add_column_if_not_exists(column_name, column_definition):
     conn = get_connection()
@@ -428,6 +580,8 @@ def migrate_db():
     舊資料庫升級用。
     PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
+    add_column_if_not_exists("user_id", "INTEGER")
+
     add_column_if_not_exists("purchase_method", "TEXT")
 
     add_column_if_not_exists("sell_fee", "REAL DEFAULT 0")
@@ -437,7 +591,11 @@ def migrate_db():
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
 
 
-def mark_card_as_sold(card_id, sell_data):
+# =========================
+# Sell / Holding Functions
+# =========================
+
+def mark_card_as_sold(card_id, sell_data, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -468,12 +626,17 @@ def mark_card_as_sold(card_id, sell_data):
         card_id
     ]
 
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
     execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
 
-def mark_card_as_holding(card_id):
+
+def mark_card_as_holding(card_id, user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -492,16 +655,27 @@ def mark_card_as_holding(card_id):
     WHERE id = ?
     """
 
-    execute_sql(cursor, sql, [card_id])
+    params = [card_id]
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
 
-def get_dashboard_full_summary():
+
+# =========================
+# Dashboard Summary
+# =========================
+
+def get_dashboard_full_summary(user_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    holding_sql = """
         SELECT
             COUNT(*) AS total_cards,
             SUM(total_cost) AS total_cost,
@@ -509,10 +683,18 @@ def get_dashboard_full_summary():
             SUM(unrealized_profit) AS total_unrealized_profit
         FROM cards
         WHERE status = 'holding'
-    """)
+    """
+
+    holding_params = []
+
+    if user_id is not None:
+        holding_sql += " AND user_id = ?"
+        holding_params.append(user_id)
+
+    execute_sql(cursor, holding_sql, holding_params)
     holding = cursor.fetchone()
 
-    cursor.execute("""
+    sold_sql = """
         SELECT
             COUNT(*) AS total_cards,
             SUM(total_cost) AS total_cost,
@@ -520,7 +702,15 @@ def get_dashboard_full_summary():
             SUM(realized_profit) AS total_realized_profit
         FROM cards
         WHERE status = 'sold'
-    """)
+    """
+
+    sold_params = []
+
+    if user_id is not None:
+        sold_sql += " AND user_id = ?"
+        sold_params.append(user_id)
+
+    execute_sql(cursor, sold_sql, sold_params)
     sold = cursor.fetchone()
 
     conn.close()

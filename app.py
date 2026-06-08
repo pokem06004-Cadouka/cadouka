@@ -1,4 +1,14 @@
-from flask import Flask, request, abort, send_file, render_template, redirect, flash
+from flask import (
+    Flask,
+    request,
+    abort,
+    send_file,
+    render_template,
+    redirect,
+    flash,
+    session,
+    url_for
+)
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -12,6 +22,10 @@ from linebot.models import (
 from urllib.parse import parse_qs, unquote
 import urllib.request as req
 import traceback
+import os
+from functools import wraps
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, headers
 
@@ -40,7 +54,13 @@ from models import (
     update_card,
     delete_card,
     mark_card_as_sold,
-    mark_card_as_holding
+    mark_card_as_holding,
+
+    create_user,
+    get_user_by_username,
+    get_user_by_id,
+    get_first_user,
+    assign_unowned_cards_to_user
 )
 
 from calculations import calculate_total_cost
@@ -49,7 +69,8 @@ from datetime import datetime, date
 
 
 app = Flask(__name__)
-app.secret_key = "cadouka-secret-key"
+app.secret_key = os.getenv("SECRET_KEY", "cadouka-secret-key")
+
 init_db()
 migrate_db()
 
@@ -58,10 +79,50 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 
 # 暫存 LINE 使用者搜尋到的商品結果
-# key = user_id
+# key = LINE user_id
 # value = 商品列表
 user_products = {}
 
+
+# =========================
+# Auth Helpers
+# =========================
+
+def current_user_id():
+    return session.get("user_id")
+
+
+def current_user():
+    user_id = current_user_id()
+
+    if not user_id:
+        return None
+
+    return get_user_by_id(user_id)
+
+
+def login_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not current_user_id():
+            flash("請先登入", "warning")
+            return redirect(url_for("login_page", next=request.full_path))
+
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.context_processor
+def inject_current_user():
+    return {
+        "current_user": current_user()
+    }
+
+
+# =========================
+# Calculation Helpers
+# =========================
 
 def calculate_holding_days_for_card(card):
     """
@@ -132,14 +193,113 @@ def calculate_realized_by_buy_price(net_revenue, buy_price):
     return realized_profit, realized_roi
 
 
+# =========================
+# Auth Routes
+# =========================
+
 @app.route("/")
 def home():
-    return redirect("/dashboard")
+    if current_user_id():
+        return redirect("/dashboard")
 
+    return redirect("/login")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register_page():
+    if current_user_id():
+        return redirect("/dashboard")
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not username or not password:
+            flash("請輸入帳號與密碼", "warning")
+            return redirect("/register")
+
+        if password != confirm_password:
+            flash("兩次輸入的密碼不一致", "warning")
+            return redirect("/register")
+
+        existing_user = get_user_by_username(username)
+
+        if existing_user:
+            flash("這個帳號已經被使用", "warning")
+            return redirect("/register")
+
+        first_user_before_create = get_first_user()
+
+        password_hash = generate_password_hash(password)
+        create_user(username, password_hash)
+
+        user = get_user_by_username(username)
+
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
+
+        # 如果這是第一個註冊者，把帳號系統上線前的舊資料歸給他
+        if first_user_before_create is None:
+            assign_unowned_cards_to_user(user["id"])
+
+        flash("註冊成功，已自動登入", "success")
+        return redirect("/dashboard")
+
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    if current_user_id():
+        return redirect("/dashboard")
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        next_url = request.form.get("next", "").strip()
+
+        user = get_user_by_username(username)
+
+        if not user:
+            flash("帳號或密碼錯誤", "warning")
+            return redirect("/login")
+
+        if not check_password_hash(user["password_hash"], password):
+            flash("帳號或密碼錯誤", "warning")
+            return redirect("/login")
+
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
+
+        flash("登入成功", "success")
+
+        if next_url and next_url.startswith("/"):
+            return redirect(next_url)
+
+        return redirect("/dashboard")
+
+    next_url = request.args.get("next", "")
+    return render_template("login.html", next_url=next_url)
+
+
+@app.route("/logout")
+def logout_page():
+    session.clear()
+    flash("已登出", "success")
+    return redirect("/login")
+
+
+# =========================
+# Dashboard / Card Routes
+# =========================
 
 @app.route("/dashboard")
+@login_required
 def dashboard_page():
-    holding, sold = get_dashboard_full_summary()
+    user_id = current_user_id()
+
+    holding, sold = get_dashboard_full_summary(user_id=user_id)
 
     holding_cards = holding["total_cards"] or 0
     holding_cost = holding["total_cost"] or 0
@@ -191,7 +351,10 @@ def dashboard_page():
 
 
 @app.route("/cards")
+@login_required
 def card_list_page():
+    user_id = current_user_id()
+
     status = request.args.get("status")
     keyword = request.args.get("keyword", "").strip()
     sort = request.args.get("sort", "").strip()
@@ -213,7 +376,12 @@ def card_list_page():
     if sort not in allowed_sorts:
         sort = ""
 
-    cards = get_all_cards(status, keyword, sort)
+    cards = get_all_cards(
+        status=status,
+        keyword=keyword,
+        sort=sort,
+        user_id=user_id
+    )
 
     card_list = []
 
@@ -275,7 +443,10 @@ def card_list_page():
 
 
 @app.route("/cards/add", methods=["GET", "POST"])
+@login_required
 def add_card_page():
+    user_id = current_user_id()
+
     if request.method == "POST":
         card_name = request.form.get("card_name", "").strip()
         card_number = request.form.get("card_number", "").strip()
@@ -305,14 +476,14 @@ def add_card_page():
             other_fee
         )
 
-        # 未實現損益 = 目前市價 - 購入價格
-        # 未實現 ROI = 未實現損益 / 購入價格 * 100%
         unrealized_profit, roi = calculate_unrealized_by_buy_price(
             current_market_price,
             buy_price
         )
 
         card_data = {
+            "user_id": user_id,
+
             "card_name": card_name,
             "card_number": card_number,
             "series_name": "",
@@ -342,7 +513,6 @@ def add_card_page():
         flash("卡牌新增成功", "success")
         return redirect("/cards")
 
-    # GET：讓網址參數可以自動帶入新增表單
     prefill = {
         "card_name": request.args.get("card_name", "").strip(),
         "card_number": request.args.get("card_number", "").strip(),
@@ -359,8 +529,11 @@ def add_card_page():
 
 
 @app.route("/cards/<int:card_id>")
+@login_required
 def card_detail_page(card_id):
-    card = get_card_by_id(card_id)
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
 
     if not card:
         return "找不到這張卡牌", 404
@@ -372,8 +545,11 @@ def card_detail_page(card_id):
 
 
 @app.route("/cards/<int:card_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_card_page(card_id):
-    card = get_card_by_id(card_id)
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
 
     if not card:
         return "找不到這張卡牌", 404
@@ -407,8 +583,6 @@ def edit_card_page(card_id):
             other_fee
         )
 
-        # 未實現損益 = 目前市價 - 購入價格
-        # 未實現 ROI = 未實現損益 / 購入價格 * 100%
         unrealized_profit, roi = calculate_unrealized_by_buy_price(
             current_market_price,
             buy_price
@@ -438,7 +612,7 @@ def edit_card_page(card_id):
             "note": note
         }
 
-        update_card(card_id, card_data)
+        update_card(card_id, card_data, user_id=user_id)
 
         # 如果這張卡已經售出，購入價格改變後，
         # 已實現損益與已實現 ROI 也要重新計算。
@@ -461,7 +635,7 @@ def edit_card_page(card_id):
                 "sell_date": card["sell_date"] or ""
             }
 
-            mark_card_as_sold(card_id, sell_data)
+            mark_card_as_sold(card_id, sell_data, user_id=user_id)
 
         flash("卡牌資料已更新", "success")
         return redirect(f"/cards/{card_id}")
@@ -470,21 +644,27 @@ def edit_card_page(card_id):
 
 
 @app.route("/cards/<int:card_id>/delete", methods=["POST"])
+@login_required
 def delete_card_page(card_id):
-    card = get_card_by_id(card_id)
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
 
     if not card:
         return "找不到這張卡牌", 404
 
-    delete_card(card_id)
+    delete_card(card_id, user_id=user_id)
 
     flash("卡牌已刪除", "success")
     return redirect("/cards")
 
 
 @app.route("/cards/<int:card_id>/sell", methods=["GET", "POST"])
+@login_required
 def sell_card_page(card_id):
-    card = get_card_by_id(card_id)
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
 
     if not card:
         return "找不到這張卡牌", 404
@@ -503,8 +683,6 @@ def sell_card_page(card_id):
         # 實際收入 = 使用者填寫的金額
         net_revenue = sell_price
 
-        # 已實現損益 = 實際收入 - 購入價格
-        # 已實現 ROI = 已實現損益 / 購入價格 * 100%
         buy_price = card["buy_price"] or 0
 
         realized_profit, realized_roi = calculate_realized_by_buy_price(
@@ -523,29 +701,37 @@ def sell_card_page(card_id):
             "sell_date": sell_date
         }
 
-        mark_card_as_sold(card_id, sell_data)
+        mark_card_as_sold(card_id, sell_data, user_id=user_id)
 
         if card["status"] == "sold":
             flash("售出資料已更新", "success")
         else:
             flash("已標記為已售出", "success")
+
         return redirect(f"/cards/{card_id}")
 
     return render_template("sell_card.html", card=card)
 
 
 @app.route("/cards/<int:card_id>/unsell", methods=["POST"])
+@login_required
 def unsell_card_page(card_id):
-    card = get_card_by_id(card_id)
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
 
     if not card:
         return "找不到這張卡牌", 404
 
-    mark_card_as_holding(card_id)
+    mark_card_as_holding(card_id, user_id=user_id)
 
     flash("已標記回持有中", "success")
     return redirect(f"/cards/{card_id}")
 
+
+# =========================
+# LINE Callback / Image Tools
+# =========================
 
 @app.route("/callback", methods=["POST"])
 def callback():
@@ -596,7 +782,7 @@ def crop_image():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     card_id = event.message.text.strip()
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
 
     try:
         products = search_products(card_id)
@@ -608,7 +794,7 @@ def handle_message(event):
             )
             return
 
-        user_products[user_id] = products
+        user_products[line_user_id] = products
 
         flex_message = create_product_image_grid_messages(products)
 
@@ -629,7 +815,7 @@ def handle_message(event):
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
     data = event.postback.data
 
     try:
@@ -637,7 +823,7 @@ def handle_postback(event):
 
         action = params.get("action", [""])[0]
 
-        products = user_products.get(user_id)
+        products = user_products.get(line_user_id)
 
         if not products:
             line_bot_api.reply_message(

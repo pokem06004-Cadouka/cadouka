@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="auth-page">
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <p class="eyebrow">Create Account</p>
+            <h1>註冊 Cadouka</h1>
+            <p class="page-subtitle">建立帳號後，你的卡牌資料會和其他使用者分開管理。</p>
+        </div>
+
+        <form action="/register" method="post" class="auth-form">
+
+            <label>帳號</label>
+            <input
+                type="text"
+                name="username"
+                placeholder="請輸入帳號"
+                required
+            >
+
+            <label>密碼</label>
+            <input
+                type="password"
+                name="password"
+                placeholder="請輸入密碼"
+                required
+            >
+
+            <label>確認密碼</label>
+            <input
+                type="password"
+                name="confirm_password"
+                placeholder="請再次輸入密碼"
+                required
+            >
+
+            <button type="submit" class="btn-add auth-submit">
+                註冊
+            </button>
+
+        </form>
+
+        <div class="auth-footer">
+            已經有帳號？
+            <a href="/login">前往登入</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

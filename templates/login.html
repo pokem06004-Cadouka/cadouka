@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="auth-page">
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <p class="eyebrow">Welcome Back</p>
+            <h1>登入 Cadouka</h1>
+            <p class="page-subtitle">登入後即可管理自己的卡牌投資紀錄。</p>
+        </div>
+
+        <form action="/login" method="post" class="auth-form">
+
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
+
+            <label>帳號</label>
+            <input
+                type="text"
+                name="username"
+                placeholder="請輸入帳號"
+                required
+            >
+
+            <label>密碼</label>
+            <input
+                type="password"
+                name="password"
+                placeholder="請輸入密碼"
+                required
+            >
+
+            <button type="submit" class="btn-add auth-submit">
+                登入
+            </button>
+
+        </form>
+
+        <div class="auth-footer">
+            還沒有帳號？
+            <a href="/register">立即註冊</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
