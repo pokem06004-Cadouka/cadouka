@@ -8,7 +8,40 @@
         <p class="page-subtitle">管理持有中與已售出的卡牌投資紀錄</p>
     </div>
 
-    <a href="/cards/add" class="btn-add">新增卡牌</a>
+    <div class="page-header-actions">
+        <a href="/cards/add" class="btn-add">新增卡牌</a>
+
+        {% if cards %}
+            <button
+                type="button"
+                class="btn-secondary"
+                id="bulkDeleteModeBtn"
+                onclick="enableBulkDeleteMode()"
+            >
+                批量刪除
+            </button>
+
+            <button
+                type="button"
+                class="btn-secondary bulk-cancel-btn"
+                id="bulkCancelBtn"
+                onclick="disableBulkDeleteMode()"
+                style="display: none;"
+            >
+                取消
+            </button>
+
+            <button
+                type="button"
+                class="btn-danger bulk-delete-submit-btn"
+                id="bulkDeleteSubmitBtn"
+                onclick="submitBulkDelete()"
+                style="display: none;"
+            >
+                刪除選取
+            </button>
+        {% endif %}
+    </div>
 </div>
 
 <div class="list-summary-bar">
@@ -169,125 +202,146 @@
 </div>
 
 {% if cards %}
-<div class="table-card">
-    <table class="card-table card-table-polished">
-        <thead>
-            <tr>
-                <th>圖片</th>
-                <th>卡牌名稱</th>
-                <th>卡號</th>
-                <th>狀態</th>
-                <th>持有天數</th>
-                <th class="money-cell">購入價格</th>
-                <th class="money-cell">市價 / 實收</th>
-                <th class="money-cell">損益</th>
-                <th class="money-cell">ROI</th>
-            </tr>
-        </thead>
+<form action="/cards/bulk-delete" method="post" id="bulkDeleteForm">
 
-        <tbody>
-            {% for card in cards %}
-            <tr class="{% if card.status == 'sold' %}sold-row{% else %}holding-row{% endif %}">
-                <td>
-                    <a href="/cards/{{ card.id }}" class="card-image-link">
-                        {% if card.image_url %}
-                            <img src="{{ card.image_url }}" class="list-card-img">
-                        {% else %}
-                            <div class="list-no-img">No Image</div>
-                        {% endif %}
-                    </a>
-                </td>
+    <div class="table-card">
+        <table class="card-table card-table-polished">
+            <thead>
+                <tr>
+                    <th class="bulk-select-col">
+                        <input
+                            type="checkbox"
+                            id="selectAllCards"
+                            class="bulk-checkbox"
+                            onclick="toggleSelectAllCards()"
+                        >
+                    </th>
+                    <th>圖片</th>
+                    <th>卡牌名稱</th>
+                    <th>卡號</th>
+                    <th>狀態</th>
+                    <th>持有天數</th>
+                    <th class="money-cell">購入價格</th>
+                    <th class="money-cell">市價 / 實收</th>
+                    <th class="money-cell">損益</th>
+                    <th class="money-cell">ROI</th>
+                </tr>
+            </thead>
 
-                <td>
-                    <a href="/cards/{{ card.id }}" class="card-name-link">
-                        <div class="card-name-text">
-                            {{ card.card_name }}
+            <tbody>
+                {% for card in cards %}
+                <tr class="{% if card.status == 'sold' %}sold-row{% else %}holding-row{% endif %}">
+                    <td class="bulk-select-col">
+                        <input
+                            type="checkbox"
+                            name="card_ids"
+                            value="{{ card.id }}"
+                            class="bulk-checkbox card-select-checkbox"
+                        >
+                    </td>
+
+                    <td>
+                        <a href="/cards/{{ card.id }}" class="card-image-link">
+                            {% if card.image_url %}
+                                <img src="{{ card.image_url }}" class="list-card-img">
+                            {% else %}
+                                <div class="list-no-img">No Image</div>
+                            {% endif %}
+                        </a>
+                    </td>
+
+                    <td>
+                        <a href="/cards/{{ card.id }}" class="card-name-link">
+                            <div class="card-name-text">
+                                {{ card.card_name }}
+                            </div>
+                        </a>
+
+                        <div class="tag-row">
+                            {% if card.grade %}
+                                <span class="mini-tag">{{ card.grade }}</span>
+                            {% else %}
+                                <span class="mini-tag light">無鑑定</span>
+                            {% endif %}
+
+                            {% if card.buy_date %}
+                                <span class="mini-tag light">{{ card.buy_date }}</span>
+                            {% endif %}
                         </div>
-                    </a>
+                    </td>
 
-                    <div class="tag-row">
-                        {% if card.grade %}
-                            <span class="mini-tag">{{ card.grade }}</span>
+                    <td>
+                        {% if card.card_number %}
+                            <span class="sub-text strong-text">{{ card.card_number }}</span>
                         {% else %}
-                            <span class="mini-tag light">無鑑定</span>
+                            <span class="sub-text">未填</span>
                         {% endif %}
+                    </td>
 
-                        {% if card.buy_date %}
-                            <span class="mini-tag light">{{ card.buy_date }}</span>
-                        {% endif %}
-                    </div>
-                </td>
-
-                <td>
-                    {% if card.card_number %}
-                        <span class="sub-text strong-text">{{ card.card_number }}</span>
-                    {% else %}
-                        <span class="sub-text">未填</span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    {% if card.status == "holding" %}
-                        <span class="status holding">持有中</span>
-                    {% elif card.status == "sold" %}
-                        <span class="status sold">已售出</span>
-                    {% else %}
-                        <span class="status">{{ card.status }}</span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    <span class="sub-text strong-text">{{ card.holding_days or "-" }}</span>
-                </td>
-
-                <td class="money-cell">
-                    <strong>NT${{ "{:,.0f}".format(card.buy_price or 0) }}</strong>
-                </td>
-
-                <td class="money-cell">
-                    {% if card.status == "sold" %}
-                        NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
-                    {% else %}
-                        NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
-                    {% endif %}
-                </td>
-
-                <td class="money-cell">
-                    {% if card.status == "sold" %}
-                        {% if card.realized_profit >= 0 %}
-                            <span class="pill-profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
+                    <td>
+                        {% if card.status == "holding" %}
+                            <span class="status holding">持有中</span>
+                        {% elif card.status == "sold" %}
+                            <span class="status sold">已售出</span>
                         {% else %}
-                            <span class="pill-loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
+                            <span class="status">{{ card.status }}</span>
                         {% endif %}
-                    {% else %}
-                        {% if card.unrealized_profit >= 0 %}
-                            <span class="pill-profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
-                        {% else %}
-                            <span class="pill-loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
-                        {% endif %}
-                    {% endif %}
-                </td>
+                    </td>
 
-                <td class="money-cell">
-                    {% if card.status == "sold" %}
-                        {% if card.realized_roi >= 0 %}
-                            <span class="pill-profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                    <td>
+                        <span class="sub-text strong-text">{{ card.holding_days or "-" }}</span>
+                    </td>
+
+                    <td class="money-cell">
+                        <strong>NT${{ "{:,.0f}".format(card.buy_price or 0) }}</strong>
+                    </td>
+
+                    <td class="money-cell">
+                        {% if card.status == "sold" %}
+                            NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
                         {% else %}
-                            <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
                         {% endif %}
-                    {% else %}
-                        {% if card.roi >= 0 %}
-                            <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                    </td>
+
+                    <td class="money-cell">
+                        {% if card.status == "sold" %}
+                            {% if card.realized_profit >= 0 %}
+                                <span class="pill-profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
+                            {% else %}
+                                <span class="pill-loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
+                            {% endif %}
                         {% else %}
-                            <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% if card.unrealized_profit >= 0 %}
+                                <span class="pill-profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
+                            {% else %}
+                                <span class="pill-loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+                    </td>
+
+                    <td class="money-cell">
+                        {% if card.status == "sold" %}
+                            {% if card.realized_roi >= 0 %}
+                                <span class="pill-profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            {% else %}
+                                <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            {% endif %}
+                        {% else %}
+                            {% if card.roi >= 0 %}
+                                <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% else %}
+                                <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</form>
 
 {% else %}
 <div class="empty-box">
@@ -302,5 +356,83 @@
     {% endif %}
 </div>
 {% endif %}
+
+<script>
+    function enableBulkDeleteMode() {
+        document.body.classList.add("bulk-delete-mode");
+
+        const bulkDeleteModeBtn = document.getElementById("bulkDeleteModeBtn");
+        const bulkCancelBtn = document.getElementById("bulkCancelBtn");
+        const bulkDeleteSubmitBtn = document.getElementById("bulkDeleteSubmitBtn");
+
+        if (bulkDeleteModeBtn) {
+            bulkDeleteModeBtn.style.display = "none";
+        }
+
+        if (bulkCancelBtn) {
+            bulkCancelBtn.style.display = "inline-flex";
+        }
+
+        if (bulkDeleteSubmitBtn) {
+            bulkDeleteSubmitBtn.style.display = "inline-flex";
+        }
+    }
+
+    function disableBulkDeleteMode() {
+        document.body.classList.remove("bulk-delete-mode");
+
+        const bulkDeleteModeBtn = document.getElementById("bulkDeleteModeBtn");
+        const bulkCancelBtn = document.getElementById("bulkCancelBtn");
+        const bulkDeleteSubmitBtn = document.getElementById("bulkDeleteSubmitBtn");
+        const selectAllCards = document.getElementById("selectAllCards");
+        const checkboxes = document.querySelectorAll(".card-select-checkbox");
+
+        if (bulkDeleteModeBtn) {
+            bulkDeleteModeBtn.style.display = "inline-flex";
+        }
+
+        if (bulkCancelBtn) {
+            bulkCancelBtn.style.display = "none";
+        }
+
+        if (bulkDeleteSubmitBtn) {
+            bulkDeleteSubmitBtn.style.display = "none";
+        }
+
+        if (selectAllCards) {
+            selectAllCards.checked = false;
+        }
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = false;
+        });
+    }
+
+    function toggleSelectAllCards() {
+        const selectAllCards = document.getElementById("selectAllCards");
+        const checkboxes = document.querySelectorAll(".card-select-checkbox");
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = selectAllCards.checked;
+        });
+    }
+
+    function submitBulkDelete() {
+        const selectedCards = document.querySelectorAll(".card-select-checkbox:checked");
+
+        if (selectedCards.length === 0) {
+            alert("請先選擇要刪除的卡牌");
+            return;
+        }
+
+        const confirmed = confirm("確定要刪除選取的 " + selectedCards.length + " 張卡牌嗎？此動作無法復原。");
+
+        if (!confirmed) {
+            return;
+        }
+
+        document.getElementById("bulkDeleteForm").submit();
+    }
+</script>
 
 {% endblock %}

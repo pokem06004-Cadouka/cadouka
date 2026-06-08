@@ -842,6 +842,30 @@ def delete_card_page(card_id):
     flash("卡牌已刪除", "success")
     return redirect("/cards")
 
+@app.route("/cards/bulk-delete", methods=["POST"])
+@login_required
+def bulk_delete_cards_page():
+    user_id = current_user_id()
+
+    card_ids = request.form.getlist("card_ids")
+
+    if not card_ids:
+        flash("請先選擇要刪除的卡牌", "warning")
+        return redirect(request.referrer or "/cards")
+
+    deleted_count = 0
+
+    for card_id in card_ids:
+        try:
+            delete_card(int(card_id), user_id=user_id)
+            deleted_count += 1
+        except Exception as e:
+            print("批量刪除錯誤：", e)
+            traceback.print_exc()
+            continue
+
+    flash(f"已刪除 {deleted_count} 張卡牌", "success")
+    return redirect("/cards")
 
 @app.route("/cards/<int:card_id>/sell", methods=["GET", "POST"])
 @login_required
@@ -930,15 +954,14 @@ def refresh_all_card_prices_page():
 
     success_count = 0
     fail_count = 0
-    skipped_count = 0
 
     for card in cards:
         try:
             product_url = card["product_url"] or ""
 
-            # 沒有商品網址就跳過，不算錯誤
+            # 沒有商品網址也算更新失敗
             if not product_url:
-                skipped_count += 1
+                fail_count += 1
                 continue
 
             current_market_price = get_market_price_by_product_url(product_url)
@@ -988,16 +1011,10 @@ def refresh_all_card_prices_page():
             fail_count += 1
             continue
 
-    if success_count > 0:
-        flash(
-            f"已更新 {success_count} 張卡牌，{skipped_count} 張沒有商品網址已跳過，{fail_count} 張更新失敗",
-            "success" if fail_count == 0 else "warning"
-        )
+    if fail_count == 0:
+        flash(f"已成功更新 {success_count} 張卡牌", "success")
     else:
-        flash(
-            f"沒有成功更新任何卡牌，{skipped_count} 張沒有商品網址已跳過，{fail_count} 張更新失敗",
-            "warning"
-        )
+        flash(f"已更新 {success_count} 張卡牌，{fail_count} 張更新失敗", "warning")
 
     return redirect(request.referrer or "/cards")
 

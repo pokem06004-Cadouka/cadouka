@@ -2242,3 +2242,36 @@ a {
     color: #1d4ed8;
     transform: translateY(-1px);
 }
+
+/* =========================
+   Bulk Delete Mode
+========================= */
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bulk-select-col {
+    display: none;
+    width: 44px;
+    text-align: center;
+}
+
+.bulk-delete-mode .bulk-select-col {
+    display: table-cell;
+}
+
+.bulk-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #ef4444;
+}
+
+.bulk-cancel-btn,
+.bulk-delete-submit-btn {
+    align-items: center;
+    justify-content: center;
+}
