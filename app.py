@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, send_file, render_template, redirect
+from flask import Flask, request, abort, send_file, render_template, redirect, flash
 
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -49,7 +49,7 @@ from datetime import datetime, date
 
 
 app = Flask(__name__)
-
+app.secret_key = "cadouka-secret-key"
 init_db()
 migrate_db()
 
@@ -296,6 +296,7 @@ def add_card_page():
 
         add_card(card_data)
 
+        flash("卡牌新增成功", "success")
         return redirect("/cards")
 
     # GET：讓網址參數可以自動帶入新增表單
@@ -419,6 +420,7 @@ def edit_card_page(card_id):
 
             mark_card_as_sold(card_id, sell_data)
 
+        flash("卡牌資料已更新", "success")
         return redirect(f"/cards/{card_id}")
 
     return render_template("edit_card.html", card=card)
@@ -433,6 +435,7 @@ def delete_card_page(card_id):
 
     delete_card(card_id)
 
+    flash("卡牌已刪除", "success")
     return redirect("/cards")
 
 
@@ -479,6 +482,10 @@ def sell_card_page(card_id):
 
         mark_card_as_sold(card_id, sell_data)
 
+        if card["status"] == "sold":
+            flash("售出資料已更新", "success")
+        else:
+            flash("已標記為已售出", "success")
         return redirect(f"/cards/{card_id}")
 
     return render_template("sell_card.html", card=card)
@@ -493,6 +500,7 @@ def unsell_card_page(card_id):
 
     mark_card_as_holding(card_id)
 
+    flash("已標記回持有中", "success")
     return redirect(f"/cards/{card_id}")
 
 
