@@ -72,60 +72,86 @@
             {% endif %}
         </div>
 
-                <div class="detail-summary detail-summary-polished">
-            <div class="summary-card mini-summary-card">
-                <div class="summary-title">購入價格</div>
-                <div class="summary-value">NT${{ "{:,.0f}".format(card.buy_price or 0) }}</div>
-            </div>
+                <div class="detail-summary-single-card">
+                    <div class="detail-summary-single-body">
 
-            {% if card.status == "sold" %}
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">實際收入</div>
-                    <div class="summary-value">NT${{ "{:,.0f}".format(card.net_revenue or 0) }}</div>
-                </div>
+                        <div class="detail-summary-single-row">
+                            <div class="detail-summary-single-label">購入價格</div>
+                            <div class="detail-summary-single-value">
+                                NT${{ "{:,.0f}".format(card.buy_price or 0) }}
+                            </div>
+                        </div>
 
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">已實現損益</div>
-                    {% if card.realized_profit >= 0 %}
-                        <div class="summary-value profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</div>
-                    {% else %}
-                        <div class="summary-value loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</div>
-                    {% endif %}
-                </div>
+                        {% if card.status == "sold" %}
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">實際收入</div>
+                                <div class="detail-summary-single-value">
+                                    NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
+                                </div>
+                            </div>
 
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">已實現 ROI</div>
-                    {% if card.realized_roi >= 0 %}
-                        <div class="summary-value profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</div>
-                    {% else %}
-                        <div class="summary-value loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</div>
-                    {% endif %}
-                </div>
-            {% else %}
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">目前市價</div>
-                    <div class="summary-value">NT${{ "{:,.0f}".format(card.current_market_price or 0) }}</div>
-                </div>
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">已實現損益</div>
+                                {% if card.realized_profit >= 0 %}
+                                    <div class="detail-summary-single-value profit">
+                                        +NT${{ "{:,.0f}".format(card.realized_profit or 0) }}
+                                    </div>
+                                {% else %}
+                                    <div class="detail-summary-single-value loss">
+                                        -NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}
+                                    </div>
+                                {% endif %}
+                            </div>
 
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">未實現損益</div>
-                    {% if card.unrealized_profit >= 0 %}
-                        <div class="summary-value profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</div>
-                    {% else %}
-                        <div class="summary-value loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</div>
-                    {% endif %}
-                </div>
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">已實現 ROI</div>
+                                {% if card.realized_roi >= 0 %}
+                                    <div class="detail-summary-single-value profit">
+                                        +{{ "{:.2f}".format(card.realized_roi or 0) }}%
+                                    </div>
+                                {% else %}
+                                    <div class="detail-summary-single-value loss">
+                                        {{ "{:.2f}".format(card.realized_roi or 0) }}%
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">目前市價</div>
+                                <div class="detail-summary-single-value">
+                                    NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
+                                </div>
+                            </div>
 
-                <div class="summary-card mini-summary-card">
-                    <div class="summary-title">未實現 ROI</div>
-                    {% if card.roi >= 0 %}
-                        <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                    {% else %}
-                        <div class="summary-value loss">{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                    {% endif %}
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">未實現損益</div>
+                                {% if card.unrealized_profit >= 0 %}
+                                    <div class="detail-summary-single-value profit">
+                                        +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
+                                    </div>
+                                {% else %}
+                                    <div class="detail-summary-single-value loss">
+                                        -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="detail-summary-single-row">
+                                <div class="detail-summary-single-label">未實現 ROI</div>
+                                {% if card.roi >= 0 %}
+                                    <div class="detail-summary-single-value profit">
+                                        +{{ "{:.2f}".format(card.roi or 0) }}%
+                                    </div>
+                                {% else %}
+                                    <div class="detail-summary-single-value loss">
+                                        {{ "{:.2f}".format(card.roi or 0) }}%
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                    </div>
                 </div>
-            {% endif %}
-        </div>
     </div>
 
 </div>

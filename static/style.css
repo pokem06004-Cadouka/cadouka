@@ -3172,3 +3172,81 @@ a {
         max-height: 280px;
     }
 }
+
+/* =========================
+   Detail summary single card
+========================= */
+
+.detail-summary-single-card {
+    background: #ffffff;
+    border: 1px solid #dfe7f6;
+    border-radius: 28px;
+    padding: 28px 30px;
+    margin-top: 20px;
+}
+
+.detail-summary-single-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-summary-single-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid #edf1f7;
+}
+
+.detail-summary-single-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.detail-summary-single-row:first-child {
+    padding-top: 0;
+}
+
+.detail-summary-single-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.detail-summary-single-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: right;
+    line-height: 1.2;
+}
+
+.detail-summary-single-value.profit {
+    color: #2f9e6f;
+}
+
+.detail-summary-single-value.loss {
+    color: #df4c43;
+}
+
+@media (max-width: 760px) {
+    .detail-summary-single-card {
+        padding: 22px 20px;
+        border-radius: 24px;
+    }
+
+    .detail-summary-single-row {
+        padding: 16px 0;
+        gap: 14px;
+    }
+
+    .detail-summary-single-label {
+        font-size: 14px;
+    }
+
+    .detail-summary-single-value {
+        font-size: 22px;
+    }
+}
