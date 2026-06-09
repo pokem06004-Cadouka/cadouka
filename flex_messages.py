@@ -292,9 +292,9 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
                     style="primary",
                     height="sm",
                     action=PostbackAction(
-                        label="加入 Cadouka",
+                        label="加入",
                         data=add_card_action_data,
-                        display_text="加入 Cadouka"
+                        display_text="加入"
                     ),
                     flex=1
                 )
