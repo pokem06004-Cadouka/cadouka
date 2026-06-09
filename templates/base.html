@@ -34,32 +34,62 @@
         <button
             type="button"
             class="mobile-menu-toggle"
-            onclick="toggleMobileMenu()"
+            onclick="openMobileMenu()"
             aria-label="開啟選單"
         >
             ☰
         </button>
     </nav>
 
-    <div class="mobile-nav-menu" id="mobileNavMenu">
-        {% if current_user %}
-            <a href="/dashboard">首頁</a>
-            <a href="/cards">卡牌倉庫</a>
+    <div
+        class="mobile-nav-backdrop"
+        id="mobileNavBackdrop"
+        onclick="closeMobileMenu()"
+    ></div>
 
-            <form action="/cards/refresh-all-prices" method="post" class="mobile-nav-form">
-                <button type="submit">更新市價</button>
-            </form>
+    <aside class="mobile-nav-drawer" id="mobileNavDrawer">
+        <div class="mobile-drawer-header">
+            <div>
+                <div class="mobile-drawer-brand">Cadouka</div>
 
-            <a href="/profile">
-                個人資料：{{ current_user.display_name or current_user.username }}
-            </a>
+                {% if current_user %}
+                    <div class="mobile-drawer-user">
+                        {{ current_user.display_name or current_user.username }}
+                    </div>
+                {% else %}
+                    <div class="mobile-drawer-user">
+                        未登入
+                    </div>
+                {% endif %}
+            </div>
 
-            <a href="/logout" class="mobile-logout-link">登出</a>
-        {% else %}
-            <a href="/login">登入</a>
-            <a href="/register">註冊</a>
-        {% endif %}
-    </div>
+            <button
+                type="button"
+                class="mobile-drawer-close"
+                onclick="closeMobileMenu()"
+                aria-label="關閉選單"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="mobile-drawer-links">
+            {% if current_user %}
+                <a href="/dashboard">首頁</a>
+                <a href="/cards">卡牌倉庫</a>
+
+                <form action="/cards/refresh-all-prices" method="post" class="mobile-drawer-form">
+                    <button type="submit">更新市價</button>
+                </form>
+
+                <a href="/profile">個人資料</a>
+                <a href="/logout" class="mobile-drawer-danger">登出</a>
+            {% else %}
+                <a href="/login">登入</a>
+                <a href="/register">註冊</a>
+            {% endif %}
+        </div>
+    </aside>
 
     <main class="container">
 
@@ -82,12 +112,34 @@
     </main>
 
     <script>
-        function toggleMobileMenu() {
-            const mobileNavMenu = document.getElementById("mobileNavMenu");
+        function openMobileMenu() {
+            const drawer = document.getElementById("mobileNavDrawer");
+            const backdrop = document.getElementById("mobileNavBackdrop");
 
-            if (mobileNavMenu) {
-                mobileNavMenu.classList.toggle("is-open");
+            if (drawer) {
+                drawer.classList.add("is-open");
             }
+
+            if (backdrop) {
+                backdrop.classList.add("is-open");
+            }
+
+            document.body.classList.add("mobile-menu-open");
+        }
+
+        function closeMobileMenu() {
+            const drawer = document.getElementById("mobileNavDrawer");
+            const backdrop = document.getElementById("mobileNavBackdrop");
+
+            if (drawer) {
+                drawer.classList.remove("is-open");
+            }
+
+            if (backdrop) {
+                backdrop.classList.remove("is-open");
+            }
+
+            document.body.classList.remove("mobile-menu-open");
         }
 
         setTimeout(function () {

@@ -3108,3 +3108,13 @@ a {
         color: #b91c1c !important;
     }
 }
+
+/* =========================
+   Hide Old Mobile Menu Fallback
+========================= */
+
+.mobile-nav-menu,
+.mobile-nav-form,
+.mobile-logout-link {
+    display: none !important;
+}
