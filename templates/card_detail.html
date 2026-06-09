@@ -64,6 +64,12 @@
             <span>{{ card.card_number or "未填 PSA 卡號" }}</span>
             <span>{{ card.grade or "無鑑定狀態" }}</span>
             <span>{{ card.holding_days or "-" }}</span>
+
+            {% if card.status == "sold" %}
+                <span class="detail-status-badge sold mobile-detail-status">已售出</span>
+            {% else %}
+                <span class="detail-status-badge holding mobile-detail-status">持有中</span>
+            {% endif %}
         </div>
 
                 <div class="detail-summary detail-summary-polished">

@@ -3118,3 +3118,57 @@ a {
 .mobile-logout-link {
     display: none !important;
 }
+
+/* =========================
+   Mobile Card Detail Polish
+========================= */
+
+.mobile-detail-status {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    .detail-title-row {
+        display: block;
+    }
+
+    .detail-title-row > .detail-status-badge {
+        display: none;
+    }
+
+    .mobile-detail-status {
+        display: inline-flex;
+        margin-left: auto;
+    }
+
+    .detail-meta,
+    .detail-meta-polished {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .detail-info h1,
+    .detail-title-row h1 {
+        font-size: 30px;
+        line-height: 1.35;
+        letter-spacing: -0.03em;
+        word-break: break-word;
+    }
+
+    .detail-card,
+    .detail-card-polished {
+        padding: 22px;
+        gap: 22px;
+    }
+
+    .detail-image-box-polished {
+        min-height: 300px;
+    }
+
+    .detail-img-polished {
+        max-width: 220px;
+        max-height: 280px;
+    }
+}
