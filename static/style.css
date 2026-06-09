@@ -3250,3 +3250,46 @@ a {
         font-size: 22px;
     }
 }
+
+/* =========================
+   Mobile Form Input Fix
+========================= */
+
+@media (max-width: 760px) {
+    .form-card input,
+    .form-card textarea,
+    .form-card select,
+    .form-field input,
+    .form-field textarea,
+    .form-field select,
+    input[type="date"],
+    input[type="number"],
+    input[type="text"] {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    input[type="date"] {
+        appearance: none;
+        -webkit-appearance: none;
+        min-width: 0;
+    }
+}
+
+/* =========================
+   Mobile Search Input Align
+========================= */
+
+@media (max-width: 760px) {
+    .search-form input {
+        text-align: left;
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .search-form input::placeholder {
+        text-align: left;
+        color: #9ca3af;
+    }
+}
