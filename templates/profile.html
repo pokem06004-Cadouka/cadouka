@@ -82,6 +82,19 @@
                         </button>
                     </div>
 
+                    {% if line_liff_id %}
+                        <a
+                            href="https://liff.line.me/{{ line_liff_id }}?bind_code={{ user.line_bind_code }}"
+                            class="btn-add line-bind-btn"
+                        >
+                            用 LINE 綁定
+                        </a>
+                    {% else %}
+                        <p class="sub-text">
+                            LIFF 尚未設定，請確認 Render 環境變數 LINE_LIFF_ID。
+                        </p>
+                    {% endif %}
+
                     <p class="sub-text">
                         複製上方指令，到 LINE 貼上即可完成綁定。
                     </p>
@@ -95,7 +108,7 @@
 
                 <form action="/profile/generate-line-bind-code" method="post">
                     <button type="submit" class="btn-secondary line-bind-btn">
-                        產生 LINE 綁定碼
+                        產生 LINE 綁定連結
                     </button>
                 </form>
             {% endif %}

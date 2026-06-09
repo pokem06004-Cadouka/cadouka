@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadouka LINE 綁定</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            background: #f7f8fb;
+            color: #111827;
+        }
+
+        .bind-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .bind-card {
+            width: 100%;
+            max-width: 430px;
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            text-align: center;
+        }
+
+        .logo-text {
+            color: #3b82f6;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            letter-spacing: -0.03em;
+        }
+
+        p {
+            margin: 0;
+            color: #6b7280;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .status-box {
+            margin-top: 22px;
+            padding: 16px;
+            border-radius: 18px;
+            background: #f8fafc;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.7;
+            border: 1px solid #e5e7eb;
+        }
+
+        .status-box.success {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #bbf7d0;
+        }
+
+        .status-box.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .btn {
+            margin-top: 18px;
+            width: 100%;
+            height: 46px;
+            border: none;
+            border-radius: 999px;
+            background: #3b82f6;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #eef2f7;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+
+<div class="bind-page">
+    <div class="bind-card">
+        <div class="logo-text">Cadouka</div>
+        <h1>LINE 帳號綁定</h1>
+        <p>系統正在確認你的 LINE 身分，並綁定到 Cadouka 帳號。</p>
+
+        <div id="statusBox" class="status-box">
+            初始化中，請稍候...
+        </div>
+
+        <button id="closeBtn" class="btn btn-secondary" style="display:none;" onclick="closeLiffWindow()">
+            關閉視窗
+        </button>
+    </div>
+</div>
+
+<script>
+    const LIFF_ID = "{{ line_liff_id }}";
+
+    function getBindCodeFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        let bindCode = urlParams.get("bind_code");
+
+        if (bindCode) {
+            return bindCode;
+        }
+
+        const liffState = urlParams.get("liff.state");
+
+        if (liffState) {
+            const decodedState = decodeURIComponent(liffState);
+            const stateParams = new URLSearchParams(decodedState);
+            bindCode = stateParams.get("bind_code");
+
+            if (bindCode) {
+                return bindCode;
+            }
+        }
+
+        return "";
+    }
+
+    function setStatus(message, type) {
+        const statusBox = document.getElementById("statusBox");
+        statusBox.innerText = message;
+
+        statusBox.classList.remove("success", "error");
+
+        if (type) {
+            statusBox.classList.add(type);
+        }
+    }
+
+    function showCloseButton() {
+        document.getElementById("closeBtn").style.display = "inline-block";
+    }
+
+    function closeLiffWindow() {
+        if (window.liff && liff.isInClient()) {
+            liff.closeWindow();
+        } else {
+            window.location.href = "/";
+        }
+    }
+
+    async function startBind() {
+        if (!LIFF_ID) {
+            setStatus("LIFF ID 尚未設定，請確認 Render 環境變數 LINE_LIFF_ID。", "error");
+            showCloseButton();
+            return;
+        }
+
+        const bindCode = getBindCodeFromUrl();
+
+        if (!bindCode) {
+            setStatus("找不到綁定碼，請回 Cadouka 個人資料頁重新產生綁定連結。", "error");
+            showCloseButton();
+            return;
+        }
+
+        try {
+            await liff.init({
+                liffId: LIFF_ID,
+                withLoginOnExternalBrowser: true
+            });
+
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+
+            setStatus("正在取得 LINE 使用者資訊...");
+
+            const profile = await liff.getProfile();
+
+            setStatus("正在綁定 Cadouka 帳號...");
+
+            const response = await fetch("/line/liff-bind/confirm", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    line_user_id: profile.userId,
+                    bind_code: bindCode
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                setStatus(result.message || "綁定失敗，請稍後再試。", "error");
+                showCloseButton();
+                return;
+            }
+
+            setStatus(result.message, "success");
+            showCloseButton();
+
+        } catch (error) {
+            console.error(error);
+            setStatus("綁定時發生錯誤，請重新開啟綁定頁或稍後再試。", "error");
+            showCloseButton();
+        }
+    }
+
+    startBind();
+</script>
+
+</body>
+</html>

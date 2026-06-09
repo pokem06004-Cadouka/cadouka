@@ -7,7 +7,8 @@ from flask import (
     redirect,
     flash,
     session,
-    url_for
+    url_for,
+    jsonify
 )
 
 from linebot import LineBotApi, WebhookHandler
@@ -86,6 +87,8 @@ from datetime import datetime, date, timedelta,timezone
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "cadouka-secret-key")
 
+LINE_LIFF_ID = os.getenv("LINE_LIFF_ID", "")
+
 init_db()
 migrate_db()
 
@@ -145,7 +148,8 @@ def login_required(view_func):
 @app.context_processor
 def inject_current_user():
     return {
-        "current_user": current_user()
+        "current_user": current_user(),
+        "line_liff_id": LINE_LIFF_ID
     }
 
 
@@ -515,6 +519,74 @@ def delete_account_page():
 def forgot_password_page():
     return render_template("forgot_password.html")
 
+@app.route("/line/liff-bind")
+def line_liff_bind_page():
+    return render_template(
+        "liff_bind.html",
+        line_liff_id=LINE_LIFF_ID
+    )
+
+
+@app.route("/line/liff-bind/confirm", methods=["POST"])
+def line_liff_bind_confirm_page():
+    data = request.get_json() or {}
+
+    line_user_id = data.get("line_user_id", "").strip()
+    bind_code = data.get("bind_code", "").strip().upper()
+
+    if not line_user_id:
+        return jsonify({
+            "success": False,
+            "message": "無法取得 LINE 使用者資訊，請重新開啟綁定頁。"
+        }), 400
+
+    if not bind_code:
+        return jsonify({
+            "success": False,
+            "message": "找不到綁定碼，請回 Cadouka 個人資料頁重新產生綁定連結。"
+        }), 400
+
+    user = get_user_by_line_bind_code(bind_code)
+
+    if not user:
+        return jsonify({
+            "success": False,
+            "message": "找不到這組綁定碼，請回 Cadouka 個人資料頁重新產生。"
+        }), 404
+
+    expires_at_text = user["line_bind_code_expires_at"]
+
+    if expires_at_text:
+        try:
+            expires_at = datetime.strptime(expires_at_text, "%Y-%m-%d %H:%M:%S")
+
+            if datetime.now() > expires_at:
+                return jsonify({
+                    "success": False,
+                    "message": "這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。"
+                }), 400
+        except:
+            return jsonify({
+                "success": False,
+                "message": "綁定碼狀態異常，請回 Cadouka 個人資料頁重新產生。"
+            }), 400
+
+    existing_line_user = get_user_by_line_user_id(line_user_id)
+
+    if existing_line_user and existing_line_user["id"] != user["id"]:
+        return jsonify({
+            "success": False,
+            "message": "這個 LINE 帳號已經綁定其他 Cadouka 帳號，請先解除綁定。"
+        }), 409
+
+    bind_line_user_to_account(user["id"], line_user_id)
+
+    display_name = user["display_name"] or user["username"]
+
+    return jsonify({
+        "success": True,
+        "message": f"綁定成功！你的 LINE 已綁定 Cadouka 帳號：{display_name}"
+    })
 
 # =========================
 # Dashboard / Card Routes
