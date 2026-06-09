@@ -2396,6 +2396,17 @@ a {
     border-color: #3b82f6;
 }
 
+.pagination-ellipsis {
+    height: 38px;
+    min-width: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 900;
+}
+
 .pagination-total {
     height: 38px;
     padding: 0 14px;
