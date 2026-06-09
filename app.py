@@ -48,7 +48,9 @@ from snkrdunk import (
 from flex_messages import (
     create_product_image_grid_messages,
     create_price_flex,
-    create_price_flex_carousel
+    create_price_flex_carousel,
+    create_grade_summary_flex,
+    create_history_flex
 )
 
 from exchange import get_jpy_spot_sell
@@ -1789,7 +1791,7 @@ def handle_postback(event):
 
             jpy_rate = get_jpy_spot_sell()
 
-            price_flex_message = create_price_flex_carousel(
+            price_flex_message = create_grade_summary_flex(
                 product,
                 prices_by_conditions,
                 jpy_rate,
@@ -1799,6 +1801,45 @@ def handle_postback(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 price_flex_message
+            )
+            return
+
+        if action == "history":
+            index = int(params.get("index", [0])[0])
+            selected_grade = params.get("grade", ["PSA10"])[0]
+
+            if index >= len(products):
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="商品選擇錯誤，請重新搜尋。")
+                )
+                return
+
+            product = products[index]
+            product_url = product["url"]
+
+            product_id = get_product_id(product_url)
+            price_url = build_sales_history_url(
+                product_id,
+                condition=selected_grade,
+                page=1,
+                per_page=20
+            )
+
+            prices = getprice(price_url)
+            jpy_rate = get_jpy_spot_sell()
+
+            history_flex_message = create_history_flex(
+                product,
+                prices,
+                selected_grade,
+                jpy_rate,
+                index
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                history_flex_message
             )
             return
 

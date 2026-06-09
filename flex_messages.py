@@ -77,6 +77,50 @@ def calculate_price_stats(prices):
         "lowest": lowest
     }
 
+def is_within_24h(date_text):
+    """
+    判斷 SNKRDUNK 顯示的成交時間是否屬於 24 小時內。
+    支援：
+    - 幾分前 / 分前
+    - 幾分鐘前
+    - 幾時間前
+    - 幾小時前
+    """
+    text = str(date_text).strip()
+
+    if not text:
+        return False
+
+    if "分前" in text or "分鐘前" in text:
+        return True
+
+    if "時間前" in text or "小時前" in text:
+        number_text = ""
+
+        for ch in text:
+            if ch.isdigit():
+                number_text += ch
+
+        try:
+            hours = int(number_text)
+            return hours <= 24
+        except:
+            return True
+
+    return False
+
+
+def count_24h_sales(prices):
+    if not prices:
+        return 0
+
+    count = 0
+
+    for p in prices:
+        if is_within_24h(p.get("date")):
+            count += 1
+
+    return count
 
 def create_cadouka_add_url(product_name, price_stats, jpy_rate, image_url=""):
     """
@@ -166,6 +210,379 @@ def create_price_stat_box(price_stats, jpy_rate=None):
         spacing="sm",
         margin="md",
         contents=stat_boxes
+    )
+
+def create_grade_summary_section(product_index, condition_label, prices, jpy_rate=None):
+    price_stats = calculate_price_stats(prices) if prices else None
+    sales_24h = count_24h_sales(prices)
+
+    section_contents = []
+
+    section_contents.append(
+        BoxComponent(
+            layout="horizontal",
+            align_items="center",
+            contents=[
+                TextComponent(
+                    text=condition_label,
+                    size="md",
+                    weight="bold",
+                    color="#222222",
+                    flex=2
+                ),
+                TextComponent(
+                    text=f"24h 成交 {sales_24h} 筆",
+                    size="xs",
+                    color="#777777",
+                    align="end",
+                    flex=3
+                )
+            ]
+        )
+    )
+
+    if price_stats:
+        section_contents.append(
+            create_price_stat_box(price_stats, jpy_rate)
+        )
+    else:
+        section_contents.append(
+            BoxComponent(
+                layout="vertical",
+                padding_all="md",
+                background_color="#F7F7F7",
+                corner_radius="md",
+                margin="md",
+                contents=[
+                    TextComponent(
+                        text=f"查無 {condition_label} 成交紀錄",
+                        size="sm",
+                        color="#666666",
+                        align="center",
+                        wrap=True
+                    )
+                ]
+            )
+        )
+
+    history_action_data = f"action=history&index={product_index}&grade={quote(condition_label)}"
+    add_card_action_data = f"action=add_card&index={product_index}&grade={quote(condition_label)}"
+
+    section_contents.append(
+        BoxComponent(
+            layout="horizontal",
+            spacing="sm",
+            margin="md",
+            contents=[
+                ButtonComponent(
+                    style="secondary",
+                    height="sm",
+                    action=PostbackAction(
+                        label="歷史成交",
+                        data=history_action_data,
+                        display_text=f"{condition_label} 歷史成交"
+                    )
+                ),
+                ButtonComponent(
+                    style="primary",
+                    height="sm",
+                    action=PostbackAction(
+                        label="加入",
+                        data=add_card_action_data,
+                        display_text=f"加入 {condition_label}"
+                    )
+                )
+            ]
+        )
+    )
+
+    return BoxComponent(
+        layout="vertical",
+        spacing="sm",
+        margin="lg",
+        padding_all="md",
+        background_color="#FFFFFF",
+        corner_radius="md",
+        contents=section_contents
+    )
+
+def create_grade_summary_flex(product, prices_by_conditions, jpy_rate=None, product_index=None):
+    product_name = product["name"] if product["name"] else "未命名商品"
+    product_url = product["url"]
+    image_url = safe_image_url(product["image"])
+
+    body_contents = [
+        TextComponent(
+            text=product_name,
+            weight="bold",
+            size="lg",
+            color="#222222",
+            wrap=True
+        )
+    ]
+
+    for condition_label in ["PSA10", "PSA9", "PSA8以下"]:
+        prices = prices_by_conditions.get(condition_label, [])
+
+        body_contents.append(
+            create_grade_summary_section(
+                product_index=product_index,
+                condition_label=condition_label,
+                prices=prices,
+                jpy_rate=jpy_rate
+            )
+        )
+
+    bubble = BubbleContainer(
+        hero=ImageComponent(
+            url=image_url,
+            size="full",
+            aspect_ratio="4:3",
+            aspect_mode="fit"
+        ),
+        body=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=body_contents
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=[
+                ButtonComponent(
+                    style="secondary",
+                    action=URIAction(
+                        label="前往商品頁",
+                        uri=product_url
+                    )
+                )
+            ]
+        )
+    )
+
+    return FlexSendMessage(
+        alt_text="等級行情比較",
+        contents=bubble
+    )
+
+def create_history_flex(product, prices, condition_label, jpy_rate=None, product_index=None):
+    product_name = product["name"] if product["name"] else "未命名商品"
+    product_url = product["url"]
+
+    price_contents = []
+
+    price_contents.append(
+        BoxComponent(
+            layout="horizontal",
+            padding_bottom="sm",
+            contents=[
+                TextComponent(
+                    text="Date",
+                    size="sm",
+                    color="#999999",
+                    flex=3,
+                    weight="bold"
+                ),
+                TextComponent(
+                    text="Grade",
+                    size="sm",
+                    color="#999999",
+                    flex=2,
+                    align="center",
+                    weight="bold"
+                ),
+                TextComponent(
+                    text="Price",
+                    size="sm",
+                    color="#999999",
+                    flex=4,
+                    align="end",
+                    weight="bold"
+                )
+            ]
+        )
+    )
+
+    if prices:
+        for idx, p in enumerate(prices[:10]):
+            jpy_price = format_jpy_price(p["price"])
+
+            if jpy_price is not None:
+                jpy_text = f"¥{jpy_price:,}"
+
+                twd_value = format_twd_price(jpy_price, jpy_rate)
+
+                if twd_value is not None:
+                    twd_text = f"NT${twd_value:,}"
+                else:
+                    twd_text = "匯率取得失敗"
+            else:
+                jpy_text = f'¥{p["price"]}'
+                twd_text = "無法換算台幣"
+
+            row_contents = [
+                BoxComponent(
+                    layout="horizontal",
+                    spacing="sm",
+                    padding_top="sm",
+                    padding_bottom="sm",
+                    contents=[
+                        TextComponent(
+                            text=format_date_text(p["date"]),
+                            size="sm",
+                            color="#666666",
+                            flex=3,
+                            wrap=False
+                        ),
+                        TextComponent(
+                            text=str(p.get("condition") or condition_label),
+                            size="sm",
+                            color="#666666",
+                            flex=2,
+                            align="center"
+                        ),
+                        BoxComponent(
+                            layout="vertical",
+                            flex=4,
+                            contents=[
+                                TextComponent(
+                                    text=jpy_text,
+                                    size="md",
+                                    color="#222222",
+                                    weight="bold",
+                                    align="end"
+                                ),
+                                TextComponent(
+                                    text=twd_text,
+                                    size="sm",
+                                    color="#999999",
+                                    align="end"
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ]
+
+            if idx == 0:
+                price_contents.append(
+                    BoxComponent(
+                        layout="vertical",
+                        contents=row_contents
+                    )
+                )
+            else:
+                price_contents.append(
+                    BoxComponent(
+                        layout="vertical",
+                        separator=True,
+                        separator_color="#EEEEEE",
+                        contents=row_contents
+                    )
+                )
+    else:
+        price_contents.append(
+            BoxComponent(
+                layout="vertical",
+                padding_all="md",
+                background_color="#F7F7F7",
+                corner_radius="md",
+                contents=[
+                    TextComponent(
+                        text=f"查無 {condition_label} 成交紀錄",
+                        size="md",
+                        color="#666666",
+                        wrap=True,
+                        align="center"
+                    )
+                ]
+            )
+        )
+
+    body_contents = [
+        TextComponent(
+            text=f"{condition_label} 歷史成交",
+            weight="bold",
+            size="lg",
+            color="#222222",
+            wrap=True
+        ),
+        TextComponent(
+            text=product_name,
+            size="sm",
+            color="#666666",
+            wrap=True,
+            margin="sm"
+        )
+    ]
+
+    if jpy_rate:
+        body_contents.append(
+            TextComponent(
+                text=f"台灣銀行日圓即期匯率：{jpy_rate}",
+                size="xs",
+                color="#999999",
+                wrap=True,
+                margin="sm"
+            )
+        )
+    else:
+        body_contents.append(
+            TextComponent(
+                text="日圓匯率取得失敗，僅顯示日幣價格",
+                size="xs",
+                color="#999999",
+                wrap=True,
+                margin="sm"
+            )
+        )
+
+    body_contents.append(
+        BoxComponent(
+            layout="vertical",
+            spacing="none",
+            margin="md",
+            contents=price_contents
+        )
+    )
+
+    if product_index is not None:
+        add_card_action_data = f"action=add_card&index={product_index}&grade={quote(condition_label)}"
+    else:
+        add_card_action_data = f"action=add_card&grade={quote(condition_label)}"
+
+    bubble = BubbleContainer(
+        body=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=body_contents
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=[
+                ButtonComponent(
+                    style="primary",
+                    action=PostbackAction(
+                        label=f"加入 {condition_label}",
+                        data=add_card_action_data,
+                        display_text=f"加入 {condition_label}"
+                    )
+                ),
+                ButtonComponent(
+                    style="secondary",
+                    action=URIAction(
+                        label="前往商品頁",
+                        uri=product_url
+                    )
+                )
+            ]
+        )
+    )
+
+    return FlexSendMessage(
+        alt_text=f"{condition_label} 歷史成交",
+        contents=bubble
     )
 
 def create_price_bubble_for_condition(product, prices, condition_label, jpy_rate=None, product_index=None):
