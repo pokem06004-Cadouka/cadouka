@@ -238,6 +238,7 @@
                     <th class="col-market money-cell">市價</th>
                     <th class="col-profit money-cell">損益</th>
                     <th class="col-roi money-cell">ROI</th>
+                    <th class="refresh-cell-header"></th>
                 </tr>
             </thead>
 
@@ -340,23 +341,25 @@
                                 <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
                             {% endif %}
                         {% else %}
-                            <div class="roi-cell-with-refresh">
-                                {% if card.roi >= 0 %}
-                                    <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
-                                {% else %}
-                                    <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
-                                {% endif %}
+                            {% if card.roi >= 0 %}
+                                <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% else %}
+                                <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
 
-                                <button
-                                    type="submit"
-                                    formaction="/cards/{{ card.id }}/refresh-price"
-                                    formmethod="post"
-                                    class="list-refresh-btn"
-                                    title="更新此卡市價"
-                                >
-                                    ⟳
-                                </button>
-                            </div>
+                    <td class="refresh-cell">
+                        {% if card.status == "holding" %}
+                            <button
+                                type="submit"
+                                formaction="/cards/{{ card.id }}/refresh-price"
+                                formmethod="post"
+                                class="list-refresh-btn"
+                                title="更新此卡市價"
+                            >
+                                ⟳
+                            </button>
                         {% endif %}
                     </td>
                 </tr>
