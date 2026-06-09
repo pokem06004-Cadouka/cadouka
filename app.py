@@ -454,7 +454,10 @@ def generate_line_bind_code_page():
         return redirect("/login")
 
     bind_code = generate_line_bind_code()
-    expires_at = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+
+
+    taiwan_now = datetime.now(timezone(timedelta(hours=8)))
+    expires_at = (taiwan_now + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
 
     update_user_line_bind_code(user["id"], bind_code, expires_at)
 
@@ -560,7 +563,9 @@ def line_liff_bind_confirm_page():
         try:
             expires_at = datetime.strptime(expires_at_text, "%Y-%m-%d %H:%M:%S")
 
-            if datetime.now() > expires_at:
+            taiwan_now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+
+            if taiwan_now > expires_at:
                 return jsonify({
                     "success": False,
                     "message": "這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。"
@@ -1561,7 +1566,9 @@ def handle_message(event):
             try:
                 expires_at = datetime.strptime(expires_at_text, "%Y-%m-%d %H:%M:%S")
 
-                if datetime.now() > expires_at:
+                taiwan_now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+
+                if taiwan_now > expires_at:
                     line_bot_api.reply_message(
                         event.reply_token,
                         TextSendMessage(text="這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。")
