@@ -229,15 +229,15 @@
         <table class="card-table card-table-polished">
             <thead>
                 <tr>
-                    <th>圖片</th>
-                    <th>卡牌名稱</th>
-                    <th>卡號</th>
-                    <th>狀態</th>
-                    <th>持有天數</th>
-                    <th class="money-cell">購入價格</th>
-                    <th class="money-cell">市價 / 實收</th>
-                    <th class="money-cell">損益</th>
-                    <th class="money-cell">ROI</th>
+                    <th class="col-image">圖片</th>
+                    <th class="col-name">卡牌名稱</th>
+                    <th class="col-number">卡號</th>
+                    <th class="col-status">狀態</th>
+                    <th class="col-days">持有天數</th>
+                    <th class="col-buy money-cell">購入價格</th>
+                    <th class="col-market money-cell">市價</th>
+                    <th class="col-profit money-cell">損益</th>
+                    <th class="col-roi money-cell">ROI</th>
                 </tr>
             </thead>
 
@@ -340,11 +340,23 @@
                                 <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
                             {% endif %}
                         {% else %}
-                            {% if card.roi >= 0 %}
-                                <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
-                            {% else %}
-                                <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
-                            {% endif %}
+                            <div class="roi-cell-with-refresh">
+                                {% if card.roi >= 0 %}
+                                    <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                                {% else %}
+                                    <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                                {% endif %}
+
+                                <button
+                                    type="submit"
+                                    formaction="/cards/{{ card.id }}/refresh-price"
+                                    formmethod="post"
+                                    class="list-refresh-btn"
+                                    title="更新此卡市價"
+                                >
+                                    ⟳
+                                </button>
+                            </div>
                         {% endif %}
                     </td>
                 </tr>
@@ -488,6 +500,23 @@
 
         document.getElementById("bulkDeleteForm").submit();
     }
+
+    document.addEventListener("click", function (event) {
+    const refreshButton = event.target.closest(".list-refresh-btn");
+
+    if (refreshButton) {
+        sessionStorage.setItem("cadoukaCardsScrollY", window.scrollY);
+    }
+});
+
+window.addEventListener("load", function () {
+    const savedScrollY = sessionStorage.getItem("cadoukaCardsScrollY");
+
+    if (savedScrollY !== null) {
+        window.scrollTo(0, parseInt(savedScrollY, 10));
+        sessionStorage.removeItem("cadoukaCardsScrollY");
+    }
+});
 </script>
 
 {% endblock %}

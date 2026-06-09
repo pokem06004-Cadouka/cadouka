@@ -66,7 +66,7 @@
             <span>{{ card.holding_days or "-" }}</span>
         </div>
 
-        <div class="detail-summary detail-summary-polished">
+                <div class="detail-summary detail-summary-polished">
             <div class="summary-card mini-summary-card">
                 <div class="summary-title">購入價格</div>
                 <div class="summary-value">NT${{ "{:,.0f}".format(card.buy_price or 0) }}</div>
@@ -112,13 +112,17 @@
 
                 <div class="summary-card mini-summary-card">
                     <div class="summary-title">未實現 ROI</div>
-                        {% if card.roi >= 0 %}
-                            <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                        {% else %}
-                            <div class="summary-value loss">{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                        {% endif %}
+                    {% if card.roi >= 0 %}
+                        <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
+                    {% else %}
+                        <div class="summary-value loss">{{ "{:.2f}".format(card.roi or 0) }}%</div>
+                    {% endif %}
                 </div>
+            {% endif %}
+        </div>
     </div>
+
+</div>
 
 </div>
 
