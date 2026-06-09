@@ -461,7 +461,7 @@ def generate_line_bind_code_page():
 
     update_user_line_bind_code(user["id"], bind_code, expires_at)
 
-    flash("LINE 綁定碼已產生，請在 10 分鐘內到 LINE 輸入綁定指令", "success")
+    flash("LINE 綁定連結已產生，請在 30 分鐘內完成綁定", "success")
     return redirect("/profile")
 
 
@@ -874,6 +874,7 @@ def export_cards_excel_page():
 
     headers = [
         "卡牌名稱",
+        "顯示名稱",
         "鑑定卡號",
         "鑑定狀態",
         "狀態",
@@ -920,6 +921,7 @@ def export_cards_excel_page():
 
         row = [
             card_dict.get("card_name") or "",
+            card_dict.get("card_display_name") or "",
             card_dict.get("card_number") or "",
             card_dict.get("grade") or "",
             status_text,
@@ -942,38 +944,39 @@ def export_cards_excel_page():
         ws.append(row)
 
     # 欄寬設定
-    column_widths = {
+        column_widths = {
         "A": 34,  # 卡牌名稱
-        "B": 18,  # 鑑定卡號
-        "C": 14,  # 鑑定狀態
-        "D": 12,  # 狀態
-        "E": 14,  # 購入日期
-        "F": 18,  # 購入方式
-        "G": 14,  # 購入價格
-        "H": 14,  # 目前市價
-        "I": 16,  # 未實現損益
-        "J": 14,  # 未實現 ROI
-        "K": 14,  # 售出日期
-        "L": 14,  # 實際收入
-        "M": 16,  # 已實現損益
-        "N": 14,  # 已實現 ROI
-        "O": 12,  # 持有天數
-        "P": 42,  # 商品網址
-        "Q": 30,  # 備註
-        "R": 22   # 建立時間
+        "B": 24,  # 顯示名稱
+        "C": 18,  # 鑑定卡號
+        "D": 14,  # 鑑定狀態
+        "E": 12,  # 狀態
+        "F": 14,  # 購入日期
+        "G": 18,  # 購入方式
+        "H": 14,  # 購入價格
+        "I": 14,  # 目前市價
+        "J": 16,  # 未實現損益
+        "K": 14,  # 未實現 ROI
+        "L": 14,  # 售出日期
+        "M": 14,  # 實際收入
+        "N": 16,  # 已實現損益
+        "O": 14,  # 已實現 ROI
+        "P": 12,  # 持有天數
+        "Q": 42,  # 商品網址
+        "R": 30,  # 備註
+        "S": 22   # 建立時間
     }
 
     for column_letter, width in column_widths.items():
         ws.column_dimensions[column_letter].width = width
 
     # 數字格式
-    money_columns = ["G", "H", "I", "L", "M"]
+    money_columns = ["H", "I", "J", "M", "N"]
 
     for column_letter in money_columns:
         for cell in ws[column_letter][1:]:
             cell.number_format = '#,##0'
 
-    percent_columns = ["J", "N"]
+    percent_columns = ["K", "O"]
 
     for column_letter in percent_columns:
         for cell in ws[column_letter][1:]:
@@ -1007,6 +1010,7 @@ def add_card_page():
 
     if request.method == "POST":
         card_name = request.form.get("card_name", "").strip()
+        card_display_name = request.form.get("card_display_name", "").strip()
         card_number = request.form.get("card_number", "").strip()
         grade = request.form.get("grade", "").strip()
         purchase_method = request.form.get("purchase_method", "").strip()
@@ -1044,6 +1048,7 @@ def add_card_page():
             "user_id": user_id,
 
             "card_name": card_name,
+            "card_display_name": card_display_name,
             "card_number": card_number,
             "series_name": "",
             "rarity": "",
@@ -1075,6 +1080,7 @@ def add_card_page():
 
     prefill = {
         "card_name": request.args.get("card_name", "").strip(),
+        "card_display_name": request.args.get("card_display_name", "").strip(),
         "card_number": request.args.get("card_number", "").strip(),
         "grade": request.args.get("grade", "").strip(),
         "purchase_method": "",
@@ -1117,6 +1123,7 @@ def edit_card_page(card_id):
 
     if request.method == "POST":
         card_name = request.form.get("card_name", "").strip()
+        card_display_name = request.form.get("card_display_name", "").strip()
         card_number = request.form.get("card_number", "").strip()
         grade = request.form.get("grade", "").strip()
         purchase_method = request.form.get("purchase_method", "").strip()
@@ -1152,6 +1159,7 @@ def edit_card_page(card_id):
 
         card_data = {
             "card_name": card_name,
+            "card_display_name": card_display_name,
             "card_number": card_number,
             "series_name": "",
             "rarity": "",
@@ -1847,6 +1855,7 @@ def handle_postback(event):
                 "user_id": user["id"],
 
                 "card_name": product_name,
+                "card_display_name": "",
                 "card_number": "",
                 "series_name": "",
                 "rarity": "",

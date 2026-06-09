@@ -20,16 +20,25 @@
             <p>更新卡牌名稱、鑑定卡號與鑑定狀態。</p>
         </div>
 
-        <div class="form-grid">
-            <div class="form-field full">
-                <label>卡牌名稱</label>
-                <input
-                    type="text"
-                    name="card_name"
-                    value="{{ card.card_name or '' }}"
-                    required
-                >
-            </div>
+        <div class="form-field full">
+            <label>卡牌名稱</label>
+            <input
+                type="text"
+                name="card_name"
+                value="{{ card.card_name or '' }}"
+                required
+            >
+        </div>
+
+        <div class="form-field full">
+            <label>顯示名稱</label>
+            <input
+                type="text"
+                name="card_display_name"
+                value="{{ card.card_display_name or '' }}"
+                placeholder="可選填"
+            >
+        </div>
 
             <div class="form-field">
                 <label>鑑定卡號</label>

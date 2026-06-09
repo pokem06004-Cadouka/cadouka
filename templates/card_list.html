@@ -266,7 +266,7 @@
                     <td>
                         <a href="/cards/{{ card.id }}" class="card-name-link">
                             <div class="card-name-text">
-                                {{ card.card_name }}
+                                {{ card.card_display_name or card.card_name }}
                             </div>
                         </a>
 
@@ -393,7 +393,7 @@
                 <div class="mobile-card-info">
                     <div class="mobile-card-title-row">
                         <a href="/cards/{{ card.id }}" class="mobile-card-name">
-                            {{ card.card_name }}
+                            {{ card.card_display_name or card.card_name }}
                         </a>
 
                         {% if card.status == "holding" %}

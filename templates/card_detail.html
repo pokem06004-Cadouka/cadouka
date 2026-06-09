@@ -50,7 +50,7 @@
         <div class="detail-title-row">
             <div>
                 <p class="eyebrow">Card Detail</p>
-                <h1>{{ card.card_name }}</h1>
+                <h1>{{ card.card_display_name or card.card_name }}</h1>
             </div>
 
             {% if card.status == "sold" %}
@@ -153,8 +153,6 @@
                     </div>
                 </div>
     </div>
-
-</div>
 
 </div>
 

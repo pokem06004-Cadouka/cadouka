@@ -71,6 +71,7 @@ def init_db():
             user_id INTEGER,
 
             card_name TEXT NOT NULL,
+            card_display_name TEXT,
             card_number TEXT,
             series_name TEXT,
             rarity TEXT,
@@ -132,6 +133,7 @@ def init_db():
             user_id INTEGER,
 
             card_name TEXT NOT NULL,
+            card_display_name TEXT,
             card_number TEXT,
             series_name TEXT,
             rarity TEXT,
@@ -467,6 +469,7 @@ def add_card(card_data):
         user_id,
 
         card_name,
+        card_display_name,
         card_number,
         series_name,
         rarity,
@@ -490,13 +493,14 @@ def add_card(card_data):
         product_url,
         note
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     params = [
         card_data.get("user_id"),
 
         card_data["card_name"],
+        card_data.get("card_display_name", ""),
         card_data.get("card_number", ""),
         card_data.get("series_name", ""),
         card_data.get("rarity", ""),
@@ -551,6 +555,7 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
             sql += """
                 AND (
                     card_name ILIKE ?
+                    OR card_display_name ILIKE ?
                     OR card_number ILIKE ?
                     OR grade ILIKE ?
                     OR purchase_method ILIKE ?
@@ -562,6 +567,7 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
             sql += """
                 AND (
                     card_name LIKE ?
+                    OR card_display_name LIKE ?
                     OR card_number LIKE ?
                     OR grade LIKE ?
                     OR purchase_method LIKE ?
@@ -572,6 +578,7 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
 
         search_keyword = f"%{keyword}%"
         params.extend([
+            search_keyword,
             search_keyword,
             search_keyword,
             search_keyword,
@@ -668,6 +675,7 @@ def update_card(card_id, card_data, user_id=None):
     UPDATE cards
     SET
         card_name = ?,
+        card_display_name = ?,
         card_number = ?,
         series_name = ?,
         rarity = ?,
@@ -694,6 +702,7 @@ def update_card(card_id, card_data, user_id=None):
 
     params = [
         card_data["card_name"],
+        card_data.get("card_display_name", ""),
         card_data.get("card_number", ""),
         card_data.get("series_name", ""),
         card_data.get("rarity", ""),
@@ -924,6 +933,7 @@ def migrate_db():
 
     add_column_if_not_exists("user_id", "INTEGER")
 
+    add_column_if_not_exists("card_display_name", "TEXT")
     add_column_if_not_exists("purchase_method", "TEXT")
     add_column_if_not_exists("product_url", "TEXT")
     add_column_if_not_exists("price_updated_at", "TEXT")

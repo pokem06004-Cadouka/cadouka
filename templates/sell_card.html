@@ -11,7 +11,7 @@
 {% endif %}
 
 <div class="sell-card-summary">
-    <h2>{{ card.card_name }}</h2>
+    <h2>{{ card.card_display_name or card.card_name }}</h2>
     <p>購入價格：NT${{ "{:,.0f}".format(card.buy_price or 0) }}</p>
 </div>
 
