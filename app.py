@@ -59,6 +59,7 @@ from models import (
     get_dashboard_full_summary,
     get_card_by_id,
     update_card,
+    update_card_market_price,
     delete_card,
     mark_card_as_sold,
     mark_card_as_holding,
@@ -276,6 +277,29 @@ def get_market_price_by_product_url(product_url):
     )
 
     return current_market_price
+
+def get_taiwan_now_text():
+    taiwan_time = datetime.now(timezone(timedelta(hours=8)))
+    return taiwan_time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def should_skip_price_update(price_updated_at, cooldown_hours=6):
+    """
+    如果這張卡在 cooldown_hours 小時內更新過，就略過。
+    """
+    if not price_updated_at:
+        return False
+
+    try:
+        updated_text = str(price_updated_at).split(".")[0]
+        updated_at = datetime.strptime(updated_text, "%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+
+        diff = now - updated_at
+
+        return diff < timedelta(hours=cooldown_hours)
+    except:
+        return False
 
 # =========================
 # Auth Routes
@@ -1196,17 +1220,49 @@ def refresh_all_card_prices_page():
         flash("目前沒有持有中的卡牌可以更新", "warning")
         return redirect(request.referrer or "/cards")
 
+    MAX_REFRESH_COUNT = 10
+    COOLDOWN_HOURS = 6
+
     success_count = 0
     fail_count = 0
+    skipped_count = 0
+
+    candidate_cards = []
 
     for card in cards:
-        try:
-            product_url = card["product_url"] or ""
+        card_dict = dict(card)
 
-            # 沒有商品網址也算更新失敗
-            if not product_url:
-                fail_count += 1
-                continue
+        product_url = card_dict.get("product_url") or ""
+
+        # 沒有商品網址，算失敗
+        if not product_url:
+            fail_count += 1
+            continue
+
+        # 6 小時內更新過，略過
+        if should_skip_price_update(
+            card_dict.get("price_updated_at"),
+            cooldown_hours=COOLDOWN_HOURS
+        ):
+            skipped_count += 1
+            continue
+
+        candidate_cards.append(card_dict)
+
+    # 優先更新最久沒更新的卡牌
+    # price_updated_at 空白的會排最前面
+    candidate_cards = sorted(
+        candidate_cards,
+        key=lambda card: card.get("price_updated_at") or ""
+    )
+
+    # 一次最多更新 10 張，其餘略過
+    cards_to_update = candidate_cards[:MAX_REFRESH_COUNT]
+    skipped_count += max(0, len(candidate_cards) - MAX_REFRESH_COUNT)
+
+    for card in cards_to_update:
+        try:
+            product_url = card.get("product_url") or ""
 
             current_market_price = get_market_price_by_product_url(product_url)
 
@@ -1214,39 +1270,24 @@ def refresh_all_card_prices_page():
                 fail_count += 1
                 continue
 
-            buy_price = card["buy_price"] or 0
+            buy_price = card.get("buy_price") or 0
 
             unrealized_profit, roi = calculate_unrealized_by_buy_price(
                 current_market_price,
                 buy_price
             )
 
-            card_data = {
-                "card_name": card["card_name"],
-                "card_number": card["card_number"] or "",
-                "series_name": card["series_name"] or "",
-                "rarity": card["rarity"] or "",
-                "grade": card["grade"] or "",
-                "purchase_method": card["purchase_method"] or "",
+            price_updated_at = get_taiwan_now_text()
 
-                "buy_price": buy_price,
-                "shipping_fee": card["shipping_fee"] or 0,
-                "tax_fee": card["tax_fee"] or 0,
-                "platform_fee": card["platform_fee"] or 0,
-                "other_fee": card["other_fee"] or 0,
+            update_card_market_price(
+                card["id"],
+                current_market_price,
+                unrealized_profit,
+                roi,
+                price_updated_at,
+                user_id=user_id
+            )
 
-                "total_cost": card["total_cost"] or 0,
-                "current_market_price": current_market_price,
-                "unrealized_profit": unrealized_profit,
-                "roi": roi,
-
-                "buy_date": card["buy_date"] or "",
-                "image_url": card["image_url"] or "",
-                "product_url": product_url,
-                "note": card["note"] or ""
-            }
-
-            update_card(card["id"], card_data, user_id=user_id)
             success_count += 1
 
         except Exception as e:
@@ -1255,10 +1296,12 @@ def refresh_all_card_prices_page():
             fail_count += 1
             continue
 
-    if fail_count == 0:
-        flash(f"已成功更新 {success_count} 張卡牌", "success")
+    if success_count == 0 and skipped_count > 0 and fail_count == 0:
+        flash(f"近期已更新過，已略過 {skipped_count} 張卡牌", "success")
+    elif fail_count == 0:
+        flash(f"已更新 {success_count} 張，略過 {skipped_count} 張", "success")
     else:
-        flash(f"已更新 {success_count} 張卡牌，{fail_count} 張更新失敗", "warning")
+        flash(f"已更新 {success_count} 張，略過 {skipped_count} 張，失敗 {fail_count} 張", "warning")
 
     return redirect(request.referrer or "/cards")
 

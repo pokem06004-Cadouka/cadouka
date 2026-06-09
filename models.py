@@ -85,7 +85,8 @@ def init_db():
 
             total_cost REAL DEFAULT 0,
             current_market_price REAL DEFAULT 0,
-
+            price_updated_at TEXT,
+                       
             unrealized_profit REAL DEFAULT 0,
             roi REAL DEFAULT 0,
 
@@ -144,7 +145,8 @@ def init_db():
 
             total_cost REAL DEFAULT 0,
             current_market_price REAL DEFAULT 0,
-
+            price_updated_at TEXT,
+                       
             unrealized_profit REAL DEFAULT 0,
             roi REAL DEFAULT 0,
 
@@ -665,6 +667,36 @@ def update_card(card_id, card_data, user_id=None):
     conn.commit()
     conn.close()
 
+def update_card_market_price(card_id, current_market_price, unrealized_profit, roi, price_updated_at, user_id=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+    UPDATE cards
+    SET
+        current_market_price = ?,
+        unrealized_profit = ?,
+        roi = ?,
+        price_updated_at = ?
+    WHERE id = ?
+    """
+
+    params = [
+        current_market_price,
+        unrealized_profit,
+        roi,
+        price_updated_at,
+        card_id
+    ]
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
+    execute_sql(cursor, sql, params)
+
+    conn.commit()
+    conn.close()
 
 def delete_card(card_id, user_id=None):
     conn = get_connection()
@@ -773,6 +805,7 @@ def migrate_db():
 
     add_column_if_not_exists("purchase_method", "TEXT")
     add_column_if_not_exists("product_url", "TEXT")
+    add_column_if_not_exists("price_updated_at", "TEXT")
 
     add_column_if_not_exists("sell_fee", "REAL DEFAULT 0")
     add_column_if_not_exists("sell_shipping_fee", "REAL DEFAULT 0")
