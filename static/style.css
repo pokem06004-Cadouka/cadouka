@@ -1081,25 +1081,6 @@ a {
     cursor: not-allowed;
 }
 
-.pagination-info {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px;
-    height: 38px;
-    border-radius: 999px;
-    background: #f8fafc;
-    color: #374151;
-    font-size: 13px;
-    font-weight: 900;
-    border: 1px solid #e5e7eb;
-}
-
-.pagination-info span {
-    color: #6b7280;
-    font-weight: 800;
-}
-
 /* =========================
    Dashboard
 ========================= */
@@ -2372,4 +2353,59 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* =========================
+   Pagination Numbers
+========================= */
+
+.pagination-number-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+}
+
+.pagination-number {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 900;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.pagination-number:hover {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #3b82f6;
+}
+
+.pagination-total {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
 }

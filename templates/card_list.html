@@ -384,9 +384,19 @@
         <span class="pagination-btn disabled">← 上一頁</span>
     {% endif %}
 
-    <div class="pagination-info">
-        第 {{ current_page }} / {{ total_pages }} 頁
-        <span>共 {{ total_items }} 張</span>
+    <div class="pagination-number-group">
+        {% for page_num in range(1, total_pages + 1) %}
+            <a
+                href="/cards?page={{ page_num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}"
+                class="pagination-number {% if page_num == current_page %}active{% endif %}"
+            >
+                {{ page_num }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="pagination-total">
+        共 {{ total_items }} 張
     </div>
 
     {% if current_page < total_pages %}
