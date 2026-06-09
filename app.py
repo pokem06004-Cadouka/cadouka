@@ -583,6 +583,22 @@ def line_liff_bind_confirm_page():
 
     display_name = user["display_name"] or user["username"]
 
+    user_code = user["user_code"] if user.get("user_code") else "-"
+
+    try:
+        line_bot_api.push_message(
+            line_user_id,
+            TextSendMessage(
+                text=(
+                    "Cadouka 綁定成功！\n\n"
+                    f"你的 LINE 已綁定 Cadouka 帳號：{display_name}\n"
+                )
+            )
+        )
+    except Exception as e:
+        print("LINE 綁定成功訊息推送失敗：", e)
+        traceback.print_exc()
+
     return jsonify({
         "success": True,
         "message": f"綁定成功！你的 LINE 已綁定 Cadouka 帳號：{display_name}"

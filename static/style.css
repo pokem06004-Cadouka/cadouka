@@ -2271,3 +2271,56 @@ a {
     padding: 13px 18px;
     border-radius: 999px;
 }
+
+.line-bind-code-box {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.line-bind-code {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 112px;
+    padding: 0 24px;
+    border: 2px solid #b7d4ff;
+    border-radius: 28px;
+    background: #eef5ff;
+    color: #2453d4;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    box-sizing: border-box;
+}
+
+.copy-line-code-btn {
+    min-width: 128px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28px;
+    box-sizing: border-box;
+}
+
+.line-bind-btn {
+    width: 100%;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
+
+    background: #06c755;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(6, 199, 85, 0.22);
+}
+
+.line-bind-btn:hover {
+    background: #05b34d;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
