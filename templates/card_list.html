@@ -368,6 +368,143 @@
         </table>
     </div>
 
+    <div class="mobile-card-list">
+        {% for card in cards %}
+        <div class="mobile-card-item {% if card.status == 'sold' %}sold-row{% else %}holding-row{% endif %}">
+
+            <div class="mobile-card-main">
+                <div class="mobile-card-image-box image-cell-with-checkbox">
+                    <input
+                        type="checkbox"
+                        name="card_ids"
+                        value="{{ card.id }}"
+                        class="bulk-checkbox card-select-checkbox"
+                    >
+
+                    <a href="/cards/{{ card.id }}" class="mobile-card-image-link">
+                        {% if card.image_url %}
+                            <img src="{{ card.image_url }}" class="mobile-card-img">
+                        {% else %}
+                            <div class="mobile-card-no-img">No Image</div>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <div class="mobile-card-info">
+                    <div class="mobile-card-title-row">
+                        <a href="/cards/{{ card.id }}" class="mobile-card-name">
+                            {{ card.card_name }}
+                        </a>
+
+                        {% if card.status == "holding" %}
+                            <span class="status holding">持有中</span>
+                        {% elif card.status == "sold" %}
+                            <span class="status sold">已售出</span>
+                        {% else %}
+                            <span class="status">{{ card.status }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mobile-card-meta">
+                        <span>{{ card.card_number or "未填卡號" }}</span>
+                        <span>{{ card.grade or "無鑑定" }}</span>
+                        <span>{{ card.holding_days or "-" }}</span>
+                    </div>
+
+                    <div class="mobile-card-tags">
+                        {% if card.buy_date %}
+                            <span class="mini-tag light">{{ card.buy_date }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mobile-card-stats">
+                <div class="mobile-stat">
+                    <div class="mobile-stat-label">購入價格</div>
+                    <div class="mobile-stat-value">
+                        NT${{ "{:,.0f}".format(card.buy_price or 0) }}
+                    </div>
+                </div>
+
+                <div class="mobile-stat">
+                    <div class="mobile-stat-label">
+                        {% if card.status == "sold" %}
+                            實收
+                        {% else %}
+                            市價
+                        {% endif %}
+                    </div>
+                    <div class="mobile-stat-value">
+                        {% if card.status == "sold" %}
+                            NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
+                        {% else %}
+                            NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mobile-stat">
+                    <div class="mobile-stat-label">損益</div>
+                    <div class="mobile-stat-value">
+                        {% if card.status == "sold" %}
+                            {% if card.realized_profit >= 0 %}
+                                <span class="pill-profit">+NT${{ "{:,.0f}".format(card.realized_profit or 0) }}</span>
+                            {% else %}
+                                <span class="pill-loss">-NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}</span>
+                            {% endif %}
+                        {% else %}
+                            {% if card.unrealized_profit >= 0 %}
+                                <span class="pill-profit">+NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}</span>
+                            {% else %}
+                                <span class="pill-loss">-NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mobile-stat">
+                    <div class="mobile-stat-label">ROI</div>
+                    <div class="mobile-stat-value">
+                        {% if card.status == "sold" %}
+                            {% if card.realized_roi >= 0 %}
+                                <span class="pill-profit">+{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            {% else %}
+                                <span class="pill-loss">{{ "{:.2f}".format(card.realized_roi or 0) }}%</span>
+                            {% endif %}
+                        {% else %}
+                            {% if card.roi >= 0 %}
+                                <span class="pill-profit">+{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% else %}
+                                <span class="pill-loss">{{ "{:.2f}".format(card.roi or 0) }}%</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mobile-card-actions">
+                <a href="/cards/{{ card.id }}" class="btn-secondary mobile-detail-btn">
+                    查看明細
+                </a>
+
+                {% if card.status == "holding" %}
+                    <button
+                        type="submit"
+                        formaction="/cards/{{ card.id }}/refresh-price"
+                        formmethod="post"
+                        class="btn-secondary mobile-refresh-btn list-refresh-btn"
+                        title="更新此卡市價"
+                    >
+                        ⟳ 更新市價
+                    </button>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
 </form>
 
 {% if total_pages > 1 %}
@@ -445,6 +582,13 @@
 {% endif %}
 
 <script>
+    function getVisibleCardCheckboxes() {
+        const checkboxes = document.querySelectorAll(".card-select-checkbox");
+
+        return Array.from(checkboxes).filter(function (checkbox) {
+            return checkbox.offsetParent !== null;
+        });
+    }
     function enableBulkDeleteMode() {
         document.body.classList.add("bulk-delete-mode");
 
@@ -507,7 +651,7 @@
 
     function toggleSelectAllCards() {
         const selectAllCards = document.getElementById("selectAllCards");
-        const checkboxes = document.querySelectorAll(".card-select-checkbox");
+        const checkboxes = getVisibleCardCheckboxes();
 
         checkboxes.forEach(function (checkbox) {
             checkbox.checked = selectAllCards.checked;
@@ -515,7 +659,9 @@
     }
 
     function submitBulkDelete() {
-        const selectedCards = document.querySelectorAll(".card-select-checkbox:checked");
+        const selectedCards = getVisibleCardCheckboxes().filter(function (checkbox) {
+            return checkbox.checked;
+        });
 
         if (selectedCards.length === 0) {
             alert("請先選擇要刪除的卡牌");
