@@ -779,6 +779,28 @@ def delete_card(card_id, user_id=None):
     conn.commit()
     conn.close()
 
+def delete_user_account(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 先刪除該使用者所有卡牌
+    delete_cards_sql = """
+        DELETE FROM cards
+        WHERE user_id = ?
+    """
+
+    execute_sql(cursor, delete_cards_sql, [user_id])
+
+    # 再刪除使用者帳號
+    delete_user_sql = """
+        DELETE FROM users
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, delete_user_sql, [user_id])
+
+    conn.commit()
+    conn.close()
 
 # =========================
 # Migration Helpers
@@ -899,7 +921,7 @@ def migrate_db():
     add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")
 
     backfill_user_codes()
-    
+
     add_column_if_not_exists("user_id", "INTEGER")
 
     add_column_if_not_exists("purchase_method", "TEXT")

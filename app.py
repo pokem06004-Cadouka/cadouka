@@ -74,7 +74,8 @@ from models import (
     get_user_by_line_bind_code,
     get_user_by_line_user_id,
     bind_line_user_to_account,
-    unbind_line_user
+    unbind_line_user,
+    delete_user_account
 )
 
 from calculations import calculate_total_cost
@@ -492,6 +493,23 @@ def change_password_page():
     flash("密碼已成功更新", "success")
     return redirect("/profile")
 
+@app.route("/profile/delete-account", methods=["POST"])
+@login_required
+def delete_account_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    user_id = user["id"]
+
+    delete_user_account(user_id)
+
+    session.clear()
+
+    flash("帳號已刪除", "success")
+    return redirect("/login")
 
 @app.route("/forgot-password")
 def forgot_password_page():
