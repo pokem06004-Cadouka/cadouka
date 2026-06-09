@@ -1667,11 +1667,11 @@ def handle_message(event):
                 text=(
                     "Cadouka 使用教學\n"
 
-                    "【一、建立 Cadouka 帳號】\n\n"
+                    "【一、建立 Cadouka 帳號】\n"
                     "1. 進入 Cadouka 網站。\n"
                     "2. 註冊帳號並登入。\n\n"
 
-                    "【二、LINE 一鍵綁定】\n"
+                    "【二、LINE 一鍵綁定】\n\n"
                     "1. 登入 Cadouka 網站。\n"
                     "2. 點右上角帳號名稱，進入「個人資料」。\n"
                     "3. 在 LINE 帳號綁定區按「產生綁定連結」。\n"
