@@ -2223,3 +2223,21 @@ a {
     color: #1d4ed8;
     transform: rotate(15deg);
 }
+
+/* =========================
+   User Code
+========================= */
+
+.user-code-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}

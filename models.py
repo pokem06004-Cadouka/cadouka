@@ -53,6 +53,7 @@ def init_db():
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
+            user_code TEXT UNIQUE,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
@@ -113,6 +114,7 @@ def init_db():
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_code TEXT UNIQUE,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
@@ -178,21 +180,58 @@ def init_db():
 # User Functions
 # =========================
 
+def generate_user_code(user_id):
+    return f"CDK{int(user_id):05d}"
+
 def create_user(username, password_hash):
     conn = get_connection()
     cursor = conn.cursor()
 
-    sql = """
-        INSERT INTO users (
+    if is_postgres():
+        sql = """
+            INSERT INTO users (
+                username,
+                password_hash
+            )
+            VALUES (?, ?)
+            RETURNING id
+        """
+
+        execute_sql(cursor, sql, [
             username,
             password_hash
-        )
-        VALUES (?, ?)
+        ])
+
+        new_user = cursor.fetchone()
+        user_id = new_user["id"]
+
+    else:
+        sql = """
+            INSERT INTO users (
+                username,
+                password_hash
+            )
+            VALUES (?, ?)
+        """
+
+        execute_sql(cursor, sql, [
+            username,
+            password_hash
+        ])
+
+        user_id = cursor.lastrowid
+
+    user_code = generate_user_code(user_id)
+
+    update_sql = """
+        UPDATE users
+        SET user_code = ?
+        WHERE id = ?
     """
 
-    execute_sql(cursor, sql, [
-        username,
-        password_hash
+    execute_sql(cursor, update_sql, [
+        user_code,
+        user_id
     ])
 
     conn.commit()
@@ -230,6 +269,20 @@ def get_user_by_id(user_id):
     conn.close()
     return user
 
+def get_user_by_user_code(user_code):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM users
+        WHERE user_code = ?
+    """
+
+    execute_sql(cursor, sql, [user_code])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
 
 def update_user_password(user_id, password_hash):
     conn = get_connection()
@@ -798,17 +851,55 @@ def add_user_column_if_not_exists(column_name, column_definition):
 
     conn.close()
 
+def backfill_user_codes():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT id, user_code
+        FROM users
+        ORDER BY id ASC
+    """
+
+    cursor.execute(sql)
+    users = cursor.fetchall()
+
+    for user in users:
+        user_id = user["id"] if is_postgres() else user["id"]
+        user_code = user["user_code"] if is_postgres() else user["user_code"]
+
+        if user_code:
+            continue
+
+        new_user_code = generate_user_code(user_id)
+
+        update_sql = """
+            UPDATE users
+            SET user_code = ?
+            WHERE id = ?
+        """
+
+        execute_sql(cursor, update_sql, [
+            new_user_code,
+            user_id
+        ])
+
+    conn.commit()
+    conn.close()
 
 def migrate_db():
     """
     舊資料庫升級用。
     PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
+    add_user_column_if_not_exists("user_code", "TEXT")
     add_user_column_if_not_exists("display_name", "TEXT")
     add_user_column_if_not_exists("line_user_id", "TEXT")
     add_user_column_if_not_exists("line_bind_code", "TEXT")
     add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")
 
+    backfill_user_codes()
+    
     add_column_if_not_exists("user_id", "INTEGER")
 
     add_column_if_not_exists("purchase_method", "TEXT")

@@ -19,6 +19,15 @@
 
         <table class="detail-table">
             <tr>
+                <th>用戶編號</th>
+                <td>
+                    <span class="user-code-pill">
+                        {{ user.user_code or "尚未產生" }}
+                    </span>
+                </td>
+            </tr>
+
+            <tr>
                 <th>帳號名稱</th>
                 <td>{{ user.username }}</td>
             </tr>
@@ -26,17 +35,6 @@
             <tr>
                 <th>暱稱</th>
                 <td>{{ user.display_name or "尚未設定" }}</td>
-            </tr>
-
-            <tr>
-                <th>LINE 綁定狀態</th>
-                <td>
-                    {% if user.line_user_id %}
-                        <span class="status holding">已綁定</span>
-                    {% else %}
-                        <span class="status sold">尚未綁定</span>
-                    {% endif %}
-                </td>
             </tr>
 
             <tr>
