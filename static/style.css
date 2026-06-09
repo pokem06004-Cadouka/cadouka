@@ -3293,3 +3293,30 @@ a {
         color: #9ca3af;
     }
 }
+
+/* =========================
+   Mobile Date Input Height Fix
+========================= */
+
+@media (max-width: 760px) {
+    input[type="date"] {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 52px;
+        height: 52px;
+        line-height: 52px;
+        text-align: left;
+        padding: 0 16px;
+        box-sizing: border-box;
+
+        appearance: none;
+        -webkit-appearance: none;
+
+        border: 1px solid #d1d5db;
+        border-radius: 14px;
+        background: #fbfdff;
+        color: #111827;
+        font-size: 15px;
+    }
+}
