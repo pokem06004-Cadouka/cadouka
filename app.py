@@ -1204,6 +1204,73 @@ def unsell_card_page(card_id):
     flash("已標記回持有中", "success")
     return redirect(f"/cards/{card_id}")
 
+@app.route("/cards/<int:card_id>/refresh-price", methods=["POST"])
+@login_required
+def refresh_single_card_price_page(card_id):
+    user_id = current_user_id()
+
+    card = get_card_by_id(card_id, user_id=user_id)
+
+    if not card:
+        flash("找不到這張卡牌", "warning")
+        return redirect("/cards")
+
+    card_dict = dict(card)
+
+    if card_dict.get("status") != "holding":
+        flash("已售出的卡牌不需要更新市價", "warning")
+        return redirect(f"/cards/{card_id}")
+
+    product_url = card_dict.get("product_url") or ""
+
+    if not product_url:
+        flash("這張卡尚未設定商品網址，無法更新市價", "warning")
+        return redirect(f"/cards/{card_id}")
+
+    COOLDOWN_HOURS = 6
+
+    if should_skip_price_update(
+        card_dict.get("price_updated_at"),
+        cooldown_hours=COOLDOWN_HOURS
+    ):
+        flash("這張卡近期已更新過", "success")
+        return redirect(f"/cards/{card_id}")
+
+    try:
+        current_market_price = get_market_price_by_product_url(product_url)
+
+        if current_market_price <= 0:
+            flash("更新失敗，請確認商品網址是否正確", "warning")
+            return redirect(f"/cards/{card_id}")
+
+        buy_price = card_dict.get("buy_price") or 0
+
+        unrealized_profit, roi = calculate_unrealized_by_buy_price(
+            current_market_price,
+            buy_price
+        )
+
+        price_updated_at = get_taiwan_now_text()
+
+        update_card_market_price(
+            card_id,
+            current_market_price,
+            unrealized_profit,
+            roi,
+            price_updated_at,
+            user_id=user_id
+        )
+
+        flash("已更新此卡市價", "success")
+        return redirect(f"/cards/{card_id}")
+
+    except Exception as e:
+        print("更新單張市價錯誤：", e)
+        traceback.print_exc()
+
+        flash("更新市價時發生錯誤，請稍後再試", "warning")
+        return redirect(f"/cards/{card_id}")
+
 @app.route("/cards/refresh-all-prices", methods=["POST"])
 @login_required
 def refresh_all_card_prices_page():

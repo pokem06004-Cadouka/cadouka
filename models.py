@@ -568,7 +568,15 @@ def get_all_cards(status=None, keyword=None, sort=None, user_id=None):
             END ASC
         """
     else:
-        sql += " ORDER BY created_at DESC"
+        sql += """
+            ORDER BY
+                CASE
+                    WHEN status = 'holding' THEN 0
+                    WHEN status = 'sold' THEN 1
+                    ELSE 2
+                END,
+                created_at DESC
+        """
 
     execute_sql(cursor, sql, params)
     cards = cursor.fetchall()
