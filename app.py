@@ -1685,7 +1685,7 @@ def handle_message(event):
                     "在 LINE 直接輸入關鍵字，例如：\n"
                     "Pikachu\n"
                     "系列名稱：M2 SV2a...\n"
-                    "MUR...\n"
+                    "MUR\n"
                     "卡牌左下角編號：XXX XXX\n\n"
 
                     "【四、加入卡牌倉庫】\n\n"
