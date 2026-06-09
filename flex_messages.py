@@ -192,14 +192,14 @@ def create_price_stat_box(price_stats, jpy_rate=None):
                         color="#222222",
                         weight="bold",
                         align="center",
-                        wrap=True
+                        wrap=False
                     ),
                     TextComponent(
                         text=twd_text,
-                        size="xs",
+                        size="xxs",
                         color="#999999",
                         align="center",
-                        wrap=True
+                        wrap=False
                     )
                 ]
             )
@@ -218,6 +218,7 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
 
     section_contents = []
 
+    # 標題列：左邊 grade，右邊 24h 成交
     section_contents.append(
         BoxComponent(
             layout="horizontal",
@@ -228,7 +229,8 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
                     size="md",
                     weight="bold",
                     color="#222222",
-                    flex=2
+                    flex=2,
+                    align="start"
                 ),
                 TextComponent(
                     text=f"24h 成交 {sales_24h} 筆",
@@ -241,6 +243,7 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
         )
     )
 
+    # 最高 / 平均 / 最低三格
     if price_stats:
         section_contents.append(
             create_price_stat_box(price_stats, jpy_rate)
@@ -268,6 +271,7 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
     history_action_data = f"action=history&index={product_index}&grade={quote(condition_label)}"
     add_card_action_data = f"action=add_card&index={product_index}&grade={quote(condition_label)}"
 
+    # 按鈕列
     section_contents.append(
         BoxComponent(
             layout="horizontal",
@@ -281,16 +285,18 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
                         label="歷史成交",
                         data=history_action_data,
                         display_text=f"{condition_label} 歷史成交"
-                    )
+                    ),
+                    flex=1
                 ),
                 ButtonComponent(
                     style="primary",
                     height="sm",
                     action=PostbackAction(
-                        label="加入",
+                        label="加入 Cadouka",
                         data=add_card_action_data,
-                        display_text=f"加入 {condition_label}"
-                    )
+                        display_text="加入 Cadouka"
+                    ),
+                    flex=1
                 )
             ]
         )
@@ -564,9 +570,9 @@ def create_history_flex(product, prices, condition_label, jpy_rate=None, product
                 ButtonComponent(
                     style="primary",
                     action=PostbackAction(
-                        label=f"加入 {condition_label}",
+                        label="加入 Cadouka",
                         data=add_card_action_data,
-                        display_text=f"加入 {condition_label}"
+                        display_text="加入 Cadouka"
                     )
                 ),
                 ButtonComponent(
