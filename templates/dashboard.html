@@ -20,6 +20,7 @@
         <p>包含持有中未實現損益與已售出已實現損益</p>
     </div>
 
+    <!-- 桌機版：原本三張卡 -->
     <div class="summary-grid three overview-grid">
         <div class="summary-card primary-card">
             <div class="summary-title">總投入成本</div>
@@ -53,6 +54,32 @@
                 <div class="summary-value loss">
                     {{ "{:.2f}".format(total_roi or 0) }}%
                 </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 手機版：整體表現一張大卡 -->
+    <div class="mobile-dashboard-summary-card">
+        <div class="mobile-summary-row">
+            <span>總投入成本</span>
+            <strong>NT${{ "{:,.0f}".format(total_cost or 0) }}</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>總損益</span>
+            {% if total_profit >= 0 %}
+                <strong class="profit">+NT${{ "{:,.0f}".format(total_profit or 0) }}</strong>
+            {% else %}
+                <strong class="loss">-NT${{ "{:,.0f}".format((total_profit or 0) * -1) }}</strong>
+            {% endif %}
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>整體 ROI</span>
+            {% if total_roi >= 0 %}
+                <strong class="profit">+{{ "{:.2f}".format(total_roi or 0) }}%</strong>
+            {% else %}
+                <strong class="loss">{{ "{:.2f}".format(total_roi or 0) }}%</strong>
             {% endif %}
         </div>
     </div>
@@ -154,6 +181,7 @@
         </span>
     </div>
 
+    <!-- 桌機版：原本五張卡 -->
     <div class="summary-grid">
         <div class="summary-card">
             <div class="summary-title">持有張數</div>
@@ -203,6 +231,42 @@
         </div>
     </div>
 
+    <!-- 手機版：持有中一張大卡 -->
+    <div class="mobile-dashboard-summary-card">
+        <div class="mobile-summary-row">
+            <span>持有張數</span>
+            <strong>{{ holding_cards or 0 }} 張</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>持有總成本</span>
+            <strong>NT${{ "{:,.0f}".format(holding_cost or 0) }}</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>目前總市值</span>
+            <strong>NT${{ "{:,.0f}".format(holding_market_value or 0) }}</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>未實現損益</span>
+            {% if holding_unrealized_profit >= 0 %}
+                <strong class="profit">+NT${{ "{:,.0f}".format(holding_unrealized_profit or 0) }}</strong>
+            {% else %}
+                <strong class="loss">-NT${{ "{:,.0f}".format((holding_unrealized_profit or 0) * -1) }}</strong>
+            {% endif %}
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>未實現 ROI</span>
+            {% if holding_roi >= 0 %}
+                <strong class="profit">+{{ "{:.2f}".format(holding_roi or 0) }}%</strong>
+            {% else %}
+                <strong class="loss">{{ "{:.2f}".format(holding_roi or 0) }}%</strong>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="section-action-row">
         <a href="/cards?status=holding" class="btn-secondary">查看持有中卡牌</a>
     </div>
@@ -220,6 +284,7 @@
         </span>
     </div>
 
+    <!-- 桌機版：原本五張卡 -->
     <div class="summary-grid">
         <div class="summary-card">
             <div class="summary-title">已售出張數</div>
@@ -269,6 +334,42 @@
         </div>
     </div>
 
+    <!-- 手機版：已售出一張大卡 -->
+    <div class="mobile-dashboard-summary-card">
+        <div class="mobile-summary-row">
+            <span>已售出張數</span>
+            <strong>{{ sold_cards or 0 }} 張</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>售出卡總成本</span>
+            <strong>NT${{ "{:,.0f}".format(sold_cost or 0) }}</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>實際收入</span>
+            <strong>NT${{ "{:,.0f}".format(sold_net_revenue or 0) }}</strong>
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>已實現損益</span>
+            {% if sold_realized_profit >= 0 %}
+                <strong class="profit">+NT${{ "{:,.0f}".format(sold_realized_profit or 0) }}</strong>
+            {% else %}
+                <strong class="loss">-NT${{ "{:,.0f}".format((sold_realized_profit or 0) * -1) }}</strong>
+            {% endif %}
+        </div>
+
+        <div class="mobile-summary-row">
+            <span>已實現 ROI</span>
+            {% if sold_roi >= 0 %}
+                <strong class="profit">+{{ "{:.2f}".format(sold_roi or 0) }}%</strong>
+            {% else %}
+                <strong class="loss">{{ "{:.2f}".format(sold_roi or 0) }}%</strong>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="section-action-row">
         <a href="/cards?status=sold" class="btn-secondary">查看已售出卡牌</a>
     </div>
@@ -283,7 +384,16 @@
             return;
         }
 
-        const hidden = localStorage.getItem("cadoukaHoldingOverviewHidden") === "true";
+        const savedState = localStorage.getItem("cadoukaHoldingOverviewHidden");
+        const isMobile = window.matchMedia("(max-width: 760px)").matches;
+
+        let hidden = false;
+
+        if (savedState === null && isMobile) {
+            hidden = true;
+        } else {
+            hidden = savedState === "true";
+        }
 
         if (hidden) {
             section.classList.add("is-hidden");

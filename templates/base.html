@@ -30,7 +30,36 @@
                 <a href="/register">註冊</a>
             {% endif %}
         </div>
+
+        <button
+            type="button"
+            class="mobile-menu-toggle"
+            onclick="toggleMobileMenu()"
+            aria-label="開啟選單"
+        >
+            ☰
+        </button>
     </nav>
+
+    <div class="mobile-nav-menu" id="mobileNavMenu">
+        {% if current_user %}
+            <a href="/dashboard">首頁</a>
+            <a href="/cards">卡牌倉庫</a>
+
+            <form action="/cards/refresh-all-prices" method="post" class="mobile-nav-form">
+                <button type="submit">更新市價</button>
+            </form>
+
+            <a href="/profile">
+                個人資料：{{ current_user.display_name or current_user.username }}
+            </a>
+
+            <a href="/logout" class="mobile-logout-link">登出</a>
+        {% else %}
+            <a href="/login">登入</a>
+            <a href="/register">註冊</a>
+        {% endif %}
+    </div>
 
     <main class="container">
 
@@ -53,6 +82,14 @@
     </main>
 
     <script>
+        function toggleMobileMenu() {
+            const mobileNavMenu = document.getElementById("mobileNavMenu");
+
+            if (mobileNavMenu) {
+                mobileNavMenu.classList.toggle("is-open");
+            }
+        }
+
         setTimeout(function () {
             const flashMessages = document.querySelectorAll(".flash-message");
 
