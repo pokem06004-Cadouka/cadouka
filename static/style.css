@@ -3216,11 +3216,11 @@ a {
 }
 
 .detail-summary-single-value {
-    font-size: 28px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 700;
     color: #0f172a;
     text-align: right;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .detail-summary-single-value.profit {
