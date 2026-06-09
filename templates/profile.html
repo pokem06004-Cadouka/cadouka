@@ -68,24 +68,11 @@
                 <p>產生綁定碼後，請到 LINE 輸入下方指令：</p>
 
                 {% if user.line_bind_code %}
-                    <div class="line-bind-code-box">
-                        <div class="line-bind-code" id="lineBindCommand">
-                            綁定 {{ user.line_bind_code }}
-                        </div>
-
-                        <button
-                            type="button"
-                            class="btn-secondary copy-line-code-btn"
-                            onclick="copyLineBindCommand('綁定 {{ user.line_bind_code }}')"
-                        >
-                            複製
-                        </button>
-                    </div>
 
                     {% if line_liff_id %}
                         <a
                             href="https://liff.line.me/{{ line_liff_id }}?bind_code={{ user.line_bind_code }}"
-                            class="btn-add line-bind-btn"
+                            class="btn-add line-bind-btn line-bind-main-btn"
                         >
                             LINE 一鍵綁定
                         </a>
@@ -95,20 +82,35 @@
                         </p>
                     {% endif %}
 
-                    <p class="sub-text">
-                        複製上方指令，到 LINE 貼上即可完成綁定。
+                    <p class="sub-text line-bind-helper-text">
+                        若無法使用一鍵綁定，可使用下方綁定碼：
                     </p>
+
+                    <div class="line-bind-code-box compact">
+                        <div class="line-bind-code compact" id="lineBindCommand">
+                            綁定 {{ user.line_bind_code }}
+                        </div>
+
+                        <button
+                            type="button"
+                            class="btn-secondary copy-line-code-btn compact"
+                            onclick="copyLineBindCommand('綁定 {{ user.line_bind_code }}')"
+                        >
+                            複製
+                        </button>
+                    </div>
 
                     <p class="sub-text">
                         綁定碼將於 {{ user.line_bind_code_expires_at or "-" }} 過期。
                     </p>
+
                 {% else %}
-                    <p class="sub-text">目前尚未產生綁定碼。</p>
+                    <p class="sub-text">目前尚未產生綁定連結。</p>
                 {% endif %}
 
                 <form action="/profile/generate-line-bind-code" method="post">
                     <button type="submit" class="btn-secondary line-bind-btn">
-                        產生 LINE 綁定連結
+                        產生綁定連結
                     </button>
                 </form>
             {% endif %}

@@ -2304,12 +2304,21 @@ a {
     box-sizing: border-box;
 }
 
-.line-bind-btn {
+/* =========================
+   LINE Bind Compact Layout
+========================= */
+
+.line-bind-main-btn {
     width: 100%;
     margin-top: 18px;
+    margin-bottom: 16px;
+    min-height: 46px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border-radius: 999px;
     text-align: center;
     text-decoration: none;
     box-sizing: border-box;
@@ -2319,8 +2328,48 @@ a {
     box-shadow: 0 8px 18px rgba(6, 199, 85, 0.22);
 }
 
-.line-bind-btn:hover {
+.line-bind-main-btn:hover {
     background: #05b34d;
     color: #ffffff;
     transform: translateY(-1px);
+}
+
+.line-bind-helper-text {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.line-bind-code-box.compact {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    margin: 10px 0 12px 0;
+}
+
+.line-bind-code.compact {
+    flex: 1;
+    min-height: 52px;
+    padding: 0 18px;
+    border-radius: 18px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-line-code-btn.compact {
+    min-width: 92px;
+    height: auto;
+    margin: 0;
+    border-radius: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

@@ -591,7 +591,7 @@ def line_liff_bind_confirm_page():
             TextSendMessage(
                 text=(
                     "Cadouka 綁定成功！\n\n"
-                    f"你的 LINE 已綁定 Cadouka 帳號：{display_name}\n"
+                    f"你的 LINE 已綁定 Cadouka 帳號：{display_name}"
                 )
             )
         )
