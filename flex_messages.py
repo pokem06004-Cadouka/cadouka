@@ -1,6 +1,7 @@
 from linebot.models import (
     FlexSendMessage,
     BubbleContainer,
+    CarouselContainer,
     ImageComponent,
     BoxComponent,
     TextComponent,
@@ -167,6 +168,235 @@ def create_price_stat_box(price_stats, jpy_rate=None):
         contents=stat_boxes
     )
 
+def create_price_bubble_for_condition(product, prices, condition_label, jpy_rate=None, product_index=None):
+    product_name = product["name"] if product["name"] else "未命名商品"
+    product_url = product["url"]
+    image_url = safe_image_url(product["image"])
+
+    price_stats = calculate_price_stats(prices) if prices else None
+
+    price_contents = []
+
+    price_contents.append(
+        BoxComponent(
+            layout="horizontal",
+            padding_bottom="sm",
+            contents=[
+                TextComponent(
+                    text="Date",
+                    size="sm",
+                    color="#999999",
+                    flex=3,
+                    weight="bold"
+                ),
+                TextComponent(
+                    text="Grade",
+                    size="sm",
+                    color="#999999",
+                    flex=2,
+                    align="center",
+                    weight="bold"
+                ),
+                TextComponent(
+                    text="Price",
+                    size="sm",
+                    color="#999999",
+                    flex=4,
+                    align="end",
+                    weight="bold"
+                )
+            ]
+        )
+    )
+
+    if prices:
+        for idx, p in enumerate(prices[:10]):
+            jpy_price = format_jpy_price(p["price"])
+
+            if jpy_price is not None:
+                jpy_text = f"¥{jpy_price:,}"
+
+                twd_value = format_twd_price(jpy_price, jpy_rate)
+
+                if twd_value is not None:
+                    twd_text = f"NT${twd_value:,}"
+                else:
+                    twd_text = "匯率取得失敗"
+            else:
+                jpy_text = f'¥{p["price"]}'
+                twd_text = "無法換算台幣"
+
+            row_contents = [
+                BoxComponent(
+                    layout="horizontal",
+                    spacing="sm",
+                    padding_top="sm",
+                    padding_bottom="sm",
+                    contents=[
+                        TextComponent(
+                            text=format_date_text(p["date"]),
+                            size="sm",
+                            color="#666666",
+                            flex=3,
+                            wrap=False
+                        ),
+                        TextComponent(
+                            text=str(p.get("condition") or condition_label),
+                            size="sm",
+                            color="#666666",
+                            flex=2,
+                            align="center"
+                        ),
+                        BoxComponent(
+                            layout="vertical",
+                            flex=4,
+                            contents=[
+                                TextComponent(
+                                    text=jpy_text,
+                                    size="md",
+                                    color="#222222",
+                                    weight="bold",
+                                    align="end"
+                                ),
+                                TextComponent(
+                                    text=twd_text,
+                                    size="sm",
+                                    color="#999999",
+                                    align="end"
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ]
+
+            if idx == 0:
+                price_contents.append(
+                    BoxComponent(
+                        layout="vertical",
+                        contents=row_contents
+                    )
+                )
+            else:
+                price_contents.append(
+                    BoxComponent(
+                        layout="vertical",
+                        separator=True,
+                        separator_color="#EEEEEE",
+                        contents=row_contents
+                    )
+                )
+    else:
+        price_contents.append(
+            BoxComponent(
+                layout="vertical",
+                padding_all="md",
+                background_color="#F7F7F7",
+                corner_radius="md",
+                contents=[
+                    TextComponent(
+                        text=f"查無 {condition_label} 成交紀錄",
+                        size="md",
+                        color="#666666",
+                        wrap=True,
+                        align="center"
+                    )
+                ]
+            )
+        )
+
+    body_contents = [
+        TextComponent(
+            text=product_name,
+            weight="bold",
+            size="lg",
+            color="#222222",
+            wrap=True
+        )
+    ]
+
+    if price_stats:
+        body_contents.append(
+            create_price_stat_box(price_stats, jpy_rate)
+        )
+
+    body_contents.append(
+        TextComponent(
+            text=f"{condition_label} 最近成交",
+            weight="bold",
+            size="md",
+            color="#444444",
+            margin="lg"
+        )
+    )
+
+    if jpy_rate:
+        body_contents.append(
+            TextComponent(
+                text=f"台灣銀行日圓即期匯率：{jpy_rate}",
+                size="xs",
+                color="#999999",
+                wrap=True
+            )
+        )
+    else:
+        body_contents.append(
+            TextComponent(
+                text="日圓匯率取得失敗，僅顯示日幣價格",
+                size="xs",
+                color="#999999",
+                wrap=True
+            )
+        )
+
+    body_contents.append(
+        BoxComponent(
+            layout="vertical",
+            spacing="none",
+            margin="md",
+            contents=price_contents
+        )
+    )
+
+    if product_index is not None:
+        add_card_action_data = f"action=add_card&index={product_index}&grade={quote(condition_label)}"
+    else:
+        add_card_action_data = f"action=add_card&grade={quote(condition_label)}"
+
+    return BubbleContainer(
+        hero=ImageComponent(
+            url=image_url,
+            size="full",
+            aspect_ratio="4:3",
+            aspect_mode="fit"
+        ),
+        body=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=body_contents
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=[
+                ButtonComponent(
+                    style="primary",
+                    action=PostbackAction(
+                        label="加入 Cadouka",
+                        data=add_card_action_data,
+                        display_text="加入 Cadouka"
+                    )
+                ),
+                ButtonComponent(
+                    style="secondary",
+                    action=URIAction(
+                        label="前往商品頁",
+                        uri=product_url
+                    )
+                )
+            ]
+        )
+    )
 
 def create_price_flex(product, prices, jpy_rate=None, product_index=None):
     """
@@ -422,6 +652,30 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
         contents=bubble
     )
 
+def create_price_flex_carousel(product, prices_by_conditions, jpy_rate=None, product_index=None):
+    bubbles = []
+
+    for condition_label in ["PSA10", "PSA9", "PSA8以下"]:
+        prices = prices_by_conditions.get(condition_label, [])
+
+        bubble = create_price_bubble_for_condition(
+            product=product,
+            prices=prices,
+            condition_label=condition_label,
+            jpy_rate=jpy_rate,
+            product_index=product_index
+        )
+
+        bubbles.append(bubble)
+
+    carousel = CarouselContainer(
+        contents=bubbles
+    )
+
+    return FlexSendMessage(
+        alt_text="成交價格分析",
+        contents=carousel
+    )
 
 def create_product_image_grid_messages(products):
     messages = []

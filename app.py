@@ -41,12 +41,14 @@ from snkrdunk import (
     search_products,
     getprice,
     get_product_id,
-    build_sales_history_url
+    build_sales_history_url,
+    get_prices_by_conditions
 )
 
 from flex_messages import (
     create_product_image_grid_messages,
-    create_price_flex
+    create_price_flex,
+    create_price_flex_carousel
 )
 
 from exchange import get_jpy_spot_sell
@@ -1782,15 +1784,14 @@ def handle_postback(event):
             product_url = product["url"]
 
             product_id = get_product_id(product_url)
-            price_url = build_sales_history_url(product_id)
 
-            prices = getprice(price_url)
+            prices_by_conditions = get_prices_by_conditions(product_id)
 
             jpy_rate = get_jpy_spot_sell()
 
-            price_flex_message = create_price_flex(
+            price_flex_message = create_price_flex_carousel(
                 product,
-                prices,
+                prices_by_conditions,
                 jpy_rate,
                 index
             )
@@ -1803,6 +1804,7 @@ def handle_postback(event):
 
         if action == "add_card":
             index = int(params.get("index", [0])[0])
+            selected_grade = params.get("grade", [""])[0]
 
             if index >= len(products):
                 line_bot_api.reply_message(
@@ -1833,7 +1835,11 @@ def handle_postback(event):
             product_url = product["url"]
 
             product_id = get_product_id(product_url)
-            price_url = build_sales_history_url(product_id)
+
+            if selected_grade:
+                price_url = build_sales_history_url(product_id, condition=selected_grade)
+            else:
+                price_url = build_sales_history_url(product_id)
 
             prices = getprice(price_url)
             jpy_rate = get_jpy_spot_sell()
@@ -1859,7 +1865,7 @@ def handle_postback(event):
                 "card_number": "",
                 "series_name": "",
                 "rarity": "",
-                "grade": "",
+                "grade": selected_grade,
                 "purchase_method": "",
 
                 "buy_price": buy_price,
@@ -1891,6 +1897,7 @@ def handle_postback(event):
                         "已新增到卡牌倉庫！\n"
                         f"帳號：{display_name}\n"
                         f"卡牌：{product_name}\n"
+                        f"鑑定狀態：{selected_grade or '未填'}\n"
                         f"目前市價：NT${current_market_price:,}\n\n"
                         "之後可到網站編輯購入價格、購入日期、鑑定卡號與鑑定狀態。"
                     )

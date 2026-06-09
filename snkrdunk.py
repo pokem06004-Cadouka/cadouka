@@ -2,12 +2,17 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import urllib.request as req
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 import json
 import bs4
 
 from config import headers
 
+CONDITION_ID_MAP = {
+    "PSA10": 22,
+    "PSA9": 23,
+    "PSA8以下": 24
+}
 
 def search_products(card_id):
     keyword = quote(card_id, safe="")
@@ -73,19 +78,56 @@ def getprice(price_url):
     prices = []
 
     for item in items:
-        if item.get("condition") == "PSA10":
-            prices.append({
-                "date": item.get("date"),
-                "price": item.get("price"),
-                "condition": item.get("condition")
-            })
+        prices.append({
+            "date": item.get("date"),
+            "price": item.get("price"),
+            "condition": item.get("condition")
+        })
 
     return prices
 
 
 def get_product_id(product_url):
+    parsed = urlparse(product_url)
+    parts = parsed.path.strip("/").split("/")
+
+    if "apparels" in parts:
+        index = parts.index("apparels")
+
+        if index + 1 < len(parts):
+            return parts[index + 1]
+
     return product_url.rstrip("/").split("/")[-1]
 
 
-def build_sales_history_url(product_id):
-    return f"https://snkrdunk.com/v1/apparels/{product_id}/sales-history?size_id=0&page=1&per_page=20"
+def build_sales_history_url(product_id, condition="PSA10", page=1, per_page=20):
+    condition_id = CONDITION_ID_MAP.get(condition, 22)
+
+    return (
+        f"https://snkrdunk.com/v1/apparels/{product_id}/sales-history"
+        f"?page={page}&per_page={per_page}&condition_id={condition_id}"
+    )
+
+def get_prices_by_conditions(product_id, conditions=None):
+    if conditions is None:
+        conditions = ["PSA10", "PSA9", "PSA8以下"]
+
+    result = {}
+
+    for condition in conditions:
+        price_url = build_sales_history_url(
+            product_id,
+            condition=condition,
+            page=1,
+            per_page=20
+        )
+
+        try:
+            prices = getprice(price_url)
+        except Exception as e:
+            print(f"{condition} 成交資料抓取失敗：", e)
+            prices = []
+
+        result[condition] = prices
+
+    return result
