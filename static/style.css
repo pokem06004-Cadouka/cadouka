@@ -2662,40 +2662,43 @@ a {
 }
 
 /* =========================
-   Single Card Price Refresh
+   List Single Price Refresh
 ========================= */
 
-.summary-value-with-refresh {
+.roi-cell-with-refresh {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-end;
+    gap: 7px;
+    white-space: nowrap;
 }
 
-.single-refresh-form {
+.list-refresh-form {
     display: inline-flex;
     align-items: center;
     margin: 0;
     padding: 0;
 }
 
-.single-refresh-btn {
-    width: 28px;
-    height: 28px;
+.list-refresh-btn {
+    width: 24px;
+    height: 24px;
     border-radius: 999px;
     border: 1px solid #dbeafe;
     background: #eff6ff;
     color: #2563eb;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 900;
     line-height: 1;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
     transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.single-refresh-btn:hover {
+.list-refresh-btn:hover {
     background: #dbeafe;
     color: #1d4ed8;
     transform: rotate(18deg);

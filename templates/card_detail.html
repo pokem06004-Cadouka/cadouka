@@ -111,32 +111,13 @@
                 </div>
 
                 <div class="summary-card mini-summary-card">
-                <div class="summary-title">未實現 ROI</div>
-
-                <div class="summary-value-with-refresh">
-                    {% if card.roi >= 0 %}
-                        <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                    {% else %}
-                        <div class="summary-value loss">{{ "{:.2f}".format(card.roi or 0) }}%</div>
-                    {% endif %}
-
-                    <form
-                        action="/cards/{{ card.id }}/refresh-price"
-                        method="post"
-                        class="single-refresh-form"
-                    >
-                        <button
-                            type="submit"
-                            class="single-refresh-btn"
-                            title="更新此卡市價"
-                        >
-                            ⟳
-                        </button>
-                    </form>
+                    <div class="summary-title">未實現 ROI</div>
+                        {% if card.roi >= 0 %}
+                            <div class="summary-value profit">+{{ "{:.2f}".format(card.roi or 0) }}%</div>
+                        {% else %}
+                            <div class="summary-value loss">{{ "{:.2f}".format(card.roi or 0) }}%</div>
+                        {% endif %}
                 </div>
-            </div>
-            {% endif %}
-        </div>
     </div>
 
 </div>
@@ -187,7 +168,7 @@
                 <th>持有天數</th>
                 <td>{{ card.holding_days or "-" }}</td>
             </tr>
-            
+
             <tr>
                 <th>市價更新時間</th>
                 <td>{{ card.price_updated_at or "尚未更新" }}</td>
