@@ -243,21 +243,21 @@ def create_unbound_quick_reply():
     return QuickReply(
         items=[
             QuickReplyButton(
+                action=URIAction(
+                    label="開啟 Cadouka",
+                    uri=f"{base_url}/profile"
+                )
+            ),
+            QuickReplyButton(
                 action=MessageAction(
-                    label="查看教學",
-                    text="使用教學"
+                    label="如何綁定",
+                    text="教學：如何綁定"
                 )
             ),
             QuickReplyButton(
                 action=MessageAction(
                     label="綁定狀態",
                     text="綁定狀態"
-                )
-            ),
-            QuickReplyButton(
-                action=URIAction(
-                    label="開啟 Cadouka",
-                    uri=f"{base_url}/profile"
                 )
             )
         ]
