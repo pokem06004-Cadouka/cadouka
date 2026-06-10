@@ -261,8 +261,8 @@
                     <th>標籤</th>
                     <th>狀態</th>
                     <th>備註</th>
-                    <th>建立時間</th>
                     <th>操作</th>
+                    <th>建立時間</th>
                 </tr>
             </thead>
 
@@ -366,10 +366,6 @@
                         </td>
 
                         <td>
-                            {{ alias.created_at_short or alias.created_at_text }}
-                        </td>
-
-                        <td>
                             <div class="alias-action-row">
 
                                 <form
@@ -414,6 +410,10 @@
                                 </form>
 
                             </div>
+                        </td>
+
+                        <td>
+                            {{ alias.created_at_short or alias.created_at_text }}
                         </td>
                     </tr>
                 {% else %}

@@ -4747,3 +4747,53 @@ a {
         width: 100%;
     }
 }
+
+/* =========================
+   Search Alias Search Bar Fix
+========================= */
+
+.search-form .tag-filter-select {
+    min-width: 150px;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 800;
+    box-sizing: border-box;
+}
+
+.search-form .tag-filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.09);
+}
+
+.search-form .btn-clear {
+    height: 46px;
+    min-width: 78px;
+    padding: 0 18px;
+    margin: 0;
+    box-sizing: border-box;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.search-form button {
+    height: 46px;
+    min-width: 78px;
+    box-sizing: border-box;
+}
+
+.search-form input {
+    height: 46px;
+    box-sizing: border-box;
+}
