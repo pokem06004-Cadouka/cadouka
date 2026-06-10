@@ -48,7 +48,9 @@ from snkrdunk import (
     getprice,
     get_product_id,
     build_sales_history_url,
-    get_prices_by_conditions
+    get_prices_by_conditions,
+    get_base_conditions,
+    get_pro_conditions
 )
 
 from flex_messages import (
@@ -542,10 +544,14 @@ def build_pro_market_summary(product_url):
         }
 
     try:
-        prices_by_conditions = get_prices_by_conditions(product_id)
-        jpy_rate = get_jpy_spot_sell()
+        grade_order = get_pro_conditions()
 
-        grade_order = ["PSA10", "PSA9", "PSA8以下"]
+        prices_by_conditions = get_prices_by_conditions(
+            product_id,
+            conditions=grade_order
+        )
+
+        jpy_rate = get_jpy_spot_sell()
 
         grades = []
 
@@ -1619,7 +1625,7 @@ def card_pro_history_page(card_id):
 
     selected_grade = request.args.get("grade", "PSA10").strip()
 
-    allowed_grades = ["PSA10", "PSA9", "PSA8以下"]
+    allowed_grades = get_pro_conditions()
 
     if selected_grade not in allowed_grades:
         selected_grade = "PSA10"
@@ -2439,16 +2445,35 @@ def handle_postback(event):
 
             product_id = get_product_id(product_url)
 
-            prices_by_conditions = get_prices_by_conditions(product_id)
+            line_user = get_user_by_line_user_id(line_user_id)
+
+            if line_user and is_pro_user(line_user):
+                condition_order = get_pro_conditions()
+            else:
+                condition_order = get_base_conditions()
+
+            prices_by_conditions = get_prices_by_conditions(
+                product_id,
+                conditions=condition_order
+            )
 
             jpy_rate = get_jpy_spot_sell()
 
-            price_flex_message = create_grade_summary_flex(
-                product,
-                prices_by_conditions,
-                jpy_rate,
-                index
-            )
+            try:
+                price_flex_message = create_grade_summary_flex(
+                    product,
+                    prices_by_conditions,
+                    jpy_rate,
+                    index,
+                    condition_order=condition_order
+                )
+            except TypeError:
+                price_flex_message = create_grade_summary_flex(
+                    product,
+                    prices_by_conditions,
+                    jpy_rate,
+                    index
+                )
 
             safe_add_line_log(
                 line_user_id=line_user_id,
@@ -2477,6 +2502,16 @@ def handle_postback(event):
             product = products[index]
             product_url = product["url"]
 
+            line_user = get_user_by_line_user_id(line_user_id)
+            line_is_pro = bool(line_user and is_pro_user(line_user))
+
+            if selected_grade in ["A", "B"] and not line_is_pro:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="A / B 歷史成交為 Cadouka Pro 會員功能。")
+                )
+                return
+
             product_id = get_product_id(product_url)
             price_url = build_sales_history_url(
                 product_id,
@@ -2488,9 +2523,7 @@ def handle_postback(event):
             prices = getprice(price_url)
             jpy_rate = get_jpy_spot_sell()
 
-            line_user = get_user_by_line_user_id(line_user_id)
-
-            if line_user and is_pro_user(line_user):
+            if line_is_pro:
                 history_display_limit = 10
             else:
                 history_display_limit = 5
@@ -2529,6 +2562,20 @@ def handle_postback(event):
                 return
 
             user = get_user_by_line_user_id(line_user_id)
+
+            if selected_grade in ["A", "B"] and (not user or not is_pro_user(user)):
+                safe_add_line_log(
+                    line_user_id=line_user_id,
+                    action="add_card",
+                    result="failed",
+                    message="非 Pro，無法加入 A / B 卡牌"
+                )
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="A / B 加入卡牌為 Cadouka Pro 會員功能。")
+                )
+                return
 
             if not user:
                 safe_add_line_log(

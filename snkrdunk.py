@@ -8,11 +8,27 @@ import bs4
 
 from config import headers
 
+
+# =========================
+# SNKRDUNK Condition Settings
+# =========================
+
 CONDITION_ID_MAP = {
+    "A": 18,
+    "B": 19,
     "PSA10": 22,
     "PSA9": 23,
     "PSA8以下": 24
 }
+
+BASE_CONDITIONS = ["PSA10", "PSA9", "PSA8以下"]
+
+PRO_CONDITIONS = ["A", "B", "PSA10", "PSA9", "PSA8以下"]
+
+
+# =========================
+# Search Products
+# =========================
 
 def search_products(card_id):
     keyword = quote(card_id, safe="")
@@ -65,6 +81,10 @@ def search_products(card_id):
     return products
 
 
+# =========================
+# Sales History
+# =========================
+
 def getprice(price_url):
     request_obj = req.Request(price_url, headers=headers)
 
@@ -101,16 +121,27 @@ def get_product_id(product_url):
 
 
 def build_sales_history_url(product_id, condition="PSA10", page=1, per_page=20):
-    condition_id = CONDITION_ID_MAP.get(condition, 22)
+    condition_id = CONDITION_ID_MAP.get(condition)
+
+    if condition_id is None:
+        condition_id = CONDITION_ID_MAP["PSA10"]
 
     return (
         f"https://snkrdunk.com/v1/apparels/{product_id}/sales-history"
         f"?page={page}&per_page={per_page}&condition_id={condition_id}"
     )
 
+
 def get_prices_by_conditions(product_id, conditions=None):
+    """
+    conditions 沒有傳入時，預設只抓一般版：
+    PSA10 / PSA9 / PSA8以下
+
+    Pro 會員要抓 A / B 時，請從 app.py 傳入：
+    conditions=PRO_CONDITIONS
+    """
     if conditions is None:
-        conditions = ["PSA10", "PSA9", "PSA8以下"]
+        conditions = BASE_CONDITIONS
 
     result = {}
 
@@ -131,3 +162,11 @@ def get_prices_by_conditions(product_id, conditions=None):
         result[condition] = prices
 
     return result
+
+
+def get_base_conditions():
+    return BASE_CONDITIONS
+
+
+def get_pro_conditions():
+    return PRO_CONDITIONS

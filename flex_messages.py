@@ -312,7 +312,39 @@ def create_grade_summary_section(product_index, condition_label, prices, jpy_rat
         contents=section_contents
     )
 
-def create_grade_summary_flex(product, prices_by_conditions, jpy_rate=None, product_index=None):
+def get_condition_order(prices_by_conditions=None, condition_order=None):
+    """
+    決定 LINE Flex 要顯示哪些 condition。
+
+    Free：
+    - PSA10 / PSA9 / PSA8以下
+
+    Pro：
+    - A / B / PSA10 / PSA9 / PSA8以下
+
+    app.py 如果有傳 condition_order，就優先使用 app.py 傳入的順序。
+    如果沒有傳，則根據 prices_by_conditions 裡有沒有 A / B 自動判斷。
+    """
+    base_conditions = ["PSA10", "PSA9", "PSA8以下"]
+    pro_conditions = ["A", "B", "PSA10", "PSA9", "PSA8以下"]
+
+    if condition_order:
+        return condition_order
+
+    if prices_by_conditions:
+        if "A" in prices_by_conditions or "B" in prices_by_conditions:
+            return pro_conditions
+
+    return base_conditions
+
+
+def create_grade_summary_flex(
+    product,
+    prices_by_conditions,
+    jpy_rate=None,
+    product_index=None,
+    condition_order=None
+):
     product_name = product["name"] if product["name"] else "未命名商品"
     product_url = product["url"]
     image_url = safe_image_url(product["image"])
@@ -327,7 +359,10 @@ def create_grade_summary_flex(product, prices_by_conditions, jpy_rate=None, prod
         )
     ]
 
-    for condition_label in ["PSA10", "PSA9", "PSA8以下"]:
+    for condition_label in get_condition_order(
+        prices_by_conditions=prices_by_conditions,
+        condition_order=condition_order
+    ):
         prices = prices_by_conditions.get(condition_label, [])
 
         body_contents.append(
@@ -1075,10 +1110,19 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
         contents=bubble
     )
 
-def create_price_flex_carousel(product, prices_by_conditions, jpy_rate=None, product_index=None):
+def create_price_flex_carousel(
+    product,
+    prices_by_conditions,
+    jpy_rate=None,
+    product_index=None,
+    condition_order=None
+):
     bubbles = []
 
-    for condition_label in ["PSA10", "PSA9", "PSA8以下"]:
+    for condition_label in get_condition_order(
+        prices_by_conditions=prices_by_conditions,
+        condition_order=condition_order
+    ):
         prices = prices_by_conditions.get(condition_label, [])
 
         bubble = create_price_bubble_for_condition(
