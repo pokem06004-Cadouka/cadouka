@@ -1141,11 +1141,11 @@ def admin_search_aliases_page():
                 is_active=1,
                 tag_ids=tag_ids
             )
-            flash("搜尋別名已新增", "success")
+            
         except Exception as e:
             print("新增搜尋別名錯誤：", e)
             traceback.print_exc()
-            flash("新增搜尋別名失敗，可能是俗稱已存在", "warning")
+            
 
         return redirect("/cdk-console/search-aliases")
 
@@ -1236,11 +1236,11 @@ def admin_add_search_tag_page():
 
     try:
         add_search_tag(tag_name=tag_name, tag_color=tag_color)
-        flash("標籤已新增", "success")
+        
     except Exception as e:
         print("新增搜尋標籤錯誤：", e)
         traceback.print_exc()
-        flash("新增標籤失敗，可能是標籤名稱已存在", "warning")
+        
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1264,11 +1264,11 @@ def admin_update_search_tag_page(tag_id):
 
     try:
         update_search_tag(tag_id=tag_id, tag_name=tag_name, tag_color=tag_color)
-        flash("標籤已更新", "success")
+        
     except Exception as e:
         print("更新搜尋標籤錯誤：", e)
         traceback.print_exc()
-        flash("更新標籤失敗，可能是標籤名稱已存在", "warning")
+        
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1284,7 +1284,7 @@ def admin_delete_search_tag_page(tag_id):
         return redirect("/cdk-console/search-aliases")
 
     delete_search_tag(tag_id)
-    flash("標籤已刪除，相關搜尋別名也已移除此標籤", "success")
+    
     return redirect("/cdk-console/search-aliases")
 
 @app.route("/cdk-console/search-aliases/<int:alias_id>/update", methods=["POST"])
@@ -1318,11 +1318,11 @@ def admin_update_search_alias_page(alias_id):
             note=note,
             tag_ids=tag_ids
         )
-        flash("搜尋別名已更新", "success")
+        
     except Exception as e:
         print("更新搜尋別名錯誤：", e)
         traceback.print_exc()
-        flash("更新搜尋別名失敗，可能是俗稱已存在", "warning")
+        
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1345,11 +1345,6 @@ def admin_toggle_search_alias_page(alias_id):
 
     update_search_alias_active(alias_id, new_active)
 
-    if new_active == 1:
-        flash("搜尋別名已啟用", "success")
-    else:
-        flash("搜尋別名已停用", "success")
-
     return redirect("/cdk-console/search-aliases")
 
 
@@ -1365,7 +1360,7 @@ def admin_delete_search_alias_page(alias_id):
 
     delete_search_alias(alias_id)
 
-    flash("搜尋別名已刪除", "success")
+    
     return redirect("/cdk-console/search-aliases")
 
 # =========================

@@ -478,6 +478,22 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const maxTags = 8;
+    const scrollKey = "cadouka_search_alias_scroll_y";
+
+    const savedScrollY = sessionStorage.getItem(scrollKey);
+
+    if (savedScrollY !== null) {
+        window.scrollTo({
+            top: parseInt(savedScrollY, 10) || 0,
+            behavior: "instant"
+        });
+
+        sessionStorage.removeItem(scrollKey);
+    }
+
+    function saveCurrentScrollPosition() {
+        sessionStorage.setItem(scrollKey, String(window.scrollY || 0));
+    }
 
     window.setTagColor = function (color) {
         const colorInput = document.getElementById("newTagColor");
@@ -525,6 +541,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 checkbox.checked = false;
                 alert("每筆搜尋別名最多只能選 8 個標籤。");
             }
+        });
+    });
+
+    document.querySelectorAll("form").forEach(function (form) {
+        form.addEventListener("submit", function () {
+            saveCurrentScrollPosition();
+        });
+    });
+
+    document.querySelectorAll("a.btn-clear, .pagination-bar a").forEach(function (link) {
+        link.addEventListener("click", function () {
+            saveCurrentScrollPosition();
         });
     });
 });
