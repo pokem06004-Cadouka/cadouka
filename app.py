@@ -207,6 +207,35 @@ def create_main_quick_reply():
         ]
     )
 
+def create_tutorial_quick_reply():
+    return QuickReply(
+        items=[
+            QuickReplyButton(
+                action=MessageAction(
+                    label="如何綁定",
+                    text="教學：如何綁定"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="如何查價",
+                    text="教學：如何查價"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="加入倉庫",
+                    text="教學：加入倉庫"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="常用指令",
+                    text="教學：常用指令"
+                )
+            )
+        ]
+    )
 
 def create_unbound_quick_reply():
     base_url = get_base_url()
@@ -1782,47 +1811,86 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=(
-                    "Cadouka 使用教學\n"
+                text="Cadouka 使用教學\n請選擇你想查看的項目：",
+                quick_reply=create_tutorial_quick_reply()
+            )
+        )
+        return
 
-                    "【一、建立 Cadouka 帳號】\n"
+    if card_id == "教學：如何綁定":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "【建立 Cadouka 帳號】\n"
                     "1. 進入 Cadouka 網站。\n"
                     "2. 註冊帳號並登入。\n\n"
 
-                    "【二、LINE 一鍵綁定】\n\n"
+                    "【LINE 一鍵綁定】\n"
                     "1. 登入 Cadouka 網站。\n"
-                    "2. 點右上角帳號名稱，進入「個人資料」。\n"
+                    "2. 點右上角選單或帳號名稱，進入「個人資料」。\n"
                     "3. 在 LINE 帳號綁定區按「產生綁定連結」。\n"
                     "4. 按「LINE 一鍵綁定」。\n"
                     "5. 系統會開啟 LINE 並自動完成綁定。\n\n"
 
                     "如果一鍵綁定無法使用，也可以使用備用綁定碼：\n"
-                    "複製畫面上的「綁定 XXXXXX」，到 LINE 貼上送出即可完成綁定。\n\n"
+                    "複製畫面上的「綁定 XXXXXX」，到 LINE 貼上送出即可完成綁定。"
+                ),
+                quick_reply=create_tutorial_quick_reply()
+            )
+        )
+        return
 
-                    "【三、LINE 查價】\n"
+    if card_id == "教學：如何查價":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "【LINE 查價】\n"
                     "在 LINE 直接輸入關鍵字，例如：\n"
                     "Pikachu\n"
                     "系列名稱：M2 SV2a...\n"
                     "MUR\n"
-                    "卡牌左下角編號：XXX XXX\n\n"
-
-                    "【四、加入卡牌倉庫】\n"
-                    "在 LINE 查價結果中，按「加入 Cadouka」，即可把該商品加入你的卡牌倉庫。\n\n"
+                    "卡牌左下角編號：XXX XXX"
+                ),
+                quick_reply=create_tutorial_quick_reply()
+            )
+        )
+        return
+    
+    if card_id == "教學：加入倉庫":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "【加入卡牌倉庫】\n"
+                    "在 LINE 查價結果中，按「加入 Cadouka」，即可把該商品加入你的卡牌倉庫。\n"
                     "加入後可到網站編輯：\n"
                     "卡牌名稱、鑑定卡號、購入價格...等\n\n"
 
-                    "【五、市價更新】\n"
+                    "【市價更新】\n"
                     "如果卡牌有商品網址，可以更新市價。\n"
-                    "持有中的卡牌才會更新市價，已售出的卡牌不會更新。\n\n"
+                    "持有中的卡牌才會更新市價，已售出的卡牌不會更新。\n"
                     "卡牌倉庫中，持有中卡牌右側的更新符號可以更新單張卡牌市價。\n"
-                    "上方的「更新市價」可以批量更新持有中的卡牌。\n\n"
+                    "上方的「更新市價」可以批量更新持有中的卡牌。"
+                ),
+                quick_reply=create_tutorial_quick_reply()
+            )
+        )
+        return
 
-                    "【六、常用指令】\n"
+    if card_id == "教學：常用指令":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text=(
+                    "【常用指令】\n"
                     "綁定狀態：查看目前 LINE 是否已綁定 Cadouka 帳號\n"
                     "解除綁定：解除目前 LINE 綁定\n"
-                    "使用教學：查看 Cadouka 使用方式"
+                    "使用教學：查看 Cadouka 使用方式\n"
+                    "功能：查看功能"
                 ),
-                quick_reply=create_main_quick_reply()
+                quick_reply=create_tutorial_quick_reply()
             )
         )
         return
