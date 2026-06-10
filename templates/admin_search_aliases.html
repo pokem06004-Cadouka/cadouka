@@ -64,6 +64,29 @@
 
 </div>
 
+<div class="list-tools">
+    <form action="/cdk-console/search-aliases" method="get" class="search-form">
+        <input
+            type="text"
+            name="keyword"
+            value="{{ keyword or '' }}"
+            placeholder="搜尋俗稱、實際搜尋詞或備註"
+        >
+
+        <button type="submit">搜尋</button>
+
+        {% if keyword %}
+            <a href="/cdk-console/search-aliases" class="btn-clear">
+                清除
+            </a>
+        {% endif %}
+    </form>
+
+    <div class="page-subtitle">
+        共 {{ total_items }} 筆搜尋別名，每頁 {{ per_page }} 筆。
+    </div>
+</div>
+
 <div class="admin-table-card">
     <div class="admin-table-scroll">
         <table class="admin-table">
@@ -118,7 +141,7 @@
                             >
                         </td>
 
-                        <td>{{ alias.created_at }}</td>
+                        <td>{{ alias.created_at_text }}</td>
 
                         <td>
                             <div class="alias-action-row">
@@ -177,6 +200,53 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="pagination-bar">
+    {% if current_page > 1 %}
+        <a
+            href="/cdk-console/search-aliases?page={{ current_page - 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+            class="pagination-btn"
+        >
+            上一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">上一頁</span>
+    {% endif %}
+
+    <div class="pagination-number-group">
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == current_page %}
+                <span class="pagination-number active">{{ p }}</span>
+            {% elif p <= 2 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                <a
+                    href="/cdk-console/search-aliases?page={{ p }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+                    class="pagination-number"
+                >
+                    {{ p }}
+                </a>
+            {% elif p == 3 and current_page > 4 %}
+                <span class="pagination-ellipsis">...</span>
+            {% elif p == total_pages - 2 and current_page < total_pages - 3 %}
+                <span class="pagination-ellipsis">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if current_page < total_pages %}
+        <a
+            href="/cdk-console/search-aliases?page={{ current_page + 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+            class="pagination-btn"
+        >
+            下一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">下一頁</span>
+    {% endif %}
+
+    <span class="pagination-total">
+        第 {{ current_page }} / {{ total_pages }} 頁
+    </span>
 </div>
 
 {% endblock %}

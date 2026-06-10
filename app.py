@@ -100,6 +100,7 @@ from models import (
 
     add_search_alias,
     get_all_search_aliases,
+    count_search_aliases,
     get_search_alias_by_id,
     update_search_alias,
     update_search_alias_active,
@@ -1136,11 +1137,52 @@ def admin_search_aliases_page():
 
         return redirect("/cdk-console/search-aliases")
 
-    aliases = get_all_search_aliases()
+    keyword = request.args.get("keyword", "").strip()
+
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 20
+    total_items = count_search_aliases(keyword=keyword)
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+
+    aliases = get_all_search_aliases(
+        keyword=keyword,
+        limit=per_page,
+        offset=offset
+    )
+
+    alias_list = []
+
+    for alias in aliases:
+        alias_dict = dict(alias)
+        alias_dict["created_at_text"] = format_created_at_taiwan_time(
+            alias_dict.get("created_at")
+        )
+        alias_list.append(alias_dict)
 
     return render_template(
         "admin_search_aliases.html",
-        aliases=aliases
+        aliases=alias_list,
+        keyword=keyword,
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
     )
 
 

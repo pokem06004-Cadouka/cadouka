@@ -1186,12 +1186,13 @@ def add_search_alias(alias_keyword, search_keyword, note="", is_active=1):
     return True
 
 
-def get_all_search_aliases(keyword=None):
+def get_all_search_aliases(keyword=None, limit=20, offset=0):
     conn = get_connection()
     cursor = conn.cursor()
 
     sql = """
-        SELECT * FROM search_aliases
+        SELECT *
+        FROM search_aliases
         WHERE 1 = 1
     """
 
@@ -1222,7 +1223,13 @@ def get_all_search_aliases(keyword=None):
             search_keyword
         ])
 
-    sql += " ORDER BY id DESC"
+    sql += """
+        ORDER BY id DESC
+        LIMIT ?
+        OFFSET ?
+    """
+
+    params.extend([limit, offset])
 
     execute_sql(cursor, sql, params)
     aliases = cursor.fetchall()
@@ -1230,6 +1237,48 @@ def get_all_search_aliases(keyword=None):
     conn.close()
     return aliases
 
+def count_search_aliases(keyword=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) AS count
+        FROM search_aliases
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if keyword:
+        if is_postgres():
+            sql += """
+                AND (
+                    alias_keyword ILIKE ?
+                    OR search_keyword ILIKE ?
+                    OR note ILIKE ?
+                )
+            """
+        else:
+            sql += """
+                AND (
+                    alias_keyword LIKE ?
+                    OR search_keyword LIKE ?
+                    OR note LIKE ?
+                )
+            """
+
+        search_keyword = f"%{keyword}%"
+        params.extend([
+            search_keyword,
+            search_keyword,
+            search_keyword
+        ])
+
+    execute_sql(cursor, sql, params)
+    result = cursor.fetchone()
+
+    conn.close()
+    return result["count"] or 0
 
 def get_search_alias_by_id(alias_id):
     conn = get_connection()
