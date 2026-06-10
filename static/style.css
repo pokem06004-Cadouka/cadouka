@@ -4071,3 +4071,493 @@ a {
         text-align: center;
     }
 }
+
+/* =========================
+   Search Alias Tags / Floating Picker
+========================= */
+
+/* 搜尋別名頁：避免 form-card 的 button 全域樣式把小按鈕撐滿 */
+.alias-tag-picker button,
+.alias-tag-create-section button,
+.alias-admin-table button,
+.existing-tag-row button,
+.tag-floating-panel button {
+    width: auto;
+    margin-top: 0;
+}
+
+/* 搜尋欄標籤下拉 */
+.tag-filter-select {
+    min-width: 150px;
+    padding: 11px 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    background: #f9fafb;
+    color: #374151;
+}
+
+.tag-filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.09);
+}
+
+/* 新增別名：標籤選擇器 */
+.alias-tag-picker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tag-menu-button,
+.tag-cell-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
+    color: #2563eb;
+    border-radius: 999px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.tag-menu-button {
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+
+.tag-menu-button:hover,
+.tag-cell-menu-button:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.tag-picker-hint {
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+/* 浮出式標籤面板：不擠壓下方內容 */
+.tag-floating-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(360px, 82vw);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 60;
+    padding: 14px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+}
+
+.tag-floating-panel.is-open {
+    display: block;
+}
+
+.table-tag-panel {
+    top: calc(100% + 8px);
+    left: auto;
+    right: 0;
+    width: 280px;
+}
+
+.tag-floating-title {
+    margin-bottom: 10px;
+    color: #111827;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.tag-option-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.tag-option-item {
+    display: flex !important;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: #f8fafc;
+    cursor: pointer;
+    margin: 0 !important;
+    transition: background 0.15s ease;
+}
+
+.tag-option-item:hover {
+    background: #eef2f7;
+}
+
+.tag-option-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    flex: 0 0 auto;
+}
+
+.tag-dot,
+.alias-table-dot {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.10);
+}
+
+.tag-dot {
+    width: 12px;
+    height: 12px;
+}
+
+.tag-option-name {
+    min-width: 0;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 900;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-empty-text {
+    padding: 12px;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+/* 新增標籤區 */
+.alias-tag-create-section {
+    margin-top: 18px;
+}
+
+.tag-create-form {
+    margin-top: 0;
+}
+
+.tag-create-row {
+    display: grid;
+    grid-template-columns: 110px minmax(180px, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.tag-color-field label,
+.tag-name-field label {
+    display: block;
+    margin-top: 0;
+    margin-bottom: 7px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.tag-color-field input[type="color"] {
+    width: 100%;
+    height: 46px;
+    padding: 5px;
+    border-radius: 14px;
+    cursor: pointer;
+}
+
+.tag-name-field input[type="text"] {
+    height: 46px;
+}
+
+.tag-create-action {
+    display: flex;
+    align-items: flex-end;
+}
+
+.tag-create-action .btn-secondary {
+    min-height: 46px;
+    white-space: nowrap;
+}
+
+/* 已有標籤管理 */
+.existing-tag-row {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.existing-tag-pill-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.existing-tag-pill-form input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 3px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.existing-tag-pill-form input[type="text"] {
+    width: 96px;
+    height: 30px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.mini-save-button,
+.mini-delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    border: none;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.mini-save-button {
+    padding: 0 10px;
+    background: #eef2f7;
+    color: #374151;
+}
+
+.mini-save-button:hover {
+    background: #e5e7eb;
+}
+
+.existing-tag-delete-form {
+    display: inline-flex;
+    margin-left: -4px;
+}
+
+.mini-delete-button {
+    width: 30px;
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.mini-delete-button:hover {
+    background: #fee2e2;
+}
+
+/* 表格標籤欄 */
+.alias-admin-table th:nth-child(1),
+.alias-admin-table td:nth-child(1) {
+    min-width: 180px;
+}
+
+.alias-admin-table th:nth-child(2),
+.alias-admin-table td:nth-child(2) {
+    min-width: 180px;
+}
+
+.alias-admin-table th:nth-child(3),
+.alias-admin-table td:nth-child(3) {
+    min-width: 100px;
+    width: 100px;
+}
+
+.alias-admin-table th:nth-child(4),
+.alias-admin-table td:nth-child(4) {
+    min-width: 86px;
+    white-space: nowrap;
+}
+
+.alias-admin-table th:nth-child(5),
+.alias-admin-table td:nth-child(5) {
+    min-width: 260px;
+}
+
+.alias-admin-table th:nth-child(6),
+.alias-admin-table td:nth-child(6) {
+    min-width: 130px;
+    white-space: nowrap;
+}
+
+.alias-admin-table th:nth-child(7),
+.alias-admin-table td:nth-child(7) {
+    min-width: 210px;
+    white-space: nowrap;
+}
+
+.alias-tag-cell {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 13px) 30px;
+    grid-auto-rows: 13px;
+    gap: 5px;
+    align-items: center;
+    width: max-content;
+    max-width: 100px;
+    min-height: 31px;
+}
+
+.alias-table-dot {
+    width: 11px;
+    height: 11px;
+}
+
+.tag-cell-menu-button {
+    grid-row: 1 / span 2;
+    grid-column: 5;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 13px;
+    align-self: center;
+}
+
+.alias-inline-form input,
+.alias-admin-table input[type="text"],
+.admin-table input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    background: #f9fafb;
+    color: #111827;
+    font-size: 14px;
+}
+
+.alias-inline-form input:focus,
+.alias-admin-table input[type="text"]:focus,
+.admin-table input[type="text"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+}
+
+.alias-action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.alias-action-row .btn-secondary,
+.alias-action-row .btn-add,
+.alias-action-row .btn-danger {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+/* 標籤面板捲軸 */
+.tag-floating-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tag-floating-panel::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 999px;
+}
+
+.tag-floating-panel::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+    .tag-create-row {
+        grid-template-columns: 90px 1fr;
+    }
+
+    .tag-create-action {
+        grid-column: 1 / -1;
+    }
+
+    .tag-create-action .btn-secondary {
+        width: 100%;
+    }
+
+    .tag-filter-select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 760px) {
+    .alias-tag-picker {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .tag-menu-button {
+        width: 100%;
+    }
+
+    .tag-floating-panel {
+        left: 0;
+        right: auto;
+        width: min(320px, calc(100vw - 44px));
+    }
+
+    .table-tag-panel {
+        left: 0;
+        right: auto;
+    }
+
+    .existing-tag-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .existing-tag-pill-form {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 18px;
+    }
+
+    .existing-tag-pill-form input[type="text"] {
+        flex: 1;
+        width: auto;
+    }
+
+    .existing-tag-delete-form {
+        margin-left: 0;
+    }
+
+    .alias-action-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .alias-action-row .btn-secondary,
+    .alias-action-row .btn-add,
+    .alias-action-row .btn-danger {
+        width: 100%;
+        text-align: center;
+    }
+}

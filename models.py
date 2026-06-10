@@ -1152,7 +1152,8 @@ def create_search_aliases_table_if_not_exists():
     conn.close()
 
 
-def add_search_alias(alias_keyword, search_keyword, note="", is_active=1):
+
+def add_search_alias(alias_keyword, search_keyword, note="", is_active=1, tag_ids=None):
     alias_keyword = (alias_keyword or "").strip()
     search_keyword = (search_keyword or "").strip()
     note = (note or "").strip()
@@ -1163,36 +1164,64 @@ def add_search_alias(alias_keyword, search_keyword, note="", is_active=1):
     conn = get_connection()
     cursor = conn.cursor()
 
-    sql = """
-        INSERT INTO search_aliases (
+    if is_postgres():
+        sql = """
+            INSERT INTO search_aliases (
+                alias_keyword,
+                search_keyword,
+                note,
+                is_active
+            )
+            VALUES (?, ?, ?, ?)
+            RETURNING id
+        """
+
+        execute_sql(cursor, sql, [
             alias_keyword,
             search_keyword,
             note,
-            is_active
-        )
-        VALUES (?, ?, ?, ?)
-    """
+            1 if is_active else 0
+        ])
 
-    execute_sql(cursor, sql, [
-        alias_keyword,
-        search_keyword,
-        note,
-        1 if is_active else 0
-    ])
+        new_alias = cursor.fetchone()
+        alias_id = new_alias["id"]
+    else:
+        sql = """
+            INSERT INTO search_aliases (
+                alias_keyword,
+                search_keyword,
+                note,
+                is_active
+            )
+            VALUES (?, ?, ?, ?)
+        """
+
+        execute_sql(cursor, sql, [
+            alias_keyword,
+            search_keyword,
+            note,
+            1 if is_active else 0
+        ])
+
+        alias_id = cursor.lastrowid
 
     conn.commit()
     conn.close()
 
-    return True
+    if tag_ids is not None:
+        set_search_alias_tags(alias_id, tag_ids)
+
+    return alias_id
 
 
-def get_all_search_aliases(keyword=None, limit=20, offset=0):
+
+def get_all_search_aliases(keyword=None, limit=20, offset=0, tag_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
     sql = """
-        SELECT *
-        FROM search_aliases
+        SELECT DISTINCT sa.*
+        FROM search_aliases sa
         WHERE 1 = 1
     """
 
@@ -1202,17 +1231,33 @@ def get_all_search_aliases(keyword=None, limit=20, offset=0):
         if is_postgres():
             sql += """
                 AND (
-                    alias_keyword ILIKE ?
-                    OR search_keyword ILIKE ?
-                    OR note ILIKE ?
+                    sa.alias_keyword ILIKE ?
+                    OR sa.search_keyword ILIKE ?
+                    OR sa.note ILIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM search_alias_tags sat
+                        JOIN search_tags st
+                            ON sat.tag_id = st.id
+                        WHERE sat.alias_id = sa.id
+                        AND st.tag_name ILIKE ?
+                    )
                 )
             """
         else:
             sql += """
                 AND (
-                    alias_keyword LIKE ?
-                    OR search_keyword LIKE ?
-                    OR note LIKE ?
+                    sa.alias_keyword LIKE ?
+                    OR sa.search_keyword LIKE ?
+                    OR sa.note LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM search_alias_tags sat
+                        JOIN search_tags st
+                            ON sat.tag_id = st.id
+                        WHERE sat.alias_id = sa.id
+                        AND st.tag_name LIKE ?
+                    )
                 )
             """
 
@@ -1220,11 +1265,23 @@ def get_all_search_aliases(keyword=None, limit=20, offset=0):
         params.extend([
             search_keyword,
             search_keyword,
+            search_keyword,
             search_keyword
         ])
 
+    if tag_id:
+        sql += """
+            AND EXISTS (
+                SELECT 1
+                FROM search_alias_tags sat_filter
+                WHERE sat_filter.alias_id = sa.id
+                AND sat_filter.tag_id = ?
+            )
+        """
+        params.append(tag_id)
+
     sql += """
-        ORDER BY id DESC
+        ORDER BY sa.id DESC
         LIMIT ?
         OFFSET ?
     """
@@ -1235,15 +1292,18 @@ def get_all_search_aliases(keyword=None, limit=20, offset=0):
     aliases = cursor.fetchall()
 
     conn.close()
-    return aliases
 
-def count_search_aliases(keyword=None):
+    return hydrate_search_aliases_with_tags(aliases)
+
+
+
+def count_search_aliases(keyword=None, tag_id=None):
     conn = get_connection()
     cursor = conn.cursor()
 
     sql = """
-        SELECT COUNT(*) AS count
-        FROM search_aliases
+        SELECT COUNT(DISTINCT sa.id) AS count
+        FROM search_aliases sa
         WHERE 1 = 1
     """
 
@@ -1253,17 +1313,33 @@ def count_search_aliases(keyword=None):
         if is_postgres():
             sql += """
                 AND (
-                    alias_keyword ILIKE ?
-                    OR search_keyword ILIKE ?
-                    OR note ILIKE ?
+                    sa.alias_keyword ILIKE ?
+                    OR sa.search_keyword ILIKE ?
+                    OR sa.note ILIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM search_alias_tags sat
+                        JOIN search_tags st
+                            ON sat.tag_id = st.id
+                        WHERE sat.alias_id = sa.id
+                        AND st.tag_name ILIKE ?
+                    )
                 )
             """
         else:
             sql += """
                 AND (
-                    alias_keyword LIKE ?
-                    OR search_keyword LIKE ?
-                    OR note LIKE ?
+                    sa.alias_keyword LIKE ?
+                    OR sa.search_keyword LIKE ?
+                    OR sa.note LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM search_alias_tags sat
+                        JOIN search_tags st
+                            ON sat.tag_id = st.id
+                        WHERE sat.alias_id = sa.id
+                        AND st.tag_name LIKE ?
+                    )
                 )
             """
 
@@ -1271,14 +1347,28 @@ def count_search_aliases(keyword=None):
         params.extend([
             search_keyword,
             search_keyword,
+            search_keyword,
             search_keyword
         ])
+
+    if tag_id:
+        sql += """
+            AND EXISTS (
+                SELECT 1
+                FROM search_alias_tags sat_filter
+                WHERE sat_filter.alias_id = sa.id
+                AND sat_filter.tag_id = ?
+            )
+        """
+        params.append(tag_id)
 
     execute_sql(cursor, sql, params)
     result = cursor.fetchone()
 
     conn.close()
     return result["count"] or 0
+
+
 
 def get_search_alias_by_id(alias_id):
     conn = get_connection()
@@ -1293,10 +1383,19 @@ def get_search_alias_by_id(alias_id):
     alias = cursor.fetchone()
 
     conn.close()
-    return alias
+
+    if not alias:
+        return alias
+
+    alias_dict = dict(alias)
+    alias_dict["tags"] = get_tags_for_alias(alias_id)
+    alias_dict["tag_ids"] = [tag["id"] for tag in alias_dict["tags"]]
+
+    return alias_dict
 
 
-def update_search_alias(alias_id, alias_keyword, search_keyword, note="", is_active=1):
+
+def update_search_alias(alias_id, alias_keyword, search_keyword, note="", is_active=None, tag_ids=None):
     alias_keyword = (alias_keyword or "").strip()
     search_keyword = (search_keyword or "").strip()
     note = (note or "").strip()
@@ -1307,27 +1406,50 @@ def update_search_alias(alias_id, alias_keyword, search_keyword, note="", is_act
     conn = get_connection()
     cursor = conn.cursor()
 
-    sql = """
-        UPDATE search_aliases
-        SET
-            alias_keyword = ?,
-            search_keyword = ?,
-            note = ?,
-            is_active = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    """
+    if is_active is None:
+        sql = """
+            UPDATE search_aliases
+            SET
+                alias_keyword = ?,
+                search_keyword = ?,
+                note = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """
 
-    execute_sql(cursor, sql, [
-        alias_keyword,
-        search_keyword,
-        note,
-        1 if is_active else 0,
-        alias_id
-    ])
+        params = [
+            alias_keyword,
+            search_keyword,
+            note,
+            alias_id
+        ]
+    else:
+        sql = """
+            UPDATE search_aliases
+            SET
+                alias_keyword = ?,
+                search_keyword = ?,
+                note = ?,
+                is_active = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """
+
+        params = [
+            alias_keyword,
+            search_keyword,
+            note,
+            1 if is_active else 0,
+            alias_id
+        ]
+
+    execute_sql(cursor, sql, params)
 
     conn.commit()
     conn.close()
+
+    if tag_ids is not None:
+        set_search_alias_tags(alias_id, tag_ids)
 
     return True
 
@@ -1353,16 +1475,24 @@ def update_search_alias_active(alias_id, is_active):
     conn.close()
 
 
+
 def delete_search_alias(alias_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    sql = """
+    delete_links_sql = """
+        DELETE FROM search_alias_tags
+        WHERE alias_id = ?
+    """
+
+    execute_sql(cursor, delete_links_sql, [alias_id])
+
+    delete_alias_sql = """
         DELETE FROM search_aliases
         WHERE id = ?
     """
 
-    execute_sql(cursor, sql, [alias_id])
+    execute_sql(cursor, delete_alias_sql, [alias_id])
 
     conn.commit()
     conn.close()
@@ -1401,6 +1531,389 @@ def resolve_search_alias(raw_keyword):
         return alias["search_keyword"]
 
     return keyword
+
+
+
+# =========================
+# Search Tag Functions
+# =========================
+
+def create_search_tags_tables_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_tags (
+            id SERIAL PRIMARY KEY,
+            tag_name TEXT UNIQUE NOT NULL,
+            tag_color TEXT DEFAULT '#3b82f6',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_alias_tags (
+            id SERIAL PRIMARY KEY,
+            alias_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(alias_id, tag_id)
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag_name TEXT UNIQUE NOT NULL,
+            tag_color TEXT DEFAULT '#3b82f6',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_alias_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alias_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(alias_id, tag_id)
+        )
+        """)
+
+    conn.commit()
+    conn.close()
+
+
+def normalize_tag_color(tag_color):
+    tag_color = (tag_color or "#3b82f6").strip()
+
+    if not tag_color.startswith("#"):
+        tag_color = "#" + tag_color
+
+    if len(tag_color) != 7:
+        tag_color = "#3b82f6"
+
+    return tag_color
+
+
+def add_search_tag(tag_name, tag_color="#3b82f6"):
+    tag_name = (tag_name or "").strip()
+    tag_color = normalize_tag_color(tag_color)
+
+    if not tag_name:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        sql = """
+            INSERT INTO search_tags (
+                tag_name,
+                tag_color
+            )
+            VALUES (?, ?)
+            RETURNING id
+        """
+
+        execute_sql(cursor, sql, [
+            tag_name,
+            tag_color
+        ])
+
+        new_tag = cursor.fetchone()
+        tag_id = new_tag["id"]
+    else:
+        sql = """
+            INSERT INTO search_tags (
+                tag_name,
+                tag_color
+            )
+            VALUES (?, ?)
+        """
+
+        execute_sql(cursor, sql, [
+            tag_name,
+            tag_color
+        ])
+
+        tag_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return tag_id
+
+
+def get_all_search_tags(keyword=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM search_tags
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if keyword:
+        if is_postgres():
+            sql += " AND tag_name ILIKE ?"
+        else:
+            sql += " AND tag_name LIKE ?"
+
+        params.append(f"%{keyword}%")
+
+    sql += """
+        ORDER BY tag_name ASC, id ASC
+    """
+
+    execute_sql(cursor, sql, params)
+    tags = cursor.fetchall()
+
+    conn.close()
+    return tags
+
+
+def get_search_tag_by_id(tag_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM search_tags
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [tag_id])
+    tag = cursor.fetchone()
+
+    conn.close()
+    return tag
+
+
+def update_search_tag(tag_id, tag_name, tag_color="#3b82f6"):
+    tag_name = (tag_name or "").strip()
+    tag_color = normalize_tag_color(tag_color)
+
+    if not tag_name:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE search_tags
+        SET
+            tag_name = ?,
+            tag_color = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        tag_name,
+        tag_color,
+        tag_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+    return True
+
+
+def delete_search_tag(tag_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    delete_links_sql = """
+        DELETE FROM search_alias_tags
+        WHERE tag_id = ?
+    """
+
+    execute_sql(cursor, delete_links_sql, [tag_id])
+
+    delete_tag_sql = """
+        DELETE FROM search_tags
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, delete_tag_sql, [tag_id])
+
+    conn.commit()
+    conn.close()
+
+
+def clean_tag_ids(tag_ids, max_tags=8):
+    cleaned = []
+
+    for tag_id in tag_ids or []:
+        try:
+            tag_id_int = int(tag_id)
+        except:
+            continue
+
+        if tag_id_int <= 0:
+            continue
+
+        if tag_id_int not in cleaned:
+            cleaned.append(tag_id_int)
+
+        if len(cleaned) >= max_tags:
+            break
+
+    return cleaned
+
+
+def set_search_alias_tags(alias_id, tag_ids, max_tags=8):
+    cleaned_tag_ids = clean_tag_ids(tag_ids, max_tags=max_tags)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    delete_sql = """
+        DELETE FROM search_alias_tags
+        WHERE alias_id = ?
+    """
+
+    execute_sql(cursor, delete_sql, [alias_id])
+
+    insert_sql = """
+        INSERT INTO search_alias_tags (
+            alias_id,
+            tag_id
+        )
+        VALUES (?, ?)
+    """
+
+    for tag_id in cleaned_tag_ids:
+        try:
+            execute_sql(cursor, insert_sql, [
+                alias_id,
+                tag_id
+            ])
+        except Exception as e:
+            print("搜尋別名標籤寫入失敗：", e)
+            continue
+
+    conn.commit()
+    conn.close()
+
+    return cleaned_tag_ids
+
+
+def get_search_alias_tag_ids(alias_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT tag_id
+        FROM search_alias_tags
+        WHERE alias_id = ?
+        ORDER BY id ASC
+    """
+
+    execute_sql(cursor, sql, [alias_id])
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [row["tag_id"] for row in rows]
+
+
+def get_tags_for_alias(alias_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            st.id,
+            st.tag_name,
+            st.tag_color
+        FROM search_alias_tags sat
+        JOIN search_tags st
+            ON sat.tag_id = st.id
+        WHERE sat.alias_id = ?
+        ORDER BY sat.id ASC
+    """
+
+    execute_sql(cursor, sql, [alias_id])
+    tags = cursor.fetchall()
+
+    conn.close()
+    return [dict(tag) for tag in tags]
+
+
+def get_tags_for_aliases(alias_ids):
+    alias_ids = [
+        int(alias_id)
+        for alias_id in (alias_ids or [])
+        if str(alias_id).isdigit()
+    ]
+
+    if not alias_ids:
+        return {}
+
+    placeholders = ", ".join(["?"] * len(alias_ids))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = f"""
+        SELECT
+            sat.alias_id,
+            st.id,
+            st.tag_name,
+            st.tag_color
+        FROM search_alias_tags sat
+        JOIN search_tags st
+            ON sat.tag_id = st.id
+        WHERE sat.alias_id IN ({placeholders})
+        ORDER BY sat.alias_id ASC, sat.id ASC
+    """
+
+    execute_sql(cursor, sql, alias_ids)
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    result = {}
+
+    for row in rows:
+        alias_id = row["alias_id"]
+
+        if alias_id not in result:
+            result[alias_id] = []
+
+        result[alias_id].append({
+            "id": row["id"],
+            "tag_name": row["tag_name"],
+            "tag_color": row["tag_color"]
+        })
+
+    return result
+
+
+def hydrate_search_aliases_with_tags(aliases):
+    alias_list = []
+
+    for alias in aliases or []:
+        alias_list.append(dict(alias))
+
+    alias_ids = [alias["id"] for alias in alias_list]
+    tags_map = get_tags_for_aliases(alias_ids)
+
+    for alias in alias_list:
+        tags = tags_map.get(alias["id"], [])
+        alias["tags"] = tags
+        alias["tag_ids"] = [tag["id"] for tag in tags]
+
+    return alias_list
 
 # =========================
 # Migration Helpers
@@ -1539,6 +2052,7 @@ def migrate_db():
 
     create_line_logs_table_if_not_exists()
     create_search_aliases_table_if_not_exists()
+    create_search_tags_tables_if_not_exists()
 
 
 # =========================

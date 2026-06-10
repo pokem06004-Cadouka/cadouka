@@ -105,7 +105,13 @@ from models import (
     update_search_alias,
     update_search_alias_active,
     delete_search_alias,
-    resolve_search_alias
+    resolve_search_alias,
+
+    add_search_tag,
+    get_all_search_tags,
+    get_search_tag_by_id,
+    update_search_tag,
+    delete_search_tag
 )
 
 from calculations import calculate_total_cost
@@ -1117,6 +1123,11 @@ def admin_search_aliases_page():
         alias_keyword = request.form.get("alias_keyword", "").strip()
         search_keyword = request.form.get("search_keyword", "").strip()
         note = request.form.get("note", "").strip()
+        tag_ids = request.form.getlist("tag_ids")
+
+        if len(tag_ids) > 8:
+            flash("每筆搜尋別名最多只能選 8 個標籤", "warning")
+            return redirect("/cdk-console/search-aliases")
 
         if not alias_keyword or not search_keyword:
             flash("請輸入俗稱與實際搜尋詞", "warning")
@@ -1127,7 +1138,8 @@ def admin_search_aliases_page():
                 alias_keyword=alias_keyword,
                 search_keyword=search_keyword,
                 note=note,
-                is_active=1
+                is_active=1,
+                tag_ids=tag_ids
             )
             flash("搜尋別名已新增", "success")
         except Exception as e:
@@ -1140,6 +1152,11 @@ def admin_search_aliases_page():
     keyword = request.args.get("keyword", "").strip()
 
     try:
+        selected_tag_id = int(request.args.get("tag_id", 0) or 0)
+    except:
+        selected_tag_id = 0
+
+    try:
         page = int(request.args.get("page", 1))
     except:
         page = 1
@@ -1148,7 +1165,10 @@ def admin_search_aliases_page():
         page = 1
 
     per_page = 20
-    total_items = count_search_aliases(keyword=keyword)
+    total_items = count_search_aliases(
+        keyword=keyword,
+        tag_id=selected_tag_id if selected_tag_id else None
+    )
 
     if total_items == 0:
         total_pages = 1
@@ -1163,28 +1183,108 @@ def admin_search_aliases_page():
     aliases = get_all_search_aliases(
         keyword=keyword,
         limit=per_page,
-        offset=offset
+        offset=offset,
+        tag_id=selected_tag_id if selected_tag_id else None
     )
 
     alias_list = []
 
     for alias in aliases:
         alias_dict = dict(alias)
-        alias_dict["created_at_text"] = format_created_at_taiwan_time(
+        created_at_text = format_created_at_taiwan_time(
             alias_dict.get("created_at")
         )
+        alias_dict["created_at_text"] = created_at_text
+
+        if created_at_text and len(created_at_text) >= 16:
+            alias_dict["created_at_short"] = (
+                f"{created_at_text[2:4]}/{created_at_text[5:7]}/{created_at_text[8:10]} "
+                f"{created_at_text[11:16]}"
+            )
+        else:
+            alias_dict["created_at_short"] = created_at_text
+
         alias_list.append(alias_dict)
+
+    tags = get_all_search_tags()
+    tag_list = [dict(tag) for tag in tags]
 
     return render_template(
         "admin_search_aliases.html",
         aliases=alias_list,
+        tags=tag_list,
         keyword=keyword,
+        selected_tag_id=selected_tag_id,
         current_page=page,
         total_pages=total_pages,
         total_items=total_items,
         per_page=per_page
     )
 
+
+@app.route("/cdk-console/search-tags/add", methods=["POST"])
+@login_required
+@admin_required
+def admin_add_search_tag_page():
+    tag_color = request.form.get("tag_color", "#3b82f6").strip()
+    tag_name = request.form.get("tag_name", "").strip()
+
+    if not tag_name:
+        flash("請輸入標籤名稱", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    try:
+        add_search_tag(tag_name=tag_name, tag_color=tag_color)
+        flash("標籤已新增", "success")
+    except Exception as e:
+        print("新增搜尋標籤錯誤：", e)
+        traceback.print_exc()
+        flash("新增標籤失敗，可能是標籤名稱已存在", "warning")
+
+    return redirect("/cdk-console/search-aliases")
+
+
+@app.route("/cdk-console/search-tags/<int:tag_id>/update", methods=["POST"])
+@login_required
+@admin_required
+def admin_update_search_tag_page(tag_id):
+    tag = get_search_tag_by_id(tag_id)
+
+    if not tag:
+        flash("找不到這個標籤", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    tag_color = request.form.get("tag_color", "#3b82f6").strip()
+    tag_name = request.form.get("tag_name", "").strip()
+
+    if not tag_name:
+        flash("請輸入標籤名稱", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    try:
+        update_search_tag(tag_id=tag_id, tag_name=tag_name, tag_color=tag_color)
+        flash("標籤已更新", "success")
+    except Exception as e:
+        print("更新搜尋標籤錯誤：", e)
+        traceback.print_exc()
+        flash("更新標籤失敗，可能是標籤名稱已存在", "warning")
+
+    return redirect("/cdk-console/search-aliases")
+
+
+@app.route("/cdk-console/search-tags/<int:tag_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_search_tag_page(tag_id):
+    tag = get_search_tag_by_id(tag_id)
+
+    if not tag:
+        flash("找不到這個標籤", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    delete_search_tag(tag_id)
+    flash("標籤已刪除，相關搜尋別名也已移除此標籤", "success")
+    return redirect("/cdk-console/search-aliases")
 
 @app.route("/cdk-console/search-aliases/<int:alias_id>/update", methods=["POST"])
 @login_required
@@ -1193,6 +1293,11 @@ def admin_update_search_alias_page(alias_id):
     alias_keyword = request.form.get("alias_keyword", "").strip()
     search_keyword = request.form.get("search_keyword", "").strip()
     note = request.form.get("note", "").strip()
+    tag_ids = request.form.getlist("tag_ids")
+
+    if len(tag_ids) > 8:
+        flash("每筆搜尋別名最多只能選 8 個標籤", "warning")
+        return redirect("/cdk-console/search-aliases")
 
     if not alias_keyword or not search_keyword:
         flash("請輸入俗稱與實際搜尋詞", "warning")
@@ -1209,7 +1314,8 @@ def admin_update_search_alias_page(alias_id):
             alias_id=alias_id,
             alias_keyword=alias_keyword,
             search_keyword=search_keyword,
-            note=note
+            note=note,
+            tag_ids=tag_ids
         )
         flash("搜尋別名已更新", "success")
     except Exception as e:
@@ -1218,7 +1324,6 @@ def admin_update_search_alias_page(alias_id):
         flash("更新搜尋別名失敗，可能是俗稱已存在", "warning")
 
     return redirect("/cdk-console/search-aliases")
-
 
 @app.route("/cdk-console/search-aliases/<int:alias_id>/toggle", methods=["POST"])
 @login_required

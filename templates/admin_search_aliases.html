@@ -22,7 +22,7 @@
             <p>使用者輸入俗稱時，系統會自動改用實際搜尋詞查詢。</p>
         </div>
 
-        <form action="/cdk-console/search-aliases" method="post">
+        <form action="/cdk-console/search-aliases" method="post" id="new-alias-form">
             <div class="form-grid">
                 <div class="form-field">
                     <label>俗稱 / 關鍵字</label>
@@ -52,6 +52,58 @@
                         placeholder="例如：Van Gogh Pikachu，可留空"
                     >
                 </div>
+
+                <div class="form-field full">
+                    <label>標籤</label>
+
+                    <div class="alias-tag-picker">
+                        <button
+                            type="button"
+                            class="tag-menu-button"
+                            onclick="toggleTagPanel('new-tag-panel')"
+                        >
+                            ☰ 選擇標籤
+                        </button>
+
+                        <span class="tag-picker-hint">
+                            最多可選 8 個標籤
+                        </span>
+
+                        <div class="tag-floating-panel" id="new-tag-panel">
+                            <div class="tag-floating-title">
+                                選擇標籤
+                            </div>
+
+                            {% if all_tags %}
+                                <div class="tag-option-list">
+                                    {% for tag in all_tags %}
+                                        <label class="tag-option-item">
+                                            <input
+                                                type="checkbox"
+                                                name="tag_ids"
+                                                value="{{ tag.id }}"
+                                                data-tag-checkbox="new"
+                                            >
+
+                                            <span
+                                                class="tag-dot"
+                                                style="background: {{ tag.tag_color }};"
+                                            ></span>
+
+                                            <span class="tag-option-name">
+                                                {{ tag.tag_name }}
+                                            </span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="tag-empty-text">
+                                    目前還沒有標籤，請先在下方新增。
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-submit-row">
@@ -62,6 +114,87 @@
         </form>
     </div>
 
+    <div class="form-section alias-tag-create-section">
+        <div class="form-section-title">
+            <h2>新增標籤</h2>
+            <p>建立可重複使用的分類標籤，例如「寶可夢」、「皮卡丘」、「特典」。</p>
+        </div>
+
+        <form action="/cdk-console/search-tags/add" method="post" class="tag-create-form">
+            <div class="tag-create-row">
+                <div class="tag-color-field">
+                    <label>顏色</label>
+                    <input
+                        type="color"
+                        name="tag_color"
+                        value="#3b82f6"
+                        required
+                    >
+                </div>
+
+                <div class="tag-name-field">
+                    <label>標籤名稱</label>
+                    <input
+                        type="text"
+                        name="tag_name"
+                        placeholder="例如：寶可夢"
+                        required
+                    >
+                </div>
+
+                <div class="tag-create-action">
+                    <button type="submit" class="btn-secondary">
+                        新增標籤
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        {% if all_tags %}
+            <div class="existing-tag-row">
+                {% for tag in all_tags %}
+                    <form
+                        action="/cdk-console/search-tags/{{ tag.id }}/update"
+                        method="post"
+                        class="existing-tag-pill-form"
+                    >
+                        <input
+                            type="color"
+                            name="tag_color"
+                            value="{{ tag.tag_color }}"
+                            title="修改顏色"
+                        >
+
+                        <input
+                            type="text"
+                            name="tag_name"
+                            value="{{ tag.tag_name }}"
+                            title="修改名稱"
+                        >
+
+                        <button type="submit" class="mini-save-button">
+                            儲存
+                        </button>
+                    </form>
+
+                    <form
+                        action="/cdk-console/search-tags/{{ tag.id }}/delete"
+                        method="post"
+                        class="existing-tag-delete-form"
+                    >
+                        <button
+                            type="submit"
+                            class="mini-delete-button"
+                            onclick="return confirm('確定要刪除這個標籤嗎？已套用在別名上的關聯也會移除。')"
+                        >
+                            ×
+                        </button>
+                    </form>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
 </div>
 
 <div class="list-tools">
@@ -70,12 +203,24 @@
             type="text"
             name="keyword"
             value="{{ keyword or '' }}"
-            placeholder="搜尋俗稱、實際搜尋詞或備註"
+            placeholder="搜尋俗稱、實際搜尋詞、備註或標籤"
         >
+
+        <select name="tag_id" class="tag-filter-select">
+            <option value="">全部標籤</option>
+            {% for tag in all_tags %}
+                <option
+                    value="{{ tag.id }}"
+                    {% if selected_tag_id and selected_tag_id|string == tag.id|string %}selected{% endif %}
+                >
+                    {{ tag.tag_name }}
+                </option>
+            {% endfor %}
+        </select>
 
         <button type="submit">搜尋</button>
 
-        {% if keyword %}
+        {% if keyword or selected_tag_id %}
             <a href="/cdk-console/search-aliases" class="btn-clear">
                 清除
             </a>
@@ -89,11 +234,12 @@
 
 <div class="admin-table-card">
     <div class="admin-table-scroll">
-        <table class="admin-table">
+        <table class="admin-table alias-admin-table">
             <thead>
                 <tr>
                     <th>俗稱</th>
                     <th>實際搜尋詞</th>
+                    <th>標籤</th>
                     <th>狀態</th>
                     <th>備註</th>
                     <th>建立時間</th>
@@ -125,6 +271,63 @@
                         </td>
 
                         <td>
+                            <div class="alias-tag-cell">
+                                {% for tag in alias.tags %}
+                                    <span
+                                        class="alias-table-dot"
+                                        style="background: {{ tag.tag_color }};"
+                                        title="{{ tag.tag_name }}"
+                                    ></span>
+                                {% endfor %}
+
+                                <button
+                                    type="button"
+                                    class="tag-cell-menu-button"
+                                    onclick="toggleTagPanel('tag-panel-{{ alias.id }}')"
+                                    title="編輯標籤"
+                                >
+                                    ☰
+                                </button>
+
+                                <div class="tag-floating-panel table-tag-panel" id="tag-panel-{{ alias.id }}">
+                                    <div class="tag-floating-title">
+                                        編輯標籤
+                                    </div>
+
+                                    {% if all_tags %}
+                                        <div class="tag-option-list">
+                                            {% for tag in all_tags %}
+                                                <label class="tag-option-item">
+                                                    <input
+                                                        form="alias-update-{{ alias.id }}"
+                                                        type="checkbox"
+                                                        name="tag_ids"
+                                                        value="{{ tag.id }}"
+                                                        data-tag-checkbox="alias-{{ alias.id }}"
+                                                        {% if alias.tag_ids and tag.id in alias.tag_ids %}checked{% endif %}
+                                                    >
+
+                                                    <span
+                                                        class="tag-dot"
+                                                        style="background: {{ tag.tag_color }};"
+                                                    ></span>
+
+                                                    <span class="tag-option-name">
+                                                        {{ tag.tag_name }}
+                                                    </span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="tag-empty-text">
+                                            目前還沒有標籤。
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
                             {% if alias.is_active %}
                                 <span class="status-pill status-holding">啟用</span>
                             {% else %}
@@ -141,7 +344,9 @@
                             >
                         </td>
 
-                        <td>{{ alias.created_at_text }}</td>
+                        <td>
+                            {{ alias.created_at_short or alias.created_at_text }}
+                        </td>
 
                         <td>
                             <div class="alias-action-row">
@@ -192,7 +397,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="empty-cell">
+                        <td colspan="7" class="empty-cell">
                             目前沒有搜尋別名。
                         </td>
                     </tr>
@@ -205,7 +410,7 @@
 <div class="pagination-bar">
     {% if current_page > 1 %}
         <a
-            href="/cdk-console/search-aliases?page={{ current_page - 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+            href="/cdk-console/search-aliases?page={{ current_page - 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if selected_tag_id %}&tag_id={{ selected_tag_id }}{% endif %}"
             class="pagination-btn"
         >
             上一頁
@@ -220,7 +425,7 @@
                 <span class="pagination-number active">{{ p }}</span>
             {% elif p <= 2 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
                 <a
-                    href="/cdk-console/search-aliases?page={{ p }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+                    href="/cdk-console/search-aliases?page={{ p }}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if selected_tag_id %}&tag_id={{ selected_tag_id }}{% endif %}"
                     class="pagination-number"
                 >
                     {{ p }}
@@ -235,7 +440,7 @@
 
     {% if current_page < total_pages %}
         <a
-            href="/cdk-console/search-aliases?page={{ current_page + 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}"
+            href="/cdk-console/search-aliases?page={{ current_page + 1 }}{% if keyword %}&keyword={{ keyword }}{% endif %}{% if selected_tag_id %}&tag_id={{ selected_tag_id }}{% endif %}"
             class="pagination-btn"
         >
             下一頁
@@ -248,5 +453,52 @@
         第 {{ current_page }} / {{ total_pages }} 頁
     </span>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const maxTags = 8;
+
+    window.toggleTagPanel = function (panelId) {
+        const targetPanel = document.getElementById(panelId);
+
+        if (!targetPanel) {
+            return;
+        }
+
+        document.querySelectorAll(".tag-floating-panel").forEach(function (panel) {
+            if (panel !== targetPanel) {
+                panel.classList.remove("is-open");
+            }
+        });
+
+        targetPanel.classList.toggle("is-open");
+    };
+
+    document.addEventListener("click", function (event) {
+        const clickedInsidePanel = event.target.closest(".tag-floating-panel");
+        const clickedButton = event.target.closest(".tag-menu-button, .tag-cell-menu-button");
+
+        if (!clickedInsidePanel && !clickedButton) {
+            document.querySelectorAll(".tag-floating-panel").forEach(function (panel) {
+                panel.classList.remove("is-open");
+            });
+        }
+    });
+
+    document.querySelectorAll("[data-tag-checkbox]").forEach(function (checkbox) {
+        checkbox.addEventListener("change", function () {
+            const group = checkbox.getAttribute("data-tag-checkbox");
+            const checkedItems = document.querySelectorAll(
+                '[data-tag-checkbox="' + group + '"]:checked'
+            );
+
+            if (checkedItems.length > maxTags) {
+                checkbox.checked = false;
+                alert("每筆搜尋別名最多只能選 8 個標籤。");
+            }
+        });
+    });
+});
+</script>
 
 {% endblock %}
