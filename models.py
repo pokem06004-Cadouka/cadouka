@@ -412,19 +412,19 @@ def get_admin_users():
 
             COUNT(c.id) AS total_cards,
 
-            SUM(
+            COALESCE(SUM(
                 CASE
                     WHEN c.status = 'holding' THEN 1
                     ELSE 0
                 END
-            ) AS holding_cards,
+            ), 0) AS holding_cards,
 
-            SUM(
+            COALESCE(SUM(
                 CASE
                     WHEN c.status = 'sold' THEN 1
                     ELSE 0
                 END
-            ) AS sold_cards
+            ), 0) AS sold_cards
 
         FROM users u
         LEFT JOIN cards c
@@ -439,7 +439,7 @@ def get_admin_users():
             u.line_user_id,
             u.created_at
 
-        ORDER BY u.created_at DESC
+        ORDER BY u.id DESC
     """
 
     cursor.execute(sql)

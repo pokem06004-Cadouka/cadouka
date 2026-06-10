@@ -3320,3 +3320,142 @@ a {
         font-size: 15px;
     }
 }
+
+/* =========================
+   Admin Console
+========================= */
+
+.admin-toolbar {
+    margin: 18px 0;
+}
+
+.admin-search-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    max-width: 760px;
+}
+
+.admin-search-form input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid #d9dee8;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 14px;
+}
+
+.admin-table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 22px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.admin-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    min-width: 1180px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.admin-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 800;
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    padding: 16px;
+    border-bottom: 1px solid #eef2f7;
+    color: #111827;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-name-cell {
+    max-width: 240px;
+    white-space: normal !important;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.status-holding {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.status-sold {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.status-admin {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.status-neutral {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.profit-positive {
+    color: #25835f !important;
+    font-weight: 800;
+}
+
+.profit-negative {
+    color: #dc3f3f !important;
+    font-weight: 800;
+}
+
+.empty-cell {
+    text-align: center;
+    color: #6b7280 !important;
+    padding: 36px !important;
+}
+
+@media (max-width: 720px) {
+    .admin-search-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-search-form input,
+    .admin-search-form button,
+    .admin-search-form a {
+        width: 100%;
+    }
+
+    .admin-table-card {
+        border-radius: 18px;
+    }
+}

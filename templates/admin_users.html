@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cdk-console" class="back-link">← 回到後台總覽</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Admin Users</p>
+        <h1>用戶管理</h1>
+        <p class="page-subtitle">查看所有註冊用戶、LINE 綁定狀態與卡牌數量。</p>
+    </div>
+</div>
+
+<div class="admin-table-card">
+    <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>用戶編號</th>
+                    <th>帳號</th>
+                    <th>暱稱</th>
+                    <th>管理者</th>
+                    <th>LINE</th>
+                    <th>總卡牌</th>
+                    <th>持有中</th>
+                    <th>已售出</th>
+                    <th>建立時間</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.user_code or "-" }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.display_name or "-" }}</td>
+
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="status-pill status-admin">是</span>
+                            {% else %}
+                                <span class="status-pill status-neutral">否</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if user.line_user_id %}
+                                <span class="status-pill status-holding">已綁定</span>
+                            {% else %}
+                                <span class="status-pill status-neutral">未綁定</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ user.total_cards or 0 }}</td>
+                        <td>{{ user.holding_cards or 0 }}</td>
+                        <td>{{ user.sold_cards or 0 }}</td>
+                        <td>{{ user.created_at }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="empty-cell">目前沒有用戶資料。</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

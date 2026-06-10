@@ -12,89 +12,104 @@
     </div>
 </div>
 
-<form method="get" action="/cdk-console/cards" class="filter-card">
-    <input
-        type="text"
-        name="keyword"
-        value="{{ keyword or '' }}"
-        placeholder="搜尋卡牌名稱 / 顯示名稱 / 用戶編號 / 帳號 / PSA 狀態"
-    >
+<div class="admin-toolbar">
+    <form method="get" action="/cdk-console/cards" class="admin-search-form">
+        <input
+            type="text"
+            name="keyword"
+            value="{{ keyword or '' }}"
+            placeholder="搜尋卡牌名稱 / 顯示名稱 / 用戶編號 / 帳號 / PSA 狀態"
+        >
 
-    <button type="submit" class="btn-add">搜尋</button>
+        <button type="submit" class="btn-add">搜尋</button>
 
-    {% if keyword %}
-        <a href="/cdk-console/cards" class="btn-secondary">清除</a>
-    {% endif %}
-</form>
+        {% if keyword %}
+            <a href="/cdk-console/cards" class="btn-secondary">清除</a>
+        {% endif %}
+    </form>
+</div>
 
-<div class="table-card">
-    <table class="card-table">
-        <thead>
-            <tr>
-                <th>擁有者</th>
-                <th>用戶編號</th>
-                <th>卡牌名稱</th>
-                <th>顯示名稱</th>
-                <th>Grade</th>
-                <th>狀態</th>
-                <th>購入價格</th>
-                <th>目前市價</th>
-                <th>損益</th>
-                <th>ROI</th>
-                <th>建立時間</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for card in cards %}
+<div class="admin-table-card">
+    <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead>
                 <tr>
-                    <td>{{ card.owner_display_name or card.username or "-" }}</td>
-                    <td>{{ card.user_code or "-" }}</td>
-                    <td>{{ card.card_name }}</td>
-                    <td>{{ card.card_display_name or "-" }}</td>
-                    <td>{{ card.grade or "-" }}</td>
+                    <th>擁有者</th>
+                    <th>用戶編號</th>
+                    <th>卡牌名稱</th>
+                    <th>顯示名稱</th>
+                    <th>Grade</th>
+                    <th>狀態</th>
+                    <th>購入價格</th>
+                    <th>目前市價 / 實收</th>
+                    <th>損益</th>
+                    <th>ROI</th>
+                    <th>建立時間</th>
+                </tr>
+            </thead>
 
-                    <td>
+            <tbody>
+                {% for card in cards %}
+                    <tr>
+                        <td>{{ card.owner_display_name or card.username or "-" }}</td>
+                        <td>{{ card.user_code or "-" }}</td>
+
+                        <td class="admin-name-cell">
+                            {{ card.card_name }}
+                        </td>
+
+                        <td class="admin-name-cell">
+                            {{ card.card_display_name or "-" }}
+                        </td>
+
+                        <td>{{ card.grade or "-" }}</td>
+
+                        <td>
+                            {% if card.status == "sold" %}
+                                <span class="status-pill status-sold">已售出</span>
+                            {% else %}
+                                <span class="status-pill status-holding">持有中</span>
+                            {% endif %}
+                        </td>
+
+                        <td>NT${{ "{:,.0f}".format(card.total_cost or card.buy_price or 0) }}</td>
+
                         {% if card.status == "sold" %}
-                            已售出
+                            <td>NT${{ "{:,.0f}".format(card.net_revenue or 0) }}</td>
+
+                            <td class="{% if (card.realized_profit or 0) >= 0 %}profit-positive{% else %}profit-negative{% endif %}">
+                                {% if (card.realized_profit or 0) >= 0 %}
+                                    +NT${{ "{:,.0f}".format(card.realized_profit or 0) }}
+                                {% else %}
+                                    -NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}
+                                {% endif %}
+                            </td>
+
+                            <td>{{ "{:.2f}".format(card.realized_roi or 0) }}%</td>
                         {% else %}
-                            持有中
+                            <td>NT${{ "{:,.0f}".format(card.current_market_price or 0) }}</td>
+
+                            <td class="{% if (card.unrealized_profit or 0) >= 0 %}profit-positive{% else %}profit-negative{% endif %}">
+                                {% if (card.unrealized_profit or 0) >= 0 %}
+                                    +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
+                                {% else %}
+                                    -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
+                                {% endif %}
+                            </td>
+
+                            <td>{{ "{:.2f}".format(card.roi or 0) }}%</td>
                         {% endif %}
-                    </td>
 
-                    <td>NT${{ "{:,.0f}".format(card.total_cost or card.buy_price or 0) }}</td>
-
-                    {% if card.status == "sold" %}
-                        <td>NT${{ "{:,.0f}".format(card.net_revenue or 0) }}</td>
-                        <td>
-                            {% if (card.realized_profit or 0) >= 0 %}
-                                +NT${{ "{:,.0f}".format(card.realized_profit or 0) }}
-                            {% else %}
-                                -NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}
-                            {% endif %}
-                        </td>
-                        <td>{{ "{:.2f}".format(card.realized_roi or 0) }}%</td>
-                    {% else %}
-                        <td>NT${{ "{:,.0f}".format(card.current_market_price or 0) }}</td>
-                        <td>
-                            {% if (card.unrealized_profit or 0) >= 0 %}
-                                +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
-                            {% else %}
-                                -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
-                            {% endif %}
-                        </td>
-                        <td>{{ "{:.2f}".format(card.roi or 0) }}%</td>
-                    {% endif %}
-
-                    <td>{{ card.created_at }}</td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="11">目前沒有卡牌資料。</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                        <td>{{ card.created_at }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="11" class="empty-cell">目前沒有卡牌資料。</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% endblock %}
