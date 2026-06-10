@@ -17,7 +17,11 @@ from linebot.models import (
     MessageEvent,
     TextMessage,
     TextSendMessage,
-    PostbackEvent
+    PostbackEvent,
+    QuickReply,
+    QuickReplyButton,
+    MessageAction,
+    URIAction
 )
 
 from urllib.parse import parse_qs, unquote
@@ -35,7 +39,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, headers
+from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, headers, BASE_URL
 
 from snkrdunk import (
     search_products,
@@ -156,6 +160,77 @@ def inject_current_user():
         "line_liff_id": LINE_LIFF_ID
     }
 
+# =========================
+# LINE Quick Reply Helpers
+# =========================
+
+def get_base_url():
+    base_url = BASE_URL.strip().rstrip("/")
+
+    if not base_url.startswith("http://") and not base_url.startswith("https://"):
+        base_url = "https://" + base_url
+
+    return base_url
+
+
+def create_main_quick_reply():
+    base_url = get_base_url()
+
+    return QuickReply(
+        items=[
+            QuickReplyButton(
+                action=MessageAction(
+                    label="使用教學",
+                    text="使用教學"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="綁定狀態",
+                    text="綁定狀態"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="解除綁定",
+                    text="解除綁定"
+                )
+            ),
+            QuickReplyButton(
+                action=URIAction(
+                    label="卡牌倉庫",
+                    uri=f"{base_url}/cards"
+                )
+            )
+        ]
+    )
+
+
+def create_unbound_quick_reply():
+    base_url = get_base_url()
+
+    return QuickReply(
+        items=[
+            QuickReplyButton(
+                action=MessageAction(
+                    label="查看教學",
+                    text="使用教學"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="綁定狀態",
+                    text="綁定狀態"
+                )
+            ),
+            QuickReplyButton(
+                action=URIAction(
+                    label="開啟 Cadouka",
+                    uri=f"{base_url}/profile"
+                )
+            )
+        ]
+    )
 
 # =========================
 # Calculation Helpers
@@ -1672,6 +1747,16 @@ def handle_message(event):
         )
         return
 
+    if card_id == "功能":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="Cadouka 常用功能\n請選擇你要使用的功能：",
+                quick_reply=create_main_quick_reply()
+            )
+        )
+        return
+
     if card_id == "使用教學":
         line_bot_api.reply_message(
             event.reply_token,
@@ -1715,7 +1800,8 @@ def handle_message(event):
                     "綁定狀態：查看目前 LINE 是否已綁定 Cadouka 帳號\n"
                     "解除綁定：解除目前 LINE 綁定\n"
                     "使用教學：查看 Cadouka 使用方式"
-                )
+                ),
+                quick_reply=create_main_quick_reply()
             )
         )
         return
@@ -1836,7 +1922,7 @@ def handle_postback(event):
                 jpy_rate,
                 index
             )
-            
+
             line_bot_api.reply_message(
                 event.reply_token,
                 history_flex_message
@@ -1861,10 +1947,11 @@ def handle_postback(event):
                     event.reply_token,
                     TextSendMessage(
                         text=(
-                            "你尚未綁定 Cadouka 帳號。\n"
-                            "請先登入 Cadouka，進入個人資料頁產生 LINE 綁定碼，"
-                            "再回到 LINE 輸入綁定指令。"
-                        )
+                            "你尚未綁定 Cadouka 帳號。\n\n"
+                            "請先登入 Cadouka，進入個人資料頁產生 LINE 綁定連結，"
+                            "再完成 LINE 一鍵綁定。"
+                        ),
+                        quick_reply=create_unbound_quick_reply()
                     )
                 )
                 return
