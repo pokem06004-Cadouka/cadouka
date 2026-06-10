@@ -50,6 +50,20 @@
         >
             PSA8以下
         </a>
+
+        <a
+            href="/cards/{{ card.id }}/pro-history?grade=A"
+            class="pro-history-tab {% if selected_grade == 'A' %}active{% endif %}"
+        >
+            A
+        </a>
+
+        <a
+            href="/cards/{{ card.id }}/pro-history?grade=B"
+            class="pro-history-tab {% if selected_grade == 'B' %}active{% endif %}"
+        >
+            B
+        </a>
     </div>
 
     {% if history_data and history_data.available %}
