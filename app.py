@@ -96,7 +96,15 @@ from models import (
     get_admin_users,
     get_admin_cards,
     add_line_log,
-    get_admin_line_logs
+    get_admin_line_logs,
+
+    add_search_alias,
+    get_all_search_aliases,
+    get_search_alias_by_id,
+    update_search_alias,
+    update_search_alias_active,
+    delete_search_alias,
+    resolve_search_alias
 )
 
 from calculations import calculate_total_cost
@@ -1098,6 +1106,119 @@ def admin_line_logs_page():
         "admin_line_logs.html",
         logs=logs
     )
+
+
+@app.route("/cdk-console/search-aliases", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_search_aliases_page():
+    if request.method == "POST":
+        alias_keyword = request.form.get("alias_keyword", "").strip()
+        search_keyword = request.form.get("search_keyword", "").strip()
+        note = request.form.get("note", "").strip()
+
+        if not alias_keyword or not search_keyword:
+            flash("請輸入俗稱與實際搜尋詞", "warning")
+            return redirect("/cdk-console/search-aliases")
+
+        try:
+            add_search_alias(
+                alias_keyword=alias_keyword,
+                search_keyword=search_keyword,
+                note=note,
+                is_active=1
+            )
+            flash("搜尋別名已新增", "success")
+        except Exception as e:
+            print("新增搜尋別名錯誤：", e)
+            traceback.print_exc()
+            flash("新增搜尋別名失敗，可能是俗稱已存在", "warning")
+
+        return redirect("/cdk-console/search-aliases")
+
+    aliases = get_all_search_aliases()
+
+    return render_template(
+        "admin_search_aliases.html",
+        aliases=aliases
+    )
+
+
+@app.route("/cdk-console/search-aliases/<int:alias_id>/update", methods=["POST"])
+@login_required
+@admin_required
+def admin_update_search_alias_page(alias_id):
+    alias_keyword = request.form.get("alias_keyword", "").strip()
+    search_keyword = request.form.get("search_keyword", "").strip()
+    note = request.form.get("note", "").strip()
+
+    if not alias_keyword or not search_keyword:
+        flash("請輸入俗稱與實際搜尋詞", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    alias = get_search_alias_by_id(alias_id)
+
+    if not alias:
+        flash("找不到這筆搜尋別名", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    try:
+        update_search_alias(
+            alias_id=alias_id,
+            alias_keyword=alias_keyword,
+            search_keyword=search_keyword,
+            note=note
+        )
+        flash("搜尋別名已更新", "success")
+    except Exception as e:
+        print("更新搜尋別名錯誤：", e)
+        traceback.print_exc()
+        flash("更新搜尋別名失敗，可能是俗稱已存在", "warning")
+
+    return redirect("/cdk-console/search-aliases")
+
+
+@app.route("/cdk-console/search-aliases/<int:alias_id>/toggle", methods=["POST"])
+@login_required
+@admin_required
+def admin_toggle_search_alias_page(alias_id):
+    alias = get_search_alias_by_id(alias_id)
+
+    if not alias:
+        flash("找不到這筆搜尋別名", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    try:
+        current_active = int(alias["is_active"] or 0)
+    except:
+        current_active = 0
+
+    new_active = 0 if current_active == 1 else 1
+
+    update_search_alias_active(alias_id, new_active)
+
+    if new_active == 1:
+        flash("搜尋別名已啟用", "success")
+    else:
+        flash("搜尋別名已停用", "success")
+
+    return redirect("/cdk-console/search-aliases")
+
+
+@app.route("/cdk-console/search-aliases/<int:alias_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_search_alias_page(alias_id):
+    alias = get_search_alias_by_id(alias_id)
+
+    if not alias:
+        flash("找不到這筆搜尋別名", "warning")
+        return redirect("/cdk-console/search-aliases")
+
+    delete_search_alias(alias_id)
+
+    flash("搜尋別名已刪除", "success")
+    return redirect("/cdk-console/search-aliases")
 
 # =========================
 # Dashboard / Card Routes
@@ -2374,14 +2495,15 @@ def handle_message(event):
     # =========================
 
     try:
-        products = search_products(card_id)
+        resolved_keyword = resolve_search_alias(card_id)
+        products = search_products(resolved_keyword)
 
         if not products:
             safe_add_line_log(
                 line_user_id=line_user_id,
                 action="search",
                 result="no_result",
-                message="查無商品"
+                message=f"查無商品：{card_id} → {resolved_keyword}"
             )
 
             line_bot_api.reply_message(
@@ -2396,7 +2518,7 @@ def handle_message(event):
             line_user_id=line_user_id,
             action="search",
             result="success",
-            message=f"查價成功，找到 {len(products)} 筆商品"
+            message=f"查價成功：{card_id} → {resolved_keyword}，找到 {len(products)} 筆商品"
         )
 
         flex_message = create_product_image_grid_messages(products)

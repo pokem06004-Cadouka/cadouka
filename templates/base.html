@@ -20,6 +20,11 @@
                     <button type="submit" class="nav-link-button">更新市價</button>
                 </form>
 
+                {% if current_user.is_admin %}
+                    <a href="/cdk-console">後台</a>
+                    <a href="/cdk-console/search-aliases">搜尋別名</a>
+                {% endif %}
+
                 <a href="/profile" class="nav-user-pill">
                     {{ current_user.display_name or current_user.username }}
                 </a>
@@ -81,6 +86,14 @@
                 <form action="/cards/refresh-all-prices" method="post" class="mobile-drawer-form">
                     <button type="submit">更新市價</button>
                 </form>
+
+                {% if current_user.is_admin %}
+                    <a href="/cdk-console">後台總覽</a>
+                    <a href="/cdk-console/users">用戶管理</a>
+                    <a href="/cdk-console/cards">卡牌資料</a>
+                    <a href="/cdk-console/search-aliases">搜尋別名</a>
+                    <a href="/cdk-console/line-logs">LINE 紀錄</a>
+                {% endif %}
 
                 <a href="/profile">個人資料</a>
                 <a href="/logout" class="mobile-drawer-danger">登出</a>

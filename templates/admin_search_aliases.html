@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cdk-console" class="back-link">← 回到後台總覽</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Search Aliases</p>
+        <h1>搜尋別名管理</h1>
+        <p class="page-subtitle">
+            設定 LINE 查價時的俗稱轉換，例如「梵谷皮」→「085 svp」。
+        </p>
+    </div>
+</div>
+
+<div class="form-card form-card-polished">
+
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>新增搜尋別名</h2>
+            <p>使用者輸入俗稱時，系統會自動改用實際搜尋詞查詢。</p>
+        </div>
+
+        <form action="/cdk-console/search-aliases/add" method="post">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>俗稱 / 關鍵字</label>
+                    <input
+                        type="text"
+                        name="alias_keyword"
+                        placeholder="例如：梵谷皮"
+                        required
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label>實際搜尋詞</label>
+                    <input
+                        type="text"
+                        name="search_keyword"
+                        placeholder="例如：085 svp"
+                        required
+                    >
+                </div>
+
+                <div class="form-field full">
+                    <label>備註</label>
+                    <input
+                        type="text"
+                        name="note"
+                        placeholder="例如：Van Gogh Pikachu，可留空"
+                    >
+                </div>
+            </div>
+
+            <div class="form-submit-row">
+                <button type="submit" class="btn-add form-submit-btn">
+                    新增別名
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<div class="admin-table-card">
+    <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>俗稱</th>
+                    <th>實際搜尋詞</th>
+                    <th>狀態</th>
+                    <th>備註</th>
+                    <th>建立時間</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for alias in aliases %}
+                    <tr>
+                        <td>
+                            <form
+                                action="/cdk-console/search-aliases/{{ alias.id }}/update"
+                                method="post"
+                                class="alias-inline-form"
+                            >
+                                <input
+                                    type="text"
+                                    name="alias_keyword"
+                                    value="{{ alias.alias_keyword }}"
+                                    required
+                                >
+                        </td>
+
+                        <td>
+                                <input
+                                    type="text"
+                                    name="search_keyword"
+                                    value="{{ alias.search_keyword }}"
+                                    required
+                                >
+                        </td>
+
+                        <td>
+                            {% if alias.is_active %}
+                                <span class="status-pill status-holding">啟用</span>
+                            {% else %}
+                                <span class="status-pill status-neutral">停用</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                                <input
+                                    type="text"
+                                    name="note"
+                                    value="{{ alias.note or '' }}"
+                                >
+                        </td>
+
+                        <td>{{ alias.created_at }}</td>
+
+                        <td>
+                            <div class="alias-action-row">
+                                <button type="submit" class="btn-secondary">
+                                    儲存
+                                </button>
+                            </form>
+
+                                <form
+                                    action="/cdk-console/search-aliases/{{ alias.id }}/toggle"
+                                    method="post"
+                                    style="display:inline;"
+                                >
+                                    {% if alias.is_active %}
+                                        <button type="submit" class="btn-secondary">
+                                            停用
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn-add">
+                                            啟用
+                                        </button>
+                                    {% endif %}
+                                </form>
+
+                                <form
+                                    action="/cdk-console/search-aliases/{{ alias.id }}/delete"
+                                    method="post"
+                                    style="display:inline;"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn-danger"
+                                        onclick="return confirm('確定要刪除這個搜尋別名嗎？')"
+                                    >
+                                        刪除
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-cell">
+                            目前沒有搜尋別名。
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

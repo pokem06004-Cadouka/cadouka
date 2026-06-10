@@ -125,6 +125,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_aliases (
+            id SERIAL PRIMARY KEY,
+            alias_keyword TEXT UNIQUE NOT NULL,
+            search_keyword TEXT NOT NULL,
+            note TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     else:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -199,6 +211,18 @@ def init_db():
             result TEXT,
             message TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_aliases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alias_keyword TEXT UNIQUE NOT NULL,
+            search_keyword TEXT NOT NULL,
+            note TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
 
@@ -1090,6 +1114,245 @@ def get_admin_line_logs(limit=200):
     conn.close()
     return logs
 
+
+# =========================
+# Search Alias Functions
+# =========================
+
+def create_search_aliases_table_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_aliases (
+            id SERIAL PRIMARY KEY,
+            alias_keyword TEXT UNIQUE NOT NULL,
+            search_keyword TEXT NOT NULL,
+            note TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_aliases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alias_keyword TEXT UNIQUE NOT NULL,
+            search_keyword TEXT NOT NULL,
+            note TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+    conn.commit()
+    conn.close()
+
+
+def add_search_alias(alias_keyword, search_keyword, note="", is_active=1):
+    alias_keyword = (alias_keyword or "").strip()
+    search_keyword = (search_keyword or "").strip()
+    note = (note or "").strip()
+
+    if not alias_keyword or not search_keyword:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        INSERT INTO search_aliases (
+            alias_keyword,
+            search_keyword,
+            note,
+            is_active
+        )
+        VALUES (?, ?, ?, ?)
+    """
+
+    execute_sql(cursor, sql, [
+        alias_keyword,
+        search_keyword,
+        note,
+        1 if is_active else 0
+    ])
+
+    conn.commit()
+    conn.close()
+
+    return True
+
+
+def get_all_search_aliases(keyword=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM search_aliases
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if keyword:
+        if is_postgres():
+            sql += """
+                AND (
+                    alias_keyword ILIKE ?
+                    OR search_keyword ILIKE ?
+                    OR note ILIKE ?
+                )
+            """
+        else:
+            sql += """
+                AND (
+                    alias_keyword LIKE ?
+                    OR search_keyword LIKE ?
+                    OR note LIKE ?
+                )
+            """
+
+        search_keyword = f"%{keyword}%"
+        params.extend([
+            search_keyword,
+            search_keyword,
+            search_keyword
+        ])
+
+    sql += " ORDER BY id DESC"
+
+    execute_sql(cursor, sql, params)
+    aliases = cursor.fetchall()
+
+    conn.close()
+    return aliases
+
+
+def get_search_alias_by_id(alias_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT * FROM search_aliases
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [alias_id])
+    alias = cursor.fetchone()
+
+    conn.close()
+    return alias
+
+
+def update_search_alias(alias_id, alias_keyword, search_keyword, note="", is_active=1):
+    alias_keyword = (alias_keyword or "").strip()
+    search_keyword = (search_keyword or "").strip()
+    note = (note or "").strip()
+
+    if not alias_keyword or not search_keyword:
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE search_aliases
+        SET
+            alias_keyword = ?,
+            search_keyword = ?,
+            note = ?,
+            is_active = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        alias_keyword,
+        search_keyword,
+        note,
+        1 if is_active else 0,
+        alias_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+    return True
+
+
+def update_search_alias_active(alias_id, is_active):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE search_aliases
+        SET
+            is_active = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        1 if is_active else 0,
+        alias_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def delete_search_alias(alias_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        DELETE FROM search_aliases
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [alias_id])
+
+    conn.commit()
+    conn.close()
+
+
+def resolve_search_alias(raw_keyword):
+    """
+    LINE 查價用：
+    先用使用者輸入的文字去查 search_aliases。
+    找到啟用中的完全符合別名，就回傳 search_keyword。
+    找不到就回傳原本輸入。
+    """
+    keyword = (raw_keyword or "").strip()
+
+    if not keyword:
+        return keyword
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT search_keyword
+        FROM search_aliases
+        WHERE is_active = 1
+        AND LOWER(alias_keyword) = LOWER(?)
+        ORDER BY id DESC
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [keyword])
+    alias = cursor.fetchone()
+
+    conn.close()
+
+    if alias:
+        return alias["search_keyword"]
+
+    return keyword
+
 # =========================
 # Migration Helpers
 # =========================
@@ -1226,6 +1489,7 @@ def migrate_db():
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
 
     create_line_logs_table_if_not_exists()
+    create_search_aliases_table_if_not_exists()
 
 
 # =========================
