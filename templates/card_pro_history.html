@@ -15,6 +15,7 @@
 </div>
 
 <div class="cost-breakdown detail-section-card pro-analysis-card">
+
     <div class="pro-compact-title-row">
         <div>
             <h2>最近 10 筆成交紀錄</h2>
@@ -28,9 +29,33 @@
         {% endif %}
     </div>
 
+    <div class="pro-history-tabs">
+        <a
+            href="/cards/{{ card.id }}/pro-history?grade=PSA10"
+            class="pro-history-tab {% if selected_grade == 'PSA10' %}active{% endif %}"
+        >
+            PSA10
+        </a>
+
+        <a
+            href="/cards/{{ card.id }}/pro-history?grade=PSA9"
+            class="pro-history-tab {% if selected_grade == 'PSA9' %}active{% endif %}"
+        >
+            PSA9
+        </a>
+
+        <a
+            href="/cards/{{ card.id }}/pro-history?grade=PSA8以下"
+            class="pro-history-tab {% if selected_grade == 'PSA8以下' %}active{% endif %}"
+        >
+            PSA8以下
+        </a>
+    </div>
+
     {% if history_data and history_data.available %}
         {% if history_data.prices %}
-            <div class="pro-summary-table-wrap">
+
+            <div class="pro-history-desktop">
                 <table class="pro-history-table">
                     <thead>
                         <tr>
@@ -57,6 +82,26 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="pro-history-mobile">
+                {% for item in history_data.prices %}
+                    <div class="pro-history-mobile-card">
+                        <div class="pro-history-mobile-top">
+                            <span>{{ item.date or "-" }}</span>
+                            <strong>{{ item.grade or selected_grade }}</strong>
+                        </div>
+
+                        <div class="pro-history-mobile-price">
+                            ¥{{ "{:,.0f}".format(item.price_jpy or 0) }}
+                        </div>
+
+                        <div class="pro-history-mobile-twd">
+                            NT${{ "{:,.0f}".format(item.price_twd or 0) }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
         {% else %}
             <div class="pro-market-empty">
                 目前沒有 {{ selected_grade }} 歷史成交資料。
@@ -67,12 +112,7 @@
             {{ history_data.message if history_data else "目前無法取得歷史成交資料。" }}
         </div>
     {% endif %}
-</div>
 
-<div class="form-submit-row" style="justify-content: flex-start; margin-top: 20px;">
-    <a href="/cards/{{ card.id }}/pro-history?grade=PSA10" class="btn-secondary">PSA10</a>
-    <a href="/cards/{{ card.id }}/pro-history?grade=PSA9" class="btn-secondary">PSA9</a>
-    <a href="/cards/{{ card.id }}/pro-history?grade=PSA8以下" class="btn-secondary">PSA8以下</a>
 </div>
 
 {% endblock %}
