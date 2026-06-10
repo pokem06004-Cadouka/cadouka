@@ -91,7 +91,9 @@ from models import (
 
     get_admin_overview_stats,
     get_admin_users,
-    get_admin_cards
+    get_admin_cards,
+    add_line_log,
+    get_admin_line_logs
 )
 
 from calculations import calculate_total_cost
@@ -288,6 +290,26 @@ def create_unbound_quick_reply():
             )
         ]
     )
+
+# =========================
+# LINE Log Helper
+# =========================
+
+def safe_add_line_log(line_user_id=None, action="", result="", message=""):
+    try:
+        user = get_user_by_line_user_id(line_user_id) if line_user_id else None
+        user_id = user["id"] if user else None
+
+        add_line_log(
+            line_user_id=line_user_id,
+            user_id=user_id,
+            action=action,
+            result=result,
+            message=message
+        )
+    except Exception as e:
+        print("LINE log 寫入失敗：", e)
+        traceback.print_exc()
 
 # =========================
 # Calculation Helpers
@@ -722,6 +744,13 @@ def line_liff_bind_confirm_page():
 
     bind_line_user_to_account(user["id"], line_user_id)
 
+    safe_add_line_log(
+        line_user_id=line_user_id,
+        action="bind_line",
+        result="success",
+        message="LINE 一鍵綁定成功"
+    )
+
     display_name = user["display_name"] or user["username"]
 
     user_code = user["user_code"] if user.get("user_code") else "-"
@@ -792,6 +821,17 @@ def admin_cards_page():
         "admin_cards.html",
         cards=card_list,
         keyword=keyword
+    )
+
+@app.route("/cdk-console/line-logs")
+@login_required
+@admin_required
+def admin_line_logs_page():
+    logs = get_admin_line_logs(limit=200)
+
+    return render_template(
+        "admin_line_logs.html",
+        logs=logs
     )
 
 # =========================
@@ -1785,6 +1825,13 @@ def handle_message(event):
 
         bind_line_user_to_account(user["id"], line_user_id)
 
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="bind_line",
+            result="success",
+            message="LINE 備用綁定碼綁定成功"
+        )
+
         display_name = user["display_name"] or user["username"]
 
         line_bot_api.reply_message(
@@ -1797,11 +1844,25 @@ def handle_message(event):
         user = get_user_by_line_user_id(line_user_id)
 
         if not user:
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="binding_status",
+                result="unbound",
+                message="查看綁定狀態：尚未綁定"
+            )
+
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="你目前尚未綁定 Cadouka 帳號。")
             )
             return
+
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="binding_status",
+            result="success",
+            message="查看綁定狀態"
+        )
 
         display_name = user["display_name"] or user["username"]
 
@@ -1863,6 +1924,13 @@ def handle_message(event):
                 TextSendMessage(text="你目前沒有綁定任何 Cadouka 帳號。")
             )
             return
+
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="unbind_line",
+            result="success",
+            message="解除 LINE 綁定"
+        )
 
         unbind_line_user(line_user_id)
 
@@ -1978,6 +2046,13 @@ def handle_message(event):
         products = search_products(card_id)
 
         if not products:
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="search",
+                result="no_result",
+                message="查無商品"
+            )
+
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="查無商品，請換一個卡號試試看。")
@@ -1985,6 +2060,13 @@ def handle_message(event):
             return
 
         user_products[line_user_id] = products
+
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="search",
+            result="success",
+            message=f"查價成功，找到 {len(products)} 筆商品"
+        )
 
         flex_message = create_product_image_grid_messages(products)
 
@@ -1996,6 +2078,13 @@ def handle_message(event):
     except Exception as e:
         print("搜尋錯誤：", e)
         traceback.print_exc()
+
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="search",
+            result="failed",
+            message="搜尋時發生錯誤"
+        )
 
         line_bot_api.reply_message(
             event.reply_token,
@@ -2016,6 +2105,13 @@ def handle_postback(event):
         products = user_products.get(line_user_id)
 
         if not products:
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action=action or "postback",
+                result="failed",
+                message="找不到搜尋結果，請重新輸入"
+            )
+
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="找不到搜尋結果，請重新輸入。")
@@ -2046,6 +2142,13 @@ def handle_postback(event):
                 prices_by_conditions,
                 jpy_rate,
                 index
+            )
+
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="select_product",
+                result="success",
+                message="點選商品查看行情"
             )
 
             line_bot_api.reply_message(
@@ -2087,6 +2190,13 @@ def handle_postback(event):
                 index
             )
 
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="history",
+                result="success",
+                message=f"查看 {selected_grade} 歷史成交"
+            )
+
             line_bot_api.reply_message(
                 event.reply_token,
                 history_flex_message
@@ -2107,6 +2217,13 @@ def handle_postback(event):
             user = get_user_by_line_user_id(line_user_id)
 
             if not user:
+                safe_add_line_log(
+                    line_user_id=line_user_id,
+                    action="add_card",
+                    result="failed",
+                    message="未綁定，無法加入卡牌"
+                )
+
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
@@ -2180,6 +2297,13 @@ def handle_postback(event):
 
             add_card(card_data)
 
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="add_card",
+                result="success",
+                message=f"加入 {selected_grade or '未填'} 卡牌"
+            )
+
             display_name = user["display_name"] or user["username"]
 
             line_bot_api.reply_message(
@@ -2200,6 +2324,13 @@ def handle_postback(event):
     except Exception as e:
         print("選擇商品錯誤：", e)
         traceback.print_exc()
+
+        safe_add_line_log(
+            line_user_id=line_user_id,
+            action="postback",
+            result="failed",
+            message="查詢時發生錯誤"
+        )
 
         line_bot_api.reply_message(
             event.reply_token,

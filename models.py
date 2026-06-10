@@ -112,6 +112,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS line_logs (
+            id SERIAL PRIMARY KEY,
+            line_user_id TEXT,
+            user_id INTEGER,
+            action TEXT,
+            result TEXT,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     else:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -172,6 +184,18 @@ def init_db():
             product_url TEXT,
             note TEXT,
 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS line_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            line_user_id TEXT,
+            user_id INTEGER,
+            action TEXT,
+            result TEXT,
+            message TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -947,6 +971,98 @@ def get_admin_cards(keyword=None):
     conn.close()
     return cards
 
+
+# =========================
+# LINE Log Functions
+# =========================
+
+def create_line_logs_table_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS line_logs (
+            id SERIAL PRIMARY KEY,
+            line_user_id TEXT,
+            user_id INTEGER,
+            action TEXT,
+            result TEXT,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS line_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            line_user_id TEXT,
+            user_id INTEGER,
+            action TEXT,
+            result TEXT,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+    conn.commit()
+    conn.close()
+
+
+def add_line_log(line_user_id=None, user_id=None, action="", result="", message=""):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        INSERT INTO line_logs (
+            line_user_id,
+            user_id,
+            action,
+            result,
+            message
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """
+
+    execute_sql(cursor, sql, [
+        line_user_id or "",
+        user_id,
+        action,
+        result,
+        message
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def get_admin_line_logs(limit=200):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            l.id,
+            l.action,
+            l.result,
+            l.message,
+            l.created_at,
+            u.user_code,
+            u.username,
+            u.display_name
+        FROM line_logs l
+        LEFT JOIN users u
+            ON l.user_id = u.id
+        ORDER BY l.created_at DESC
+        LIMIT ?
+    """
+
+    execute_sql(cursor, sql, [limit])
+    logs = cursor.fetchall()
+
+    conn.close()
+    return logs
+
 # =========================
 # Migration Helpers
 # =========================
@@ -1080,6 +1196,8 @@ def migrate_db():
     add_column_if_not_exists("sell_other_fee", "REAL DEFAULT 0")
     add_column_if_not_exists("net_revenue", "REAL DEFAULT 0")
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
+
+    create_line_logs_table_if_not_exists()
 
 
 # =========================
