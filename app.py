@@ -21,7 +21,9 @@ from linebot.models import (
     QuickReply,
     QuickReplyButton,
     MessageAction,
-    URIAction
+    URIAction,
+    TemplateSendMessage,
+    ConfirmTemplate
 )
 
 from urllib.parse import parse_qs, unquote
@@ -1718,13 +1720,32 @@ def handle_message(event):
 
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(
-                text=(
-                    "你確定要解除 LINE 與 Cadouka 帳號的綁定嗎？\n\n"
-                    "解除後，將無法從 LINE 直接加入 Cadouka。\n"
-                    "若確定解除，請輸入：確認解除綁定"
+            TemplateSendMessage(
+                alt_text="解除綁定確認",
+                template=ConfirmTemplate(
+                    text=(
+                        "確定要解除綁定嗎？\n"
+                        "解除後，將無法從 LINE 直接加入 Cadouka。"
+                    ),
+                    actions=[
+                        MessageAction(
+                            label="取消",
+                            text="取消解除綁定"
+                        ),
+                        MessageAction(
+                            label="確認解除",
+                            text="確認解除綁定"
+                        )
+                    ]
                 )
             )
+        )
+        return
+
+    if card_id == "取消解除綁定":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="已取消解除綁定。")
         )
         return
 
