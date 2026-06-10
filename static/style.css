@@ -3982,3 +3982,97 @@ a {
         display: none;
     }
 }
+
+/* =========================
+   Pro History Mobile Cards
+========================= */
+
+.pro-history-mobile {
+    display: none;
+}
+
+.pro-history-mobile-card {
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.pro-history-mobile-card + .pro-history-mobile-card {
+    margin-top: 10px;
+}
+
+.pro-history-mobile-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.pro-history-mobile-top span {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.pro-history-mobile-top strong {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.pro-history-mobile-price {
+    color: #111827;
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.pro-history-mobile-twd {
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.pro-history-grade-switch {
+    justify-content: flex-start;
+    margin-top: 20px;
+}
+
+@media (max-width: 720px) {
+    .pro-history-desktop {
+        display: none;
+    }
+
+    .pro-history-mobile {
+        display: block;
+    }
+
+    .pro-history-grade-switch {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .pro-history-grade-switch a {
+        width: 100%;
+        text-align: center;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+@media (min-width: 721px) {
+    .pro-history-desktop {
+        display: block;
+    }
+
+    .pro-history-mobile {
+        display: none;
+    }
+}
