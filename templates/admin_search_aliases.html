@@ -22,7 +22,7 @@
             <p>使用者輸入俗稱時，系統會自動改用實際搜尋詞查詢。</p>
         </div>
 
-        <form action="/cdk-console/search-aliases/add" method="post">
+        <form action="/cdk-console/search-aliases" method="post">
             <div class="form-grid">
                 <div class="form-field">
                     <label>俗稱 / 關鍵字</label>
@@ -82,26 +82,23 @@
                 {% for alias in aliases %}
                     <tr>
                         <td>
-                            <form
-                                action="/cdk-console/search-aliases/{{ alias.id }}/update"
-                                method="post"
-                                class="alias-inline-form"
+                            <input
+                                form="alias-update-{{ alias.id }}"
+                                type="text"
+                                name="alias_keyword"
+                                value="{{ alias.alias_keyword }}"
+                                required
                             >
-                                <input
-                                    type="text"
-                                    name="alias_keyword"
-                                    value="{{ alias.alias_keyword }}"
-                                    required
-                                >
                         </td>
 
                         <td>
-                                <input
-                                    type="text"
-                                    name="search_keyword"
-                                    value="{{ alias.search_keyword }}"
-                                    required
-                                >
+                            <input
+                                form="alias-update-{{ alias.id }}"
+                                type="text"
+                                name="search_keyword"
+                                value="{{ alias.search_keyword }}"
+                                required
+                            >
                         </td>
 
                         <td>
@@ -113,21 +110,29 @@
                         </td>
 
                         <td>
-                                <input
-                                    type="text"
-                                    name="note"
-                                    value="{{ alias.note or '' }}"
-                                >
+                            <input
+                                form="alias-update-{{ alias.id }}"
+                                type="text"
+                                name="note"
+                                value="{{ alias.note or '' }}"
+                            >
                         </td>
 
                         <td>{{ alias.created_at }}</td>
 
                         <td>
                             <div class="alias-action-row">
-                                <button type="submit" class="btn-secondary">
-                                    儲存
-                                </button>
-                            </form>
+
+                                <form
+                                    id="alias-update-{{ alias.id }}"
+                                    action="/cdk-console/search-aliases/{{ alias.id }}/update"
+                                    method="post"
+                                    style="display:inline;"
+                                >
+                                    <button type="submit" class="btn-secondary">
+                                        儲存
+                                    </button>
+                                </form>
 
                                 <form
                                     action="/cdk-console/search-aliases/{{ alias.id }}/toggle"
@@ -158,6 +163,7 @@
                                         刪除
                                     </button>
                                 </form>
+
                             </div>
                         </td>
                     </tr>
