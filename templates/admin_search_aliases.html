@@ -87,7 +87,7 @@
 
                                             <span
                                                 class="tag-dot"
-                                                style="background: {{ tag.tag_color }};"
+                                                style="background-color: {{ tag.tag_color }};"
                                             ></span>
 
                                             <span class="tag-option-name">
@@ -112,87 +112,106 @@
                 </button>
             </div>
         </form>
-    </div>
 
-    <div class="form-section alias-tag-create-section">
-        <div class="form-section-title">
-            <h2>新增標籤</h2>
-            <p>建立可重複使用的分類標籤，例如「寶可夢」、「皮卡丘」、「特典」。</p>
-        </div>
-
-        <form action="/cdk-console/search-tags/add" method="post" class="tag-create-form">
-            <div class="tag-create-row">
-                <div class="tag-color-field">
-                    <label>顏色</label>
-                    <input
-                        type="color"
-                        name="tag_color"
-                        value="#3b82f6"
-                        required
-                    >
-                </div>
-
-                <div class="tag-name-field">
-                    <label>標籤名稱</label>
-                    <input
-                        type="text"
-                        name="tag_name"
-                        placeholder="例如：寶可夢"
-                        required
-                    >
-                </div>
-
-                <div class="tag-create-action">
-                    <button type="submit" class="btn-secondary">
-                        新增標籤
-                    </button>
-                </div>
+        <div class="alias-tag-create-section inside-alias-card">
+            <div class="form-section-title small">
+                <h2>新增標籤</h2>
+                <p>建立可重複使用的分類標籤，例如「寶可夢」、「皮卡丘」、「特典」。</p>
             </div>
-        </form>
 
-        {% if all_tags %}
-            <div class="existing-tag-row">
-                {% for tag in all_tags %}
-                    <form
-                        action="/cdk-console/search-tags/{{ tag.id }}/update"
-                        method="post"
-                        class="existing-tag-pill-form"
-                    >
+            <form action="/cdk-console/search-tags/add" method="post" class="tag-create-form">
+                <div class="tag-create-row">
+                    <div class="tag-color-field">
+                        <label>顏色</label>
                         <input
                             type="color"
                             name="tag_color"
-                            value="{{ tag.tag_color }}"
-                            title="修改顏色"
+                            id="newTagColor"
+                            value="#3b82f6"
+                            required
                         >
+                    </div>
 
+                    <div class="tag-name-field">
+                        <label>標籤名稱</label>
                         <input
                             type="text"
                             name="tag_name"
-                            value="{{ tag.tag_name }}"
-                            title="修改名稱"
+                            placeholder="例如：寶可夢"
+                            required
                         >
+                    </div>
 
-                        <button type="submit" class="mini-save-button">
-                            儲存
+                    <div class="tag-create-action">
+                        <button type="submit" class="btn-secondary">
+                            新增標籤
                         </button>
-                    </form>
+                    </div>
+                </div>
 
-                    <form
-                        action="/cdk-console/search-tags/{{ tag.id }}/delete"
-                        method="post"
-                        class="existing-tag-delete-form"
-                    >
-                        <button
-                            type="submit"
-                            class="mini-delete-button"
-                            onclick="return confirm('確定要刪除這個標籤嗎？已套用在別名上的關聯也會移除。')"
-                        >
-                            ×
-                        </button>
-                    </form>
-                {% endfor %}
-            </div>
-        {% endif %}
+                <div class="preset-color-row">
+                    <span>常用顏色</span>
+
+                    <button type="button" style="background:#ef4444;" onclick="setTagColor('#ef4444')" title="紅色"></button>
+                    <button type="button" style="background:#f97316;" onclick="setTagColor('#f97316')" title="橘色"></button>
+                    <button type="button" style="background:#facc15;" onclick="setTagColor('#facc15')" title="黃色"></button>
+                    <button type="button" style="background:#22c55e;" onclick="setTagColor('#22c55e')" title="綠色"></button>
+                    <button type="button" style="background:#3b82f6;" onclick="setTagColor('#3b82f6')" title="藍色"></button>
+                    <button type="button" style="background:#8b5cf6;" onclick="setTagColor('#8b5cf6')" title="紫色"></button>
+                    <button type="button" style="background:#ec4899;" onclick="setTagColor('#ec4899')" title="粉色"></button>
+                    <button type="button" style="background:#64748b;" onclick="setTagColor('#64748b')" title="灰色"></button>
+                    <button type="button" style="background:#111827;" onclick="setTagColor('#111827')" title="黑色"></button>
+                    <button type="button" style="background:#14b8a6;" onclick="setTagColor('#14b8a6')" title="青綠色"></button>
+                </div>
+            </form>
+
+            {% if all_tags %}
+                <div class="existing-tag-row">
+                    {% for tag in all_tags %}
+                        <div class="existing-tag-combo">
+                            <form
+                                action="/cdk-console/search-tags/{{ tag.id }}/update"
+                                method="post"
+                                class="existing-tag-pill-form"
+                            >
+                                <input
+                                    type="color"
+                                    name="tag_color"
+                                    value="{{ tag.tag_color }}"
+                                    title="修改顏色"
+                                >
+
+                                <input
+                                    type="text"
+                                    name="tag_name"
+                                    value="{{ tag.tag_name }}"
+                                    title="修改名稱"
+                                >
+
+                                <button type="submit" class="mini-save-button">
+                                    儲存
+                                </button>
+                            </form>
+
+                            <form
+                                action="/cdk-console/search-tags/{{ tag.id }}/delete"
+                                method="post"
+                                class="existing-tag-delete-form"
+                            >
+                                <button
+                                    type="submit"
+                                    class="mini-delete-button"
+                                    onclick="return confirm('確定要刪除這個標籤嗎？已套用在別名上的關聯也會移除。')"
+                                >
+                                    ×
+                                </button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
     </div>
 
 </div>
@@ -272,13 +291,15 @@
 
                         <td>
                             <div class="alias-tag-cell">
-                                {% for tag in alias.tags %}
-                                    <span
-                                        class="alias-table-dot"
-                                        style="background: {{ tag.tag_color }};"
-                                        title="{{ tag.tag_name }}"
-                                    ></span>
-                                {% endfor %}
+                                <div class="alias-dot-grid">
+                                    {% for tag in alias.tags %}
+                                        <span
+                                            class="alias-table-dot"
+                                            style="background-color: {{ tag.tag_color }};"
+                                            title="{{ tag.tag_name }}"
+                                        ></span>
+                                    {% endfor %}
+                                </div>
 
                                 <button
                                     type="button"
@@ -309,7 +330,7 @@
 
                                                     <span
                                                         class="tag-dot"
-                                                        style="background: {{ tag.tag_color }};"
+                                                        style="background-color: {{ tag.tag_color }};"
                                                     ></span>
 
                                                     <span class="tag-option-name">
@@ -457,6 +478,14 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const maxTags = 8;
+
+    window.setTagColor = function (color) {
+        const colorInput = document.getElementById("newTagColor");
+
+        if (colorInput) {
+            colorInput.value = color;
+        }
+    };
 
     window.toggleTagPanel = function (panelId) {
         const targetPanel = document.getElementById(panelId);

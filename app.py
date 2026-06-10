@@ -1212,6 +1212,7 @@ def admin_search_aliases_page():
     return render_template(
         "admin_search_aliases.html",
         aliases=alias_list,
+        all_tags=tag_list,
         tags=tag_list,
         keyword=keyword,
         selected_tag_id=selected_tag_id,

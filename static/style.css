@@ -4561,3 +4561,189 @@ a {
         text-align: center;
     }
 }
+
+/* =========================
+   Search Alias Tags - Final Tuning
+========================= */
+
+.inside-alias-card {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #eef2f7;
+}
+
+.form-section-title.small {
+    margin-bottom: 16px;
+}
+
+.form-section-title.small h2 {
+    font-size: 17px;
+}
+
+.tag-create-row {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.tag-color-field label,
+.tag-name-field label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #374151;
+}
+
+.tag-color-field input[type="color"] {
+    width: 100%;
+    height: 46px;
+    padding: 5px;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.tag-name-field input {
+    width: 100%;
+    height: 46px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    background: #fbfdff;
+    font-size: 15px;
+}
+
+.tag-create-action .btn-secondary {
+    height: 46px;
+    padding: 0 18px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.preset-color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.preset-color-row span {
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 900;
+    margin-right: 2px;
+}
+
+.preset-color-row button {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 999px !important;
+    box-shadow: 0 0 0 1px #d1d5db, 0 4px 10px rgba(15, 23, 42, 0.10);
+    cursor: pointer;
+}
+
+.preset-color-row button:hover {
+    transform: translateY(-1px);
+}
+
+.existing-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.existing-tag-combo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 5px;
+}
+
+.existing-tag-pill-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.existing-tag-pill-form input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 2px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.existing-tag-pill-form input[type="text"] {
+    width: 92px;
+    border: none;
+    background: transparent;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 4px;
+}
+
+.existing-tag-pill-form input[type="text"]:focus {
+    outline: none;
+    background: #ffffff;
+    border-radius: 999px;
+}
+
+.mini-save-button,
+.mini-delete-button {
+    width: auto !important;
+    height: 28px !important;
+    padding: 0 9px !important;
+    margin: 0 !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+}
+
+.mini-save-button {
+    background: #eef2f7 !important;
+    color: #374151 !important;
+}
+
+.mini-delete-button {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+}
+
+@media (max-width: 760px) {
+    .tag-create-row {
+        grid-template-columns: 1fr;
+    }
+
+    .tag-create-action .btn-secondary {
+        width: 100%;
+    }
+
+    .existing-tag-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .existing-tag-combo {
+        justify-content: space-between;
+        border-radius: 18px;
+    }
+
+    .existing-tag-pill-form input[type="text"] {
+        width: 100%;
+    }
+}
