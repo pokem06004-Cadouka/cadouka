@@ -87,6 +87,7 @@ from models import (
     bind_line_user_to_account,
     unbind_line_user,
     delete_user_account,
+    update_user_admin_status,
 
     get_admin_overview_stats,
     get_admin_users,
@@ -440,6 +441,31 @@ def should_skip_price_update(price_updated_at, cooldown_hours=6):
         return diff < timedelta(hours=cooldown_hours)
     except:
         return False
+
+@app.route("/cdk-setup-admin")
+def setup_admin_page():
+    token = request.args.get("token", "").strip()
+    username = request.args.get("username", "").strip()
+
+    expected_token = os.getenv("ADMIN_SETUP_TOKEN", "").strip()
+
+    if not expected_token:
+        return "ADMIN_SETUP_TOKEN 尚未設定", 500
+
+    if token != expected_token:
+        return "Token 錯誤", 403
+
+    if not username:
+        return "請提供 username，例如：/cdk-setup-admin?token=你的token&username=你的帳號", 400
+
+    user = get_user_by_username(username)
+
+    if not user:
+        return f"找不到使用者：{username}", 404
+
+    update_user_admin_status(user["id"], True)
+
+    return f"已將 {username} 設為管理者。請重新登入後進入 /cdk-console"
 
 # =========================
 # Auth Routes
