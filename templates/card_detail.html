@@ -266,7 +266,9 @@
         <div class="pro-unlocked-box pro-unlocked-box-compact">
 
             {% if pro_market_summary and pro_market_summary.available %}
-                <div class="pro-summary-table-wrap">
+
+                <!-- 電腦版：表格 -->
+                <div class="pro-summary-table-wrap pro-desktop-summary">
                     <table class="pro-summary-table">
                         <thead>
                             <tr>
@@ -328,6 +330,71 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- 手機版：分頁卡片 -->
+                <div class="pro-mobile-summary">
+                    <div class="pro-mobile-tabs">
+                        {% for item in pro_market_summary.grades %}
+                            <button
+                                type="button"
+                                class="pro-mobile-tab {% if loop.first %}active{% endif %}"
+                                data-grade-tab="{{ loop.index0 }}"
+                            >
+                                {{ item.grade }}
+                            </button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="pro-mobile-panels">
+                        {% for item in pro_market_summary.grades %}
+                            <div
+                                class="pro-mobile-panel {% if loop.first %}active{% endif %}"
+                                data-grade-panel="{{ loop.index0 }}"
+                            >
+                                <div class="pro-mobile-panel-header">
+                                    <h3>{{ item.grade }}</h3>
+                                    <span>24h 成交 {{ item.count_24h }} 筆</span>
+                                </div>
+
+                                {% if item.has_data %}
+                                    <div class="pro-mobile-price-grid">
+                                        <div class="pro-mobile-price-box">
+                                            <span>最高</span>
+                                            <strong>¥{{ "{:,.0f}".format(item.highest_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.highest_twd or 0) }}</small>
+                                        </div>
+
+                                        <div class="pro-mobile-price-box">
+                                            <span>平均</span>
+                                            <strong>¥{{ "{:,.0f}".format(item.average_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.average_twd or 0) }}</small>
+                                        </div>
+
+                                        <div class="pro-mobile-price-box">
+                                            <span>最低</span>
+                                            <strong>¥{{ "{:,.0f}".format(item.lowest_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.lowest_twd or 0) }}</small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="pro-market-empty">
+                                        目前沒有 {{ item.grade }} 成交資料。
+                                    </div>
+                                {% endif %}
+
+                                {% if card.product_url %}
+                                    <a
+                                        href="/cards/{{ card.id }}/pro-history?grade={{ item.grade }}"
+                                        class="pro-mobile-history-button"
+                                    >
+                                        查看 {{ item.grade }} 歷史成交
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
             {% else %}
                 <div class="pro-market-empty">
                     {{ pro_market_summary.message if pro_market_summary else "目前無法取得市場分析資料。" }}
@@ -384,5 +451,36 @@
     </table>
 </div>
 {% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tabs = document.querySelectorAll("[data-grade-tab]");
+    const panels = document.querySelectorAll("[data-grade-panel]");
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+            const target = tab.getAttribute("data-grade-tab");
+
+            tabs.forEach(function (item) {
+                item.classList.remove("active");
+            });
+
+            panels.forEach(function (panel) {
+                panel.classList.remove("active");
+            });
+
+            tab.classList.add("active");
+
+            const targetPanel = document.querySelector(
+                '[data-grade-panel="' + target + '"]'
+            );
+
+            if (targetPanel) {
+                targetPanel.classList.add("active");
+            }
+        });
+    });
+});
+</script>
 
 {% endblock %}

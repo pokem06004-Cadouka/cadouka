@@ -3838,3 +3838,147 @@ a {
     font-size: 14px;
     font-weight: 700;
 }
+
+/* =========================
+   Pro Mobile Tabs
+========================= */
+
+.pro-mobile-summary {
+    display: none;
+}
+
+.pro-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 4px;
+    border-radius: 999px;
+    background: #f1f5f9;
+}
+
+.pro-mobile-tab {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 8px;
+    background: transparent;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.pro-mobile-tab.active {
+    background: #ffffff;
+    color: #2563eb;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+}
+
+.pro-mobile-panel {
+    display: none;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.pro-mobile-panel.active {
+    display: block;
+}
+
+.pro-mobile-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.pro-mobile-panel-header h3 {
+    margin: 0;
+    font-size: 22px;
+    color: #111827;
+}
+
+.pro-mobile-panel-header span {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.pro-mobile-price-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.pro-mobile-price-box {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+    border-radius: 16px;
+    background: #f8fafc;
+}
+
+.pro-mobile-price-box span {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.pro-mobile-price-box strong {
+    color: #111827;
+    font-size: 19px;
+    font-weight: 900;
+}
+
+.pro-mobile-price-box small {
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.pro-mobile-history-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.pro-mobile-history-button:hover {
+    background: #dbeafe;
+}
+
+@media (max-width: 720px) {
+    .pro-desktop-summary {
+        display: none;
+    }
+
+    .pro-mobile-summary {
+        display: block;
+    }
+
+    .pro-rate-pill {
+        width: fit-content;
+    }
+}
+
+@media (min-width: 721px) {
+    .pro-desktop-summary {
+        display: block;
+    }
+
+    .pro-mobile-summary {
+        display: none;
+    }
+}
