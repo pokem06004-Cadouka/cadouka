@@ -2454,3 +2454,248 @@ def get_admin_overview_stats():
         "sold_cards": sold_cards,
         "today_new_cards": today_new_cards
     }
+
+# =========================
+# Fast Bulk Import Override
+# =========================
+
+def _import_safe_text(value):
+    if value is None:
+        return ""
+
+    try:
+        # openpyxl 讀到數字時，避免變成 85.0 這種格式。
+        if isinstance(value, float) and value.is_integer():
+            return str(int(value)).strip()
+    except:
+        pass
+
+    return str(value).strip()
+
+
+def bulk_import_search_aliases(rows, max_tags=8):
+    """
+    快速批量匯入搜尋別名。
+
+    重點：
+    1. 只開一次資料庫連線。
+    2. 先把現有標籤、現有別名讀進記憶體。
+    3. 匯入過程不再每一筆都重新 get_connection()。
+    4. Excel tags 欄位填「寶可夢」會套用既有寶可夢標籤顏色。
+    5. 不存在的標籤會自動建立為預設藍色。
+    """
+    result = {
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+    }
+
+    rows = rows or []
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 先載入所有現有標籤，key 用 lower，方便不分大小寫比對。
+        execute_sql(cursor, "SELECT id, tag_name, tag_color FROM search_tags")
+        existing_tags = cursor.fetchall()
+
+        tag_map = {}
+
+        for tag in existing_tags:
+            tag_name = tag["tag_name"]
+            tag_map[_import_safe_text(tag_name).lower()] = tag["id"]
+
+        # 先載入所有現有別名，避免每一筆查一次。
+        execute_sql(cursor, "SELECT id, alias_keyword FROM search_aliases")
+        existing_aliases = cursor.fetchall()
+
+        alias_map = {}
+
+        for alias in existing_aliases:
+            alias_keyword = alias["alias_keyword"]
+            alias_map[_import_safe_text(alias_keyword).lower()] = alias["id"]
+
+        for row in rows:
+            result["total"] += 1
+
+            try:
+                alias_keyword = _import_safe_text(row.get("alias_keyword"))
+                search_keyword = _import_safe_text(row.get("search_keyword"))
+                note = _import_safe_text(row.get("note"))
+                tags_text = _import_safe_text(row.get("tags"))
+
+                if not alias_keyword or not search_keyword:
+                    result["skipped"] += 1
+                    continue
+
+                tag_names = split_import_tag_names(tags_text, max_tags=max_tags)
+                tag_ids = []
+
+                for tag_name in tag_names:
+                    tag_name = _import_safe_text(tag_name)
+
+                    if not tag_name:
+                        continue
+
+                    tag_key = tag_name.lower()
+                    tag_id = tag_map.get(tag_key)
+
+                    if not tag_id:
+                        tag_color = "#3b82f6"
+
+                        if is_postgres():
+                            insert_tag_sql = """
+                                INSERT INTO search_tags (
+                                    tag_name,
+                                    tag_color
+                                )
+                                VALUES (?, ?)
+                                RETURNING id
+                            """
+
+                            execute_sql(cursor, insert_tag_sql, [
+                                tag_name,
+                                tag_color
+                            ])
+
+                            new_tag = cursor.fetchone()
+                            tag_id = new_tag["id"]
+                        else:
+                            insert_tag_sql = """
+                                INSERT INTO search_tags (
+                                    tag_name,
+                                    tag_color
+                                )
+                                VALUES (?, ?)
+                            """
+
+                            execute_sql(cursor, insert_tag_sql, [
+                                tag_name,
+                                tag_color
+                            ])
+
+                            tag_id = cursor.lastrowid
+
+                        tag_map[tag_key] = tag_id
+
+                    if tag_id and tag_id not in tag_ids:
+                        tag_ids.append(tag_id)
+
+                    if len(tag_ids) >= max_tags:
+                        break
+
+                alias_key = alias_keyword.lower()
+                alias_id = alias_map.get(alias_key)
+
+                if alias_id:
+                    update_alias_sql = """
+                        UPDATE search_aliases
+                        SET
+                            alias_keyword = ?,
+                            search_keyword = ?,
+                            note = ?,
+                            is_active = 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """
+
+                    execute_sql(cursor, update_alias_sql, [
+                        alias_keyword,
+                        search_keyword,
+                        note,
+                        alias_id
+                    ])
+
+                    result["updated"] += 1
+                else:
+                    if is_postgres():
+                        insert_alias_sql = """
+                            INSERT INTO search_aliases (
+                                alias_keyword,
+                                search_keyword,
+                                note,
+                                is_active
+                            )
+                            VALUES (?, ?, ?, 1)
+                            RETURNING id
+                        """
+
+                        execute_sql(cursor, insert_alias_sql, [
+                            alias_keyword,
+                            search_keyword,
+                            note
+                        ])
+
+                        new_alias = cursor.fetchone()
+                        alias_id = new_alias["id"]
+                    else:
+                        insert_alias_sql = """
+                            INSERT INTO search_aliases (
+                                alias_keyword,
+                                search_keyword,
+                                note,
+                                is_active
+                            )
+                            VALUES (?, ?, ?, 1)
+                        """
+
+                        execute_sql(cursor, insert_alias_sql, [
+                            alias_keyword,
+                            search_keyword,
+                            note
+                        ])
+
+                        alias_id = cursor.lastrowid
+
+                    alias_map[alias_key] = alias_id
+                    result["created"] += 1
+
+                # 重新設定此別名的標籤。
+                delete_link_sql = """
+                    DELETE FROM search_alias_tags
+                    WHERE alias_id = ?
+                """
+
+                execute_sql(cursor, delete_link_sql, [alias_id])
+
+                insert_link_sql = """
+                    INSERT INTO search_alias_tags (
+                        alias_id,
+                        tag_id
+                    )
+                    VALUES (?, ?)
+                """
+
+                for tag_id in tag_ids[:max_tags]:
+                    try:
+                        execute_sql(cursor, insert_link_sql, [
+                            alias_id,
+                            tag_id
+                        ])
+                    except Exception as e:
+                        print("批量匯入標籤關聯失敗：", e)
+                        continue
+
+                # 每 200 筆 commit 一次，避免交易太大。
+                if result["total"] % 200 == 0:
+                    conn.commit()
+
+            except Exception as e:
+                print("批量匯入搜尋別名單筆失敗：", e)
+                result["errors"] += 1
+                continue
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        print("批量匯入搜尋別名整批失敗：", e)
+        raise
+
+    finally:
+        conn.close()
+
+    return result
