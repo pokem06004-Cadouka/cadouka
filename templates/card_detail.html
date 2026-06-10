@@ -253,40 +253,74 @@
 
     {% if is_pro %}
         <div class="pro-unlocked-box">
-            <h3>市場分析功能已開啟</h3>
-
-            <p>
-                你目前是 Cadouka Pro 會員。之後這裡會顯示 PSA10、PSA9、PSA8以下行情比較、
-                24h 成交量、歷史成交紀錄與持有狀態分析。
-            </p>
-
-            <div class="pro-feature-list">
-                <div class="pro-feature-item">
-                    <strong>PSA 等級行情比較</strong>
-                    <span>比較 PSA10、PSA9、PSA8以下的最高、平均與最低成交價。</span>
+            <div class="pro-analysis-header">
+                <div>
+                    <h3>PSA 市場行情摘要</h3>
+                    <p>
+                        根據商品網址取得近期成交資料，顯示 PSA10、PSA9、PSA8以下的成交行情。
+                    </p>
                 </div>
 
-                <div class="pro-feature-item">
-                    <strong>24h 成交量</strong>
-                    <span>查看近期成交熱度，判斷這張卡目前是否具有流動性。</span>
-                </div>
-
-                <div class="pro-feature-item">
-                    <strong>歷史成交紀錄</strong>
-                    <span>未來可直接在明細頁查看近期成交資料，不必回 LINE 查詢。</span>
-                </div>
+                {% if pro_market_summary and pro_market_summary.jpy_rate %}
+                    <span class="pro-rate-pill">
+                        日圓匯率：{{ "%.4f"|format(pro_market_summary.jpy_rate) }}
+                    </span>
+                {% endif %}
             </div>
 
-            {% if card.product_url %}
-                <div style="margin-top: 16px;">
-                    <a
-                        href="{{ card.product_url }}"
-                        class="btn-secondary"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        查看商品來源
-                    </a>
+            {% if pro_market_summary and pro_market_summary.available %}
+                <div class="pro-market-grid">
+                    {% for item in pro_market_summary.grades %}
+                        <div class="pro-market-grade-card">
+                            <div class="pro-market-grade-header">
+                                <h4>{{ item.grade }}</h4>
+                                <span>24h 成交 {{ item.count_24h }} 筆</span>
+                            </div>
+
+                            {% if item.has_data %}
+                                <div class="pro-market-price-grid">
+                                    <div class="pro-market-price-box">
+                                        <span>最高</span>
+                                        <strong>¥{{ "{:,.0f}".format(item.highest_jpy or 0) }}</strong>
+                                        <small>NT${{ "{:,.0f}".format(item.highest_twd or 0) }}</small>
+                                    </div>
+
+                                    <div class="pro-market-price-box">
+                                        <span>平均</span>
+                                        <strong>¥{{ "{:,.0f}".format(item.average_jpy or 0) }}</strong>
+                                        <small>NT${{ "{:,.0f}".format(item.average_twd or 0) }}</small>
+                                    </div>
+
+                                    <div class="pro-market-price-box">
+                                        <span>最低</span>
+                                        <strong>¥{{ "{:,.0f}".format(item.lowest_jpy or 0) }}</strong>
+                                        <small>NT${{ "{:,.0f}".format(item.lowest_twd or 0) }}</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="pro-market-empty">
+                                    目前沒有 {{ item.grade }} 成交資料。
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if card.product_url %}
+                    <div class="pro-analysis-actions">
+                        <a
+                            href="{{ card.product_url }}"
+                            class="btn-secondary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            查看商品來源
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="pro-market-empty">
+                    {{ pro_market_summary.message if pro_market_summary else "目前無法取得市場分析資料。" }}
                 </div>
             {% endif %}
         </div>

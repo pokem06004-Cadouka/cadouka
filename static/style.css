@@ -3537,3 +3537,140 @@ a {
     font-weight: 700;
     cursor: pointer;
 }
+
+/* =========================
+   Pro Market Analysis
+========================= */
+
+.pro-analysis-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.pro-analysis-header h3 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    color: #111827;
+}
+
+.pro-analysis-header p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.pro-rate-pill {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.pro-market-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.pro-market-grade-card {
+    padding: 18px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+
+.pro-market-grade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.pro-market-grade-header h4 {
+    margin: 0;
+    font-size: 22px;
+    color: #111827;
+}
+
+.pro-market-grade-header span {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.pro-market-price-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.pro-market-price-box {
+    padding: 14px 10px;
+    border-radius: 16px;
+    background: #f8fafc;
+    text-align: center;
+}
+
+.pro-market-price-box span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.pro-market-price-box strong {
+    display: block;
+    color: #111827;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+}
+
+.pro-market-price-box small {
+    display: block;
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.pro-market-empty {
+    padding: 18px;
+    border-radius: 16px;
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+}
+
+.pro-analysis-actions {
+    margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+    .pro-analysis-header {
+        flex-direction: column;
+    }
+
+    .pro-market-grade-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .pro-market-price-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pro-market-price-box {
+        text-align: left;
+    }
+
+    .pro-market-price-box strong {
+        font-size: 20px;
+    }
+}

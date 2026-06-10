@@ -447,6 +447,135 @@ def calculate_market_price_from_prices(prices, jpy_rate):
 
     return round(average_jpy * jpy_rate)
 
+def parse_jpy_price(price):
+    try:
+        return int(float(str(price).replace(",", "").replace("¥", "").strip()))
+    except:
+        return None
+
+
+def is_recent_24h_sale(date_text):
+    """
+    SNKRDUNK 回傳常見格式：
+    8分前、2時間前、12時間前、1日前、26/06/05
+    第一版只把 分前 / 時間前 / 剛剛 算進 24h。
+    """
+    if not date_text:
+        return False
+
+    date_text = str(date_text)
+
+    if "分前" in date_text:
+        return True
+
+    if "時間前" in date_text:
+        return True
+
+    if "剛剛" in date_text:
+        return True
+
+    return False
+
+
+def summarize_price_list(prices, jpy_rate):
+    valid_prices = []
+
+    for item in prices or []:
+        jpy_price = parse_jpy_price(item.get("price"))
+
+        if jpy_price is not None:
+            valid_prices.append(jpy_price)
+
+    if not valid_prices:
+        return {
+            "has_data": False,
+            "count_24h": 0,
+            "highest_jpy": 0,
+            "average_jpy": 0,
+            "lowest_jpy": 0,
+            "highest_twd": 0,
+            "average_twd": 0,
+            "lowest_twd": 0
+        }
+
+    highest_jpy = max(valid_prices)
+    lowest_jpy = min(valid_prices)
+    average_jpy = round(sum(valid_prices) / len(valid_prices))
+
+    count_24h = 0
+
+    for item in prices or []:
+        if is_recent_24h_sale(item.get("date")):
+            count_24h += 1
+
+    return {
+        "has_data": True,
+        "count_24h": count_24h,
+
+        "highest_jpy": highest_jpy,
+        "average_jpy": average_jpy,
+        "lowest_jpy": lowest_jpy,
+
+        "highest_twd": round(highest_jpy * jpy_rate) if jpy_rate else 0,
+        "average_twd": round(average_jpy * jpy_rate) if jpy_rate else 0,
+        "lowest_twd": round(lowest_jpy * jpy_rate) if jpy_rate else 0
+    }
+
+
+def build_pro_market_summary(product_url):
+    if not product_url:
+        return {
+            "available": False,
+            "message": "這張卡尚未設定商品網址，無法取得市場分析資料。",
+            "jpy_rate": None,
+            "grades": []
+        }
+
+    product_id = get_product_id(product_url)
+
+    if not product_id:
+        return {
+            "available": False,
+            "message": "商品網址格式異常，無法取得市場分析資料。",
+            "jpy_rate": None,
+            "grades": []
+        }
+
+    try:
+        prices_by_conditions = get_prices_by_conditions(product_id)
+        jpy_rate = get_jpy_spot_sell()
+
+        grade_order = ["PSA10", "PSA9", "PSA8以下"]
+
+        grades = []
+
+        for grade in grade_order:
+            prices = prices_by_conditions.get(grade, [])
+            summary = summarize_price_list(prices, jpy_rate)
+
+            grades.append({
+                "grade": grade,
+                **summary
+            })
+
+        return {
+            "available": True,
+            "message": "",
+            "jpy_rate": jpy_rate,
+            "grades": grades
+        }
+
+    except Exception as e:
+        print("Pro 市場分析錯誤：", e)
+        traceback.print_exc()
+
+        return {
+            "available": False,
+            "message": "取得市場分析資料時發生錯誤，請稍後再試。",
+            "jpy_rate": None,
+            "grades": []
+        }
+
 def get_market_price_by_product_url(product_url):
     """
     用 SNKRDUNK 商品網址抓最新 PSA10 平均成交價，並換算成台幣。
@@ -1378,12 +1507,21 @@ def card_detail_page(card_id):
     card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
 
     user = current_user()
+    is_pro = is_pro_user(user)
+
+    pro_market_summary = None
+
+    if is_pro:
+        pro_market_summary = build_pro_market_summary(
+            card_dict.get("product_url") or ""
+        )
 
     return render_template(
         "card_detail.html",
         card=card_dict,
-        is_pro=is_pro_user(user),
-        membership_level=get_membership_level(user)
+        is_pro=is_pro,
+        membership_level=get_membership_level(user),
+        pro_market_summary=pro_market_summary
     )
 
 @app.route("/pro")
