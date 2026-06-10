@@ -23,7 +23,7 @@ CONDITION_ID_MAP = {
 
 BASE_CONDITIONS = ["PSA10", "PSA9", "PSA8以下"]
 
-PRO_CONDITIONS = ["A", "B", "PSA10", "PSA9", "PSA8以下"]
+PRO_CONDITIONS = ["PSA10", "PSA9", "PSA8以下", "A", "B"]
 
 
 # =========================

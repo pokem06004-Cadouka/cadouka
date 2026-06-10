@@ -3462,6 +3462,7 @@ a {
 
 /* =========================
    Cadouka Pro
+   Consolidated / Responsive
 ========================= */
 
 .pro-analysis-card {
@@ -3481,6 +3482,7 @@ a {
 .pro-unlocked-box h3 {
     margin: 0 0 8px;
     font-size: 18px;
+    color: #111827;
 }
 
 .pro-locked-box p,
@@ -3539,144 +3541,7 @@ a {
 }
 
 /* =========================
-   Pro Market Analysis
-========================= */
-
-.pro-analysis-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
-}
-
-.pro-analysis-header h3 {
-    margin: 0 0 6px;
-    font-size: 20px;
-    color: #111827;
-}
-
-.pro-analysis-header p {
-    margin: 0;
-    color: #64748b;
-    line-height: 1.6;
-}
-
-.pro-rate-pill {
-    flex-shrink: 0;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: #eff6ff;
-    color: #2563eb;
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.pro-market-grid {
-    display: grid;
-    gap: 18px;
-}
-
-.pro-market-grade-card {
-    padding: 18px;
-    border-radius: 18px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-}
-
-.pro-market-grade-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-}
-
-.pro-market-grade-header h4 {
-    margin: 0;
-    font-size: 22px;
-    color: #111827;
-}
-
-.pro-market-grade-header span {
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.pro-market-price-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.pro-market-price-box {
-    padding: 14px 10px;
-    border-radius: 16px;
-    background: #f8fafc;
-    text-align: center;
-}
-
-.pro-market-price-box span {
-    display: block;
-    margin-bottom: 4px;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.pro-market-price-box strong {
-    display: block;
-    color: #111827;
-    font-size: 22px;
-    letter-spacing: 0.02em;
-}
-
-.pro-market-price-box small {
-    display: block;
-    margin-top: 2px;
-    color: #94a3b8;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.pro-market-empty {
-    padding: 18px;
-    border-radius: 16px;
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 700;
-}
-
-.pro-analysis-actions {
-    margin-top: 18px;
-}
-
-@media (max-width: 720px) {
-    .pro-analysis-header {
-        flex-direction: column;
-    }
-
-    .pro-market-grade-header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .pro-market-price-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .pro-market-price-box {
-        text-align: left;
-    }
-
-    .pro-market-price-box strong {
-        font-size: 20px;
-    }
-}
-
-/* =========================
-   Pro Compact Analysis
+   Pro Detail Summary
 ========================= */
 
 .pro-compact-title-row {
@@ -3697,10 +3562,32 @@ a {
     line-height: 1.6;
 }
 
+.pro-rate-pill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
 .pro-unlocked-box-compact {
     padding: 0;
     background: transparent;
     border: none;
+}
+
+.pro-desktop-summary {
+    display: block;
+}
+
+.pro-mobile-summary {
+    display: none;
 }
 
 .pro-summary-table-wrap {
@@ -3722,7 +3609,7 @@ a {
     background: #f8fafc;
     color: #64748b;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     text-align: left;
     white-space: nowrap;
     border-bottom: 1px solid #e5e7eb;
@@ -3757,12 +3644,12 @@ a {
     margin-top: 2px;
     color: #94a3b8;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .pro-summary-empty {
     color: #64748b !important;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .pro-history-link {
@@ -3774,7 +3661,7 @@ a {
     background: #eff6ff;
     color: #2563eb;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     text-decoration: none;
     white-space: nowrap;
 }
@@ -3783,89 +3670,42 @@ a {
     background: #dbeafe;
 }
 
-@media (max-width: 720px) {
-    .pro-compact-title-row {
-        flex-direction: column;
-    }
-
-    .pro-summary-table {
-        min-width: 760px;
-    }
-}
-
-/* =========================
-   Pro History Page
-========================= */
-
-.pro-history-table {
-    width: 100%;
-    min-width: 720px;
-    border-collapse: collapse;
-}
-
-.pro-history-table th {
-    padding: 14px 16px;
+.pro-market-empty {
+    padding: 18px;
+    border-radius: 16px;
     background: #f8fafc;
     color: #64748b;
-    font-size: 13px;
     font-weight: 800;
-    text-align: left;
-    white-space: nowrap;
-    border-bottom: 1px solid #e5e7eb;
 }
 
-.pro-history-table td {
-    padding: 16px;
-    border-bottom: 1px solid #eef2f7;
-    color: #111827;
-    vertical-align: middle;
-    white-space: nowrap;
-}
-
-.pro-history-table tr:last-child td {
-    border-bottom: none;
-}
-
-.pro-history-table strong {
-    display: block;
-    font-size: 18px;
-    color: #111827;
-}
-
-.pro-history-table small {
-    display: block;
-    color: #94a3b8;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-/* =========================
-   Pro Mobile Tabs
-========================= */
-
-.pro-mobile-summary {
-    display: none;
-}
-
+/* 手機版：明細頁 Pro 摘要 tabs */
 .pro-mobile-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: 8px;
     margin-bottom: 14px;
     padding: 4px;
     border-radius: 999px;
     background: #f1f5f9;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.pro-mobile-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .pro-mobile-tab {
+    flex: 0 0 auto;
     border: none;
     border-radius: 999px;
-    padding: 10px 8px;
+    padding: 9px 13px;
     background: transparent;
     color: #64748b;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .pro-mobile-tab.active {
@@ -3903,7 +3743,7 @@ a {
 .pro-mobile-panel-header span {
     color: #64748b;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 900;
     white-space: nowrap;
 }
 
@@ -3959,316 +3799,34 @@ a {
     background: #dbeafe;
 }
 
-@media (max-width: 720px) {
-    .pro-desktop-summary {
-        display: none;
-    }
-
-    .pro-mobile-summary {
-        display: block;
-    }
-
-    .pro-rate-pill {
-        width: fit-content;
-    }
-}
-
-@media (min-width: 721px) {
-    .pro-desktop-summary {
-        display: block;
-    }
-
-    .pro-mobile-summary {
-        display: none;
-    }
-}
-
 /* =========================
-   Pro History Mobile Cards
-========================= */
-
-.pro-history-mobile {
-    display: none;
-}
-
-.pro-history-mobile-card {
-    padding: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 18px;
-    background: #ffffff;
-}
-
-.pro-history-mobile-card + .pro-history-mobile-card {
-    margin-top: 10px;
-}
-
-.pro-history-mobile-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.pro-history-mobile-top span {
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 800;
-}
-
-.pro-history-mobile-top strong {
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #334155;
-    font-size: 13px;
-    font-weight: 900;
-}
-
-.pro-history-mobile-price {
-    color: #111827;
-    font-size: 26px;
-    font-weight: 900;
-    line-height: 1.2;
-}
-
-.pro-history-mobile-twd {
-    margin-top: 4px;
-    color: #94a3b8;
-    font-size: 15px;
-    font-weight: 800;
-}
-
-.pro-history-grade-switch {
-    justify-content: flex-start;
-    margin-top: 20px;
-}
-
-@media (max-width: 720px) {
-    .pro-history-desktop {
-        display: none;
-    }
-
-    .pro-history-mobile {
-        display: block;
-    }
-
-    .pro-history-grade-switch {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-
-    .pro-history-grade-switch a {
-        width: 100%;
-        text-align: center;
-        padding-left: 8px;
-        padding-right: 8px;
-    }
-}
-
-@media (min-width: 721px) {
-    .pro-history-desktop {
-        display: block;
-    }
-
-    .pro-history-mobile {
-        display: none;
-    }
-}
-
-/* =========================
-   Pro History Page Responsive
+   Pro History Page
 ========================= */
 
 .pro-history-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 5px;
-    margin: 18px 0;
-    border-radius: 999px;
-    background: #f1f5f9;
-}
-
-.pro-history-tab {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 38px;
-    padding: 8px 10px;
-    border-radius: 999px;
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 900;
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.pro-history-tab.active {
-    background: #ffffff;
-    color: #2563eb;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
-}
-
-.pro-history-desktop {
-    width: 100%;
-    overflow-x: auto;
-    border: 1px solid #e5e7eb;
-    border-radius: 18px;
-    background: #ffffff;
-}
-
-.pro-history-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.pro-history-table th {
-    padding: 14px 16px;
-    background: #f8fafc;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 800;
-    text-align: left;
-    white-space: nowrap;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.pro-history-table td {
-    padding: 16px;
-    border-bottom: 1px solid #eef2f7;
-    color: #111827;
-    white-space: nowrap;
-}
-
-.pro-history-table tr:last-child td {
-    border-bottom: none;
-}
-
-.pro-history-table strong {
-    font-size: 18px;
-    color: #111827;
-}
-
-.pro-history-table small {
-    color: #94a3b8;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.pro-history-mobile {
-    display: none;
-}
-
-.pro-history-mobile-card {
-    padding: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 18px;
-    background: #ffffff;
-}
-
-.pro-history-mobile-card + .pro-history-mobile-card {
-    margin-top: 10px;
-}
-
-.pro-history-mobile-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.pro-history-mobile-top span {
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 800;
-}
-
-.pro-history-mobile-top strong {
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #334155;
-    font-size: 13px;
-    font-weight: 900;
-}
-
-.pro-history-mobile-price {
-    color: #111827;
-    font-size: 26px;
-    font-weight: 900;
-    line-height: 1.2;
-}
-
-.pro-history-mobile-twd {
-    margin-top: 4px;
-    color: #94a3b8;
-    font-size: 15px;
-    font-weight: 800;
-}
-
-@media (max-width: 720px) {
-    .pro-history-desktop {
-        display: none !important;
-    }
-
-    .pro-history-mobile {
-        display: block !important;
-    }
-
-        .pro-history-tabs {
-        grid-template-columns: repeat(3, 1fr);
-        border-radius: 999px;
-        background: #f1f5f9;
-        padding: 5px;
-        gap: 6px;
-    }
-
-    .pro-history-tab {
-        background: #f1f5f9;
-        border-radius: 14px;
-        min-height: 44px;
-    }
-
-    .pro-history-tab.active {
-        background: #eff6ff;
-        color: #2563eb;
-        box-shadow: none;
-    }
-}
-
-@media (min-width: 721px) {
-    .pro-history-desktop {
-        display: block !important;
-    }
-
-    .pro-history-mobile {
-        display: none !important;
-    }
-}
-
-/* =========================
-   Pro History Compact Mobile
-========================= */
-
-.pro-history-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 8px;
     padding: 4px;
     margin: 16px 0 18px;
     border-radius: 999px;
     background: #f1f5f9;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.pro-history-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .pro-history-tab {
+    flex: 1 0 auto;
+    min-width: 72px;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 34px;
-    padding: 7px 8px;
+    padding: 7px 10px;
     border-radius: 999px;
     color: #64748b;
     font-size: 13px;
@@ -4289,6 +3847,47 @@ a {
     border: 1px solid #e5e7eb;
     border-radius: 18px;
     background: #ffffff;
+}
+
+.pro-history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pro-history-table th {
+    padding: 14px 16px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 900;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.pro-history-table td {
+    padding: 16px;
+    border-bottom: 1px solid #eef2f7;
+    color: #111827;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.pro-history-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pro-history-table strong {
+    display: block;
+    font-size: 18px;
+    color: #111827;
+}
+
+.pro-history-table small {
+    display: block;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 800;
 }
 
 .pro-history-mobile {
@@ -4359,7 +3958,28 @@ a {
     font-weight: 800;
 }
 
+/* =========================
+   Pro Responsive Overrides
+========================= */
+
 @media (max-width: 720px) {
+    .pro-compact-title-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .pro-rate-pill {
+        width: fit-content;
+    }
+
+    .pro-desktop-summary {
+        display: none !important;
+    }
+
+    .pro-mobile-summary {
+        display: block !important;
+    }
+
     .pro-history-desktop {
         display: none !important;
     }
@@ -4369,18 +3989,28 @@ a {
     }
 
     .pro-history-tabs {
+        padding: 4px;
         margin-top: 12px;
         margin-bottom: 14px;
     }
 
     .pro-history-tab {
+        flex: 0 0 auto;
+        min-width: 68px;
         min-height: 32px;
-        font-size: 13px;
-        padding: 6px 6px;
+        padding: 6px 10px;
     }
 }
 
 @media (min-width: 721px) {
+    .pro-desktop-summary {
+        display: block !important;
+    }
+
+    .pro-mobile-summary {
+        display: none !important;
+    }
+
     .pro-history-desktop {
         display: block !important;
     }
@@ -4389,3 +4019,4 @@ a {
         display: none !important;
     }
 }
+

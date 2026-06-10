@@ -123,6 +123,25 @@ user_products = {}
 
 
 # =========================
+# Condition Order Settings
+# =========================
+
+# Free users only see PSA conditions.
+BASE_CONDITION_ORDER = ["PSA10", "PSA9", "PSA8以下"]
+
+# Pro/Admin users see extra raw-card conditions after PSA conditions.
+PRO_CONDITION_ORDER = ["PSA10", "PSA9", "PSA8以下", "A", "B"]
+
+
+def get_base_conditions():
+    return BASE_CONDITION_ORDER
+
+
+def get_pro_conditions():
+    return PRO_CONDITION_ORDER
+
+
+# =========================
 # Auth Helpers
 # =========================
 

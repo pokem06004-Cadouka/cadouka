@@ -326,7 +326,7 @@ def get_condition_order(prices_by_conditions=None, condition_order=None):
     如果沒有傳，則根據 prices_by_conditions 裡有沒有 A / B 自動判斷。
     """
     base_conditions = ["PSA10", "PSA9", "PSA8以下"]
-    pro_conditions = ["A", "B", "PSA10", "PSA9", "PSA8以下"]
+    pro_conditions = ["PSA10", "PSA9", "PSA8以下", "A", "B"]
 
     if condition_order:
         return condition_order
