@@ -55,6 +55,7 @@
     {% if history_data and history_data.available %}
         {% if history_data.prices %}
 
+            <!-- 電腦版：表格 -->
             <div class="pro-history-desktop">
                 <table class="pro-history-table">
                     <thead>
@@ -83,23 +84,28 @@
                 </table>
             </div>
 
+            <!-- 手機版：一張大卡包住 10 筆 -->
             <div class="pro-history-mobile">
-                {% for item in history_data.prices %}
-                    <div class="pro-history-mobile-card">
-                        <div class="pro-history-mobile-top">
-                            <span>{{ item.date or "-" }}</span>
-                            <strong>{{ item.grade or selected_grade }}</strong>
-                        </div>
+                <div class="pro-history-mobile-list-card">
+                    {% for item in history_data.prices %}
+                        <div class="pro-history-mobile-row">
+                            <div class="pro-history-mobile-left">
+                                <span class="pro-history-mobile-date">
+                                    {{ item.date or "-" }}
+                                </span>
 
-                        <div class="pro-history-mobile-price">
-                            ¥{{ "{:,.0f}".format(item.price_jpy or 0) }}
-                        </div>
+                                <span class="pro-history-mobile-grade">
+                                    {{ item.grade or selected_grade }}
+                                </span>
+                            </div>
 
-                        <div class="pro-history-mobile-twd">
-                            NT${{ "{:,.0f}".format(item.price_twd or 0) }}
+                            <div class="pro-history-mobile-right">
+                                <strong>¥{{ "{:,.0f}".format(item.price_jpy or 0) }}</strong>
+                                <small>NT${{ "{:,.0f}".format(item.price_twd or 0) }}</small>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
 
         {% else %}

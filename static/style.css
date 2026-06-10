@@ -4248,3 +4248,144 @@ a {
         display: none !important;
     }
 }
+
+/* =========================
+   Pro History Compact Mobile
+========================= */
+
+.pro-history-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding: 4px;
+    margin: 16px 0 18px;
+    border-radius: 999px;
+    background: #f1f5f9;
+}
+
+.pro-history-tab {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 34px;
+    padding: 7px 8px;
+    border-radius: 999px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.pro-history-tab.active {
+    background: #ffffff;
+    color: #2563eb;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.12);
+}
+
+.pro-history-desktop {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.pro-history-mobile {
+    display: none;
+}
+
+.pro-history-mobile-list-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.pro-history-mobile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 14px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.pro-history-mobile-row:last-child {
+    border-bottom: none;
+}
+
+.pro-history-mobile-left {
+    min-width: 0;
+}
+
+.pro-history-mobile-date {
+    display: block;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.35;
+}
+
+.pro-history-mobile-grade {
+    display: inline-flex;
+    margin-top: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.pro-history-mobile-right {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.pro-history-mobile-right strong {
+    display: block;
+    color: #111827;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.pro-history-mobile-right small {
+    display: block;
+    margin-top: 3px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+@media (max-width: 720px) {
+    .pro-history-desktop {
+        display: none !important;
+    }
+
+    .pro-history-mobile {
+        display: block !important;
+    }
+
+    .pro-history-tabs {
+        margin-top: 12px;
+        margin-bottom: 14px;
+    }
+
+    .pro-history-tab {
+        min-height: 32px;
+        font-size: 13px;
+        padding: 6px 6px;
+    }
+}
+
+@media (min-width: 721px) {
+    .pro-history-desktop {
+        display: block !important;
+    }
+
+    .pro-history-mobile {
+        display: none !important;
+    }
+}
