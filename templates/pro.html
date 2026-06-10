@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cards" class="back-link">← 回到卡牌倉庫</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Cadouka Pro</p>
+        <h1>Cadouka Pro 進階分析</h1>
+        <p class="page-subtitle">為寶可夢卡牌收藏與投資打造的進階市場分析功能。</p>
+    </div>
+</div>
+
+<div class="form-card form-card-polished">
+    {% if is_pro %}
+        <div class="form-section">
+            <div class="form-section-title">
+                <h2>你目前已是 Cadouka Pro</h2>
+                <p>你可以使用進階市場分析功能。</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="form-section">
+            <div class="form-section-title">
+                <h2>升級後可使用</h2>
+                <p>目前尚未開放正式升級，這裡先作為會員功能展示頁。</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="form-section">
+        <div class="form-section-title">
+            <h2>Pro 功能規劃</h2>
+        </div>
+
+        <div class="pro-feature-list">
+            <div class="pro-feature-item">
+                <strong>PSA 等級行情比較</strong>
+                <span>查看 PSA10、PSA9、PSA8以下的最高、平均與最低成交價。</span>
+            </div>
+
+            <div class="pro-feature-item">
+                <strong>24h 成交量</strong>
+                <span>快速判斷該卡近期是否熱門、流動性是否足夠。</span>
+            </div>
+
+            <div class="pro-feature-item">
+                <strong>歷史成交紀錄</strong>
+                <span>查看近期成交資料，輔助判斷目前市價是否合理。</span>
+            </div>
+
+            <div class="pro-feature-item">
+                <strong>價格波動與持有分析</strong>
+                <span>未來將加入波動率、價格位置與持有狀態提醒。</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

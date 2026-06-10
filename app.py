@@ -88,6 +88,7 @@ from models import (
     unbind_line_user,
     delete_user_account,
     update_user_admin_status,
+    update_user_membership_level,
 
     get_admin_overview_stats,
     get_admin_users,
@@ -183,11 +184,40 @@ def admin_required(view_func):
 
     return wrapped_view
 
+def get_membership_level(user):
+    if not user:
+        return "free"
+
+    try:
+        membership_level = user["membership_level"] or "free"
+    except:
+        membership_level = "free"
+
+    return membership_level
+
+
+def is_pro_user(user):
+    if not user:
+        return False
+
+    try:
+        is_admin = int(user["is_admin"] or 0)
+    except:
+        is_admin = 0
+
+    membership_level = get_membership_level(user)
+
+    return is_admin == 1 or membership_level == "pro"
+
 @app.context_processor
 def inject_current_user():
+    user = current_user()
+
     return {
-        "current_user": current_user(),
-        "line_liff_id": LINE_LIFF_ID
+        "current_user": user,
+        "line_liff_id": LINE_LIFF_ID,
+        "membership_level": get_membership_level(user),
+        "is_pro": is_pro_user(user)
     }
 
 # =========================
@@ -778,6 +808,20 @@ def line_liff_bind_confirm_page():
 # Admin Console Routes
 # =========================
 
+@app.route("/cdk-console/users/<int:user_id>/membership", methods=["POST"])
+@login_required
+@admin_required
+def admin_update_user_membership_page(user_id):
+    membership_level = request.form.get("membership_level", "free").strip()
+
+    if membership_level not in ["free", "pro"]:
+        membership_level = "free"
+
+    update_user_membership_level(user_id, membership_level)
+
+    flash("會員等級已更新", "success")
+    return redirect("/cdk-console/users")
+
 @app.route("/cdk-console")
 @login_required
 @admin_required
@@ -1333,8 +1377,25 @@ def card_detail_page(card_id):
     card_dict = dict(card)
     card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
 
-    return render_template("card_detail.html", card=card_dict)
+    user = current_user()
 
+    return render_template(
+        "card_detail.html",
+        card=card_dict,
+        is_pro=is_pro_user(user),
+        membership_level=get_membership_level(user)
+    )
+
+@app.route("/pro")
+@login_required
+def pro_page():
+    user = current_user()
+
+    return render_template(
+        "pro.html",
+        is_pro=is_pro_user(user),
+        membership_level=get_membership_level(user)
+    )
 
 @app.route("/cards/<int:card_id>/edit", methods=["GET", "POST"])
 @login_required

@@ -8,7 +8,7 @@
     <div>
         <p class="eyebrow">Admin Users</p>
         <h1>用戶管理</h1>
-        <p class="page-subtitle">查看所有註冊用戶、LINE 綁定狀態與卡牌數量。</p>
+        <p class="page-subtitle">查看所有註冊用戶、LINE 綁定狀態、會員等級與卡牌數量。</p>
     </div>
 </div>
 
@@ -21,6 +21,7 @@
                     <th>帳號</th>
                     <th>暱稱</th>
                     <th>管理者</th>
+                    <th>會員</th>
                     <th>LINE</th>
                     <th>總卡牌</th>
                     <th>持有中</th>
@@ -45,6 +46,32 @@
                         </td>
 
                         <td>
+                            <form
+                                action="/cdk-console/users/{{ user.id }}/membership"
+                                method="post"
+                                class="inline-admin-form"
+                            >
+                                <select name="membership_level">
+                                    <option
+                                        value="free"
+                                        {% if (user.membership_level or "free") == "free" %}selected{% endif %}
+                                    >
+                                        Free
+                                    </option>
+
+                                    <option
+                                        value="pro"
+                                        {% if user.membership_level == "pro" %}selected{% endif %}
+                                    >
+                                        Pro
+                                    </option>
+                                </select>
+
+                                <button type="submit">更新</button>
+                            </form>
+                        </td>
+
+                        <td>
                             {% if user.line_user_id %}
                                 <span class="status-pill status-holding">已綁定</span>
                             {% else %}
@@ -59,7 +86,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="9" class="empty-cell">目前沒有用戶資料。</td>
+                        <td colspan="10" class="empty-cell">目前沒有用戶資料。</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -58,6 +58,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             display_name TEXT,
             is_admin INTEGER DEFAULT 0,
+            membership_level TEXT DEFAULT 'free',
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
@@ -133,6 +134,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             display_name TEXT,
             is_admin INTEGER DEFAULT 0,
+            membership_level TEXT DEFAULT 'free',
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
@@ -367,6 +369,29 @@ def update_user_admin_status(user_id, is_admin):
     conn.commit()
     conn.close()
 
+def update_user_membership_level(user_id, membership_level):
+    allowed_levels = ["free", "pro"]
+
+    if membership_level not in allowed_levels:
+        membership_level = "free"
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET membership_level = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        membership_level,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
+
 def update_user_line_bind_code(user_id, bind_code, expires_at):
     conn = get_connection()
     cursor = conn.cursor()
@@ -431,6 +456,7 @@ def get_admin_users():
             u.username,
             u.display_name,
             u.is_admin,
+            u.membership_level,
             u.line_user_id,
             u.created_at,
 
@@ -460,6 +486,7 @@ def get_admin_users():
             u.username,
             u.display_name,
             u.is_admin,
+            u.membership_level,
             u.line_user_id,
             u.created_at
 
@@ -1178,6 +1205,7 @@ def migrate_db():
     add_user_column_if_not_exists("user_code", "TEXT")
     add_user_column_if_not_exists("display_name", "TEXT")
     add_user_column_if_not_exists("is_admin", "INTEGER DEFAULT 0")
+    add_user_column_if_not_exists("membership_level", "TEXT DEFAULT 'free'")
     add_user_column_if_not_exists("line_user_id", "TEXT")
     add_user_column_if_not_exists("line_bind_code", "TEXT")
     add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")

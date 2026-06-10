@@ -3459,3 +3459,81 @@ a {
         border-radius: 18px;
     }
 }
+
+/* =========================
+   Cadouka Pro
+========================= */
+
+.pro-analysis-card {
+    border: 1px solid #dbeafe;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.pro-locked-box,
+.pro-unlocked-box {
+    padding: 18px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.pro-locked-box h3,
+.pro-unlocked-box h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.pro-locked-box p,
+.pro-unlocked-box p {
+    margin: 0 0 16px;
+    color: #64748b;
+    line-height: 1.7;
+}
+
+.pro-feature-list {
+    display: grid;
+    gap: 14px;
+}
+
+.pro-feature-item {
+    padding: 16px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.pro-feature-item strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #111827;
+}
+
+.pro-feature-item span {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.inline-admin-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.inline-admin-form select {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: white;
+}
+
+.inline-admin-form button {
+    height: 34px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}

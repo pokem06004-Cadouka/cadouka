@@ -72,86 +72,86 @@
             {% endif %}
         </div>
 
-                <div class="detail-summary-single-card">
-                    <div class="detail-summary-single-body">
+        <div class="detail-summary-single-card">
+            <div class="detail-summary-single-body">
 
-                        <div class="detail-summary-single-row">
-                            <div class="detail-summary-single-label">購入價格</div>
-                            <div class="detail-summary-single-value">
-                                NT${{ "{:,.0f}".format(card.buy_price or 0) }}
-                            </div>
-                        </div>
-
-                        {% if card.status == "sold" %}
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">實際收入</div>
-                                <div class="detail-summary-single-value">
-                                    NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
-                                </div>
-                            </div>
-
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">已實現損益</div>
-                                {% if card.realized_profit >= 0 %}
-                                    <div class="detail-summary-single-value profit">
-                                        +NT${{ "{:,.0f}".format(card.realized_profit or 0) }}
-                                    </div>
-                                {% else %}
-                                    <div class="detail-summary-single-value loss">
-                                        -NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">已實現 ROI</div>
-                                {% if card.realized_roi >= 0 %}
-                                    <div class="detail-summary-single-value profit">
-                                        +{{ "{:.2f}".format(card.realized_roi or 0) }}%
-                                    </div>
-                                {% else %}
-                                    <div class="detail-summary-single-value loss">
-                                        {{ "{:.2f}".format(card.realized_roi or 0) }}%
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">目前市價</div>
-                                <div class="detail-summary-single-value">
-                                    NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
-                                </div>
-                            </div>
-
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">未實現損益</div>
-                                {% if card.unrealized_profit >= 0 %}
-                                    <div class="detail-summary-single-value profit">
-                                        +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
-                                    </div>
-                                {% else %}
-                                    <div class="detail-summary-single-value loss">
-                                        -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="detail-summary-single-row">
-                                <div class="detail-summary-single-label">未實現 ROI</div>
-                                {% if card.roi >= 0 %}
-                                    <div class="detail-summary-single-value profit">
-                                        +{{ "{:.2f}".format(card.roi or 0) }}%
-                                    </div>
-                                {% else %}
-                                    <div class="detail-summary-single-value loss">
-                                        {{ "{:.2f}".format(card.roi or 0) }}%
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-
+                <div class="detail-summary-single-row">
+                    <div class="detail-summary-single-label">購入價格</div>
+                    <div class="detail-summary-single-value">
+                        NT${{ "{:,.0f}".format(card.buy_price or 0) }}
                     </div>
                 </div>
+
+                {% if card.status == "sold" %}
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">實際收入</div>
+                        <div class="detail-summary-single-value">
+                            NT${{ "{:,.0f}".format(card.net_revenue or 0) }}
+                        </div>
+                    </div>
+
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">已實現損益</div>
+                        {% if card.realized_profit >= 0 %}
+                            <div class="detail-summary-single-value profit">
+                                +NT${{ "{:,.0f}".format(card.realized_profit or 0) }}
+                            </div>
+                        {% else %}
+                            <div class="detail-summary-single-value loss">
+                                -NT${{ "{:,.0f}".format((card.realized_profit or 0) * -1) }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">已實現 ROI</div>
+                        {% if card.realized_roi >= 0 %}
+                            <div class="detail-summary-single-value profit">
+                                +{{ "{:.2f}".format(card.realized_roi or 0) }}%
+                            </div>
+                        {% else %}
+                            <div class="detail-summary-single-value loss">
+                                {{ "{:.2f}".format(card.realized_roi or 0) }}%
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">目前市價</div>
+                        <div class="detail-summary-single-value">
+                            NT${{ "{:,.0f}".format(card.current_market_price or 0) }}
+                        </div>
+                    </div>
+
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">未實現損益</div>
+                        {% if card.unrealized_profit >= 0 %}
+                            <div class="detail-summary-single-value profit">
+                                +NT${{ "{:,.0f}".format(card.unrealized_profit or 0) }}
+                            </div>
+                        {% else %}
+                            <div class="detail-summary-single-value loss">
+                                -NT${{ "{:,.0f}".format((card.unrealized_profit or 0) * -1) }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="detail-summary-single-row">
+                        <div class="detail-summary-single-label">未實現 ROI</div>
+                        {% if card.roi >= 0 %}
+                            <div class="detail-summary-single-value profit">
+                                +{{ "{:.2f}".format(card.roi or 0) }}%
+                            </div>
+                        {% else %}
+                            <div class="detail-summary-single-value loss">
+                                {{ "{:.2f}".format(card.roi or 0) }}%
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
     </div>
 
 </div>
@@ -207,6 +207,7 @@
                 <th>市價更新時間</th>
                 <td>{{ card.price_updated_at or "尚未更新" }}</td>
             </tr>
+
             {% if card.status == "sold" %}
             <tr>
                 <th>售出日期</th>
@@ -245,6 +246,62 @@
             </td>
         </tr>
     </table>
+</div>
+
+<div class="cost-breakdown detail-section-card pro-analysis-card">
+    <h2>Cadouka Pro 進階分析</h2>
+
+    {% if is_pro %}
+        <div class="pro-unlocked-box">
+            <h3>市場分析功能已開啟</h3>
+
+            <p>
+                你目前是 Cadouka Pro 會員。之後這裡會顯示 PSA10、PSA9、PSA8以下行情比較、
+                24h 成交量、歷史成交紀錄與持有狀態分析。
+            </p>
+
+            <div class="pro-feature-list">
+                <div class="pro-feature-item">
+                    <strong>PSA 等級行情比較</strong>
+                    <span>比較 PSA10、PSA9、PSA8以下的最高、平均與最低成交價。</span>
+                </div>
+
+                <div class="pro-feature-item">
+                    <strong>24h 成交量</strong>
+                    <span>查看近期成交熱度，判斷這張卡目前是否具有流動性。</span>
+                </div>
+
+                <div class="pro-feature-item">
+                    <strong>歷史成交紀錄</strong>
+                    <span>未來可直接在明細頁查看近期成交資料，不必回 LINE 查詢。</span>
+                </div>
+            </div>
+
+            {% if card.product_url %}
+                <div style="margin-top: 16px;">
+                    <a
+                        href="{{ card.product_url }}"
+                        class="btn-secondary"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        查看商品來源
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="pro-locked-box">
+            <h3>此功能為 Cadouka Pro 會員功能</h3>
+
+            <p>
+                升級後可查看不同 PSA 等級行情、24h 成交量與歷史成交資料，
+                協助你更完整判斷卡牌目前的市場狀態。
+            </p>
+
+            <a href="/pro" class="btn-add">了解 Cadouka Pro</a>
+        </div>
+    {% endif %}
 </div>
 
 {% if card.status == "sold" %}
