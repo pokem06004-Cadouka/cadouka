@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cards/{{ card.id }}" class="back-link">← 回到卡牌明細</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Cadouka Pro</p>
+        <h1>{{ selected_grade }} 歷史成交</h1>
+        <p class="page-subtitle">
+            {{ card.card_display_name or card.card_name }}
+        </p>
+    </div>
+</div>
+
+<div class="cost-breakdown detail-section-card pro-analysis-card">
+    <div class="pro-compact-title-row">
+        <div>
+            <h2>最近 10 筆成交紀錄</h2>
+            <p>此頁為 Cadouka Pro 會員專屬，顯示較完整的近期成交資料。</p>
+        </div>
+
+        {% if history_data and history_data.jpy_rate %}
+            <span class="pro-rate-pill">
+                日圓匯率：{{ "%.4f"|format(history_data.jpy_rate) }}
+            </span>
+        {% endif %}
+    </div>
+
+    {% if history_data and history_data.available %}
+        {% if history_data.prices %}
+            <div class="pro-summary-table-wrap">
+                <table class="pro-history-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>Grade</th>
+                            <th>日幣價格</th>
+                            <th>台幣換算</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in history_data.prices %}
+                            <tr>
+                                <td>{{ item.date or "-" }}</td>
+                                <td>{{ item.grade or selected_grade }}</td>
+                                <td>
+                                    <strong>¥{{ "{:,.0f}".format(item.price_jpy or 0) }}</strong>
+                                </td>
+                                <td>
+                                    <small>NT${{ "{:,.0f}".format(item.price_twd or 0) }}</small>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="pro-market-empty">
+                目前沒有 {{ selected_grade }} 歷史成交資料。
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="pro-market-empty">
+            {{ history_data.message if history_data else "目前無法取得歷史成交資料。" }}
+        </div>
+    {% endif %}
+</div>
+
+<div class="form-submit-row" style="justify-content: flex-start; margin-top: 20px;">
+    <a href="/cards/{{ card.id }}/pro-history?grade=PSA10" class="btn-secondary">PSA10</a>
+    <a href="/cards/{{ card.id }}/pro-history?grade=PSA9" class="btn-secondary">PSA9</a>
+    <a href="/cards/{{ card.id }}/pro-history?grade=PSA8以下" class="btn-secondary">PSA8以下</a>
+</div>
+
+{% endblock %}
