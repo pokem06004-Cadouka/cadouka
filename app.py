@@ -30,13 +30,14 @@ from urllib.parse import parse_qs, unquote
 import urllib.request as req
 import traceback
 import os
+import csv
 import random
 import string
 from functools import wraps
 
-from io import BytesIO
+from io import BytesIO, StringIO
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -111,7 +112,8 @@ from models import (
     get_all_search_tags,
     get_search_tag_by_id,
     update_search_tag,
-    delete_search_tag
+    delete_search_tag,
+    bulk_import_search_aliases
 )
 
 from calculations import calculate_total_cost
@@ -1141,11 +1143,10 @@ def admin_search_aliases_page():
                 is_active=1,
                 tag_ids=tag_ids
             )
-            
         except Exception as e:
             print("新增搜尋別名錯誤：", e)
             traceback.print_exc()
-            
+            flash("新增搜尋別名失敗，可能是俗稱已存在", "warning")
 
         return redirect("/cdk-console/search-aliases")
 
@@ -1212,8 +1213,15 @@ def admin_search_aliases_page():
     return render_template(
         "admin_search_aliases.html",
         aliases=alias_list,
-        all_tags=tag_list,
         tags=tag_list,
+        all_tags=tag_list,
+        import_result={
+            "total": request.args.get("import_total", ""),
+            "created": request.args.get("import_created", ""),
+            "updated": request.args.get("import_updated", ""),
+            "skipped": request.args.get("import_skipped", ""),
+            "errors": request.args.get("import_errors", "")
+        },
         keyword=keyword,
         selected_tag_id=selected_tag_id,
         current_page=page,
@@ -1221,6 +1229,156 @@ def admin_search_aliases_page():
         total_items=total_items,
         per_page=per_page
     )
+
+
+# =========================
+# Search Alias Import Helpers
+# =========================
+
+def normalize_import_header(value):
+    return str(value or "").strip().replace("\ufeff", "").lower()
+
+
+def pick_import_value(row, possible_names):
+    normalized_row = {}
+
+    for key, value in row.items():
+        normalized_row[normalize_import_header(key)] = "" if value is None else str(value).strip()
+
+    for name in possible_names:
+        normalized_name = normalize_import_header(name)
+
+        if normalized_name in normalized_row:
+            return normalized_row.get(normalized_name, "").strip()
+
+    return ""
+
+
+def normalize_import_rows(raw_rows):
+    rows = []
+
+    for row in raw_rows or []:
+        alias_keyword = pick_import_value(row, [
+            "alias_keyword",
+            "alias",
+            "俗稱",
+            "別名",
+            "關鍵字",
+            "搜尋別名",
+            "輸入詞"
+        ])
+
+        search_keyword = pick_import_value(row, [
+            "search_keyword",
+            "search",
+            "實際搜尋詞",
+            "實際搜尋",
+            "搜尋詞",
+            "卡號",
+            "卡片編號",
+            "查詢詞"
+        ])
+
+        note = pick_import_value(row, [
+            "note",
+            "備註",
+            "說明"
+        ])
+
+        tags = pick_import_value(row, [
+            "tags",
+            "tag",
+            "標籤",
+            "分類"
+        ])
+
+        if not alias_keyword and not search_keyword:
+            continue
+
+        rows.append({
+            "alias_keyword": alias_keyword,
+            "search_keyword": search_keyword,
+            "note": note,
+            "tags": tags
+        })
+
+    return rows
+
+
+def decode_uploaded_text_file(file_bytes):
+    for encoding in ["utf-8-sig", "utf-8", "cp950", "big5"]:
+        try:
+            return file_bytes.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+
+    return file_bytes.decode("utf-8", errors="ignore")
+
+
+def parse_search_alias_import_file(uploaded_file):
+    filename = (uploaded_file.filename or "").lower()
+    file_bytes = uploaded_file.read()
+
+    if filename.endswith(".xlsx"):
+        workbook = load_workbook(BytesIO(file_bytes), data_only=True)
+        worksheet = workbook.active
+        rows = list(worksheet.iter_rows(values_only=True))
+
+        if not rows:
+            return []
+
+        headers = [str(cell or "").strip() for cell in rows[0]]
+        raw_rows = []
+
+        for values in rows[1:]:
+            row = {}
+
+            for index, header in enumerate(headers):
+                if not header:
+                    continue
+
+                row[header] = values[index] if index < len(values) else ""
+
+            raw_rows.append(row)
+
+        return normalize_import_rows(raw_rows)
+
+    text = decode_uploaded_text_file(file_bytes)
+    reader = csv.DictReader(StringIO(text))
+
+    return normalize_import_rows(list(reader))
+
+
+@app.route("/cdk-console/search-aliases/import", methods=["POST"])
+@login_required
+@admin_required
+def admin_import_search_aliases_page():
+    uploaded_file = request.files.get("alias_file")
+
+    if not uploaded_file or not uploaded_file.filename:
+        return redirect("/cdk-console/search-aliases")
+
+    try:
+        rows = parse_search_alias_import_file(uploaded_file)
+        result = bulk_import_search_aliases(rows, max_tags=8)
+
+        return redirect(
+            "/cdk-console/search-aliases"
+            f"?import_total={result.get('total', 0)}"
+            f"&import_created={result.get('created', 0)}"
+            f"&import_updated={result.get('updated', 0)}"
+            f"&import_skipped={result.get('skipped', 0)}"
+            f"&import_errors={result.get('errors', 0)}"
+        )
+
+    except Exception as e:
+        print("匯入搜尋別名錯誤：", e)
+        traceback.print_exc()
+
+        return redirect(
+            "/cdk-console/search-aliases"
+            "?import_total=0&import_created=0&import_updated=0&import_skipped=0&import_errors=1"
+        )
 
 
 @app.route("/cdk-console/search-tags/add", methods=["POST"])
@@ -1236,11 +1394,10 @@ def admin_add_search_tag_page():
 
     try:
         add_search_tag(tag_name=tag_name, tag_color=tag_color)
-        
     except Exception as e:
         print("新增搜尋標籤錯誤：", e)
         traceback.print_exc()
-        
+        flash("新增標籤失敗，可能是標籤名稱已存在", "warning")
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1264,11 +1421,10 @@ def admin_update_search_tag_page(tag_id):
 
     try:
         update_search_tag(tag_id=tag_id, tag_name=tag_name, tag_color=tag_color)
-        
     except Exception as e:
         print("更新搜尋標籤錯誤：", e)
         traceback.print_exc()
-        
+        flash("更新標籤失敗，可能是標籤名稱已存在", "warning")
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1284,7 +1440,6 @@ def admin_delete_search_tag_page(tag_id):
         return redirect("/cdk-console/search-aliases")
 
     delete_search_tag(tag_id)
-    
     return redirect("/cdk-console/search-aliases")
 
 @app.route("/cdk-console/search-aliases/<int:alias_id>/update", methods=["POST"])
@@ -1318,11 +1473,10 @@ def admin_update_search_alias_page(alias_id):
             note=note,
             tag_ids=tag_ids
         )
-        
     except Exception as e:
         print("更新搜尋別名錯誤：", e)
         traceback.print_exc()
-        
+        flash("更新搜尋別名失敗，可能是俗稱已存在", "warning")
 
     return redirect("/cdk-console/search-aliases")
 
@@ -1360,7 +1514,6 @@ def admin_delete_search_alias_page(alias_id):
 
     delete_search_alias(alias_id)
 
-    
     return redirect("/cdk-console/search-aliases")
 
 # =========================

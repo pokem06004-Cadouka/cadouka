@@ -1915,6 +1915,216 @@ def hydrate_search_aliases_with_tags(aliases):
 
     return alias_list
 
+
+def get_search_tag_by_name(tag_name):
+    tag_name = (tag_name or "").strip()
+
+    if not tag_name:
+        return None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM search_tags
+        WHERE LOWER(tag_name) = LOWER(?)
+        ORDER BY id ASC
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [tag_name])
+    tag = cursor.fetchone()
+
+    conn.close()
+    return tag
+
+
+def get_or_create_search_tag(tag_name, tag_color="#3b82f6"):
+    tag_name = (tag_name or "").strip()
+
+    if not tag_name:
+        return None
+
+    existing_tag = get_search_tag_by_name(tag_name)
+
+    if existing_tag:
+        return existing_tag["id"]
+
+    try:
+        return add_search_tag(tag_name, tag_color=tag_color)
+    except Exception:
+        # 避免同時間新增或大小寫差異造成錯誤，再查一次。
+        existing_tag = get_search_tag_by_name(tag_name)
+
+        if existing_tag:
+            return existing_tag["id"]
+
+        raise
+
+
+def get_search_alias_by_keyword(alias_keyword):
+    alias_keyword = (alias_keyword or "").strip()
+
+    if not alias_keyword:
+        return None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM search_aliases
+        WHERE LOWER(alias_keyword) = LOWER(?)
+        ORDER BY id DESC
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [alias_keyword])
+    alias = cursor.fetchone()
+
+    conn.close()
+    return alias
+
+
+def split_import_tag_names(tags_text, max_tags=8):
+    tags_text = (tags_text or "").strip()
+
+    if not tags_text:
+        return []
+
+    normalized = tags_text
+
+    for separator in ["，", ",", "、", ";", "；", "／", "/"]:
+        normalized = normalized.replace(separator, "|")
+
+    tag_names = []
+
+    for part in normalized.split("|"):
+        tag_name = part.strip()
+
+        if not tag_name:
+            continue
+
+        if tag_name not in tag_names:
+            tag_names.append(tag_name)
+
+        if len(tag_names) >= max_tags:
+            break
+
+    return tag_names
+
+
+def upsert_search_alias(alias_keyword, search_keyword, note="", tag_names=None, is_active=1):
+    alias_keyword = (alias_keyword or "").strip()
+    search_keyword = (search_keyword or "").strip()
+    note = (note or "").strip()
+
+    if not alias_keyword or not search_keyword:
+        return {
+            "status": "skipped",
+            "alias_id": None
+        }
+
+    tag_ids = []
+
+    for tag_name in (tag_names or [])[:8]:
+        tag_id = get_or_create_search_tag(tag_name)
+
+        if tag_id and tag_id not in tag_ids:
+            tag_ids.append(tag_id)
+
+    existing_alias = get_search_alias_by_keyword(alias_keyword)
+
+    if existing_alias:
+        alias_id = existing_alias["id"]
+
+        update_search_alias(
+            alias_id=alias_id,
+            alias_keyword=alias_keyword,
+            search_keyword=search_keyword,
+            note=note,
+            is_active=is_active,
+            tag_ids=tag_ids
+        )
+
+        return {
+            "status": "updated",
+            "alias_id": alias_id
+        }
+
+    alias_id = add_search_alias(
+        alias_keyword=alias_keyword,
+        search_keyword=search_keyword,
+        note=note,
+        is_active=is_active,
+        tag_ids=tag_ids
+    )
+
+    return {
+        "status": "created",
+        "alias_id": alias_id
+    }
+
+
+def bulk_import_search_aliases(rows, max_tags=8):
+    """
+    rows 格式：
+    [
+        {
+            "alias_keyword": "梵谷皮",
+            "search_keyword": "085 svp",
+            "note": "Van Gogh Pikachu",
+            "tags": "寶可夢|皮卡丘|特典"
+        }
+    ]
+
+    標籤名稱若已存在，會使用原本顏色；若不存在，會自動建立藍色標籤。
+    """
+    result = {
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "errors": 0,
+        "total": 0
+    }
+
+    for row in rows or []:
+        result["total"] += 1
+
+        try:
+            alias_keyword = (row.get("alias_keyword") or "").strip()
+            search_keyword = (row.get("search_keyword") or "").strip()
+            note = (row.get("note") or "").strip()
+            tags_text = (row.get("tags") or "").strip()
+
+            if not alias_keyword or not search_keyword:
+                result["skipped"] += 1
+                continue
+
+            tag_names = split_import_tag_names(tags_text, max_tags=max_tags)
+
+            upsert_result = upsert_search_alias(
+                alias_keyword=alias_keyword,
+                search_keyword=search_keyword,
+                note=note,
+                tag_names=tag_names,
+                is_active=1
+            )
+
+            if upsert_result["status"] == "created":
+                result["created"] += 1
+            elif upsert_result["status"] == "updated":
+                result["updated"] += 1
+            else:
+                result["skipped"] += 1
+
+        except Exception as e:
+            print("批量匯入搜尋別名失敗：", e)
+            result["errors"] += 1
+
+    return result
+
 # =========================
 # Migration Helpers
 # =========================
