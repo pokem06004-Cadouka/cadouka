@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">Cadouka Console</p>
+        <h1>後台總覽</h1>
+        <p class="page-subtitle">查看 Cadouka 使用者、LINE 綁定與卡牌資料概況。</p>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-card">
+        <span>總用戶數</span>
+        <strong>{{ stats.total_users }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>已綁定 LINE</span>
+        <strong>{{ stats.bound_users }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>未綁定 LINE</span>
+        <strong>{{ stats.unbound_users }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>總卡牌數</span>
+        <strong>{{ stats.total_cards }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>持有中卡牌</span>
+        <strong>{{ stats.holding_cards }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>已售出卡牌</span>
+        <strong>{{ stats.sold_cards }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>今日新增卡牌</span>
+        <strong>{{ stats.today_new_cards }}</strong>
+    </div>
+</div>
+
+<div class="form-card" style="margin-top: 28px;">
+    <h2>管理功能</h2>
+
+    <div class="form-submit-row" style="justify-content: flex-start;">
+        <a href="/cdk-console/users" class="btn-secondary">用戶管理</a>
+        <a href="/cdk-console/cards" class="btn-secondary">卡牌資料</a>
+    </div>
+</div>
+
+{% endblock %}

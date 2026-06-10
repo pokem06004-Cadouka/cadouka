@@ -86,7 +86,11 @@ from models import (
     get_user_by_line_user_id,
     bind_line_user_to_account,
     unbind_line_user,
-    delete_user_account
+    delete_user_account,
+
+    get_admin_overview_stats,
+    get_admin_users,
+    get_admin_cards
 )
 
 from calculations import calculate_total_cost
@@ -154,6 +158,27 @@ def login_required(view_func):
 
     return wrapped_view
 
+def admin_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        user = current_user()
+
+        if not user:
+            flash("請先登入", "warning")
+            return redirect("/login")
+
+        try:
+            is_admin = user["is_admin"] or 0
+        except:
+            is_admin = 0
+
+        if int(is_admin) != 1:
+            flash("你沒有權限進入後台", "warning")
+            return redirect("/dashboard")
+
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
 
 @app.context_processor
 def inject_current_user():
@@ -718,6 +743,55 @@ def line_liff_bind_confirm_page():
         "success": True,
         "message": f"綁定成功！你的 LINE 已綁定 Cadouka 帳號：{display_name}"
     })
+
+# =========================
+# Admin Console Routes
+# =========================
+
+@app.route("/cdk-console")
+@login_required
+@admin_required
+def admin_dashboard_page():
+    stats = get_admin_overview_stats()
+
+    return render_template(
+        "admin_dashboard.html",
+        stats=stats
+    )
+
+
+@app.route("/cdk-console/users")
+@login_required
+@admin_required
+def admin_users_page():
+    users = get_admin_users()
+
+    return render_template(
+        "admin_users.html",
+        users=users
+    )
+
+
+@app.route("/cdk-console/cards")
+@login_required
+@admin_required
+def admin_cards_page():
+    keyword = request.args.get("keyword", "").strip()
+
+    cards = get_admin_cards(keyword=keyword)
+
+    card_list = []
+
+    for card in cards:
+        card_dict = dict(card)
+        card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
+        card_list.append(card_dict)
+
+    return render_template(
+        "admin_cards.html",
+        cards=card_list,
+        keyword=keyword
+    )
 
 # =========================
 # Dashboard / Card Routes

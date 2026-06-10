@@ -57,6 +57,7 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
+            is_admin INTEGER DEFAULT 0,
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
@@ -119,6 +120,7 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
+            is_admin INTEGER DEFAULT 0,
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
@@ -323,6 +325,23 @@ def update_user_display_name(user_id, display_name):
     conn.commit()
     conn.close()
 
+def update_user_admin_status(user_id, is_admin):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE users
+        SET is_admin = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        1 if is_admin else 0,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
 
 def update_user_line_bind_code(user_id, bind_code, expires_at):
     conn = get_connection()
@@ -377,6 +396,57 @@ def get_user_by_line_user_id(line_user_id):
     conn.close()
     return user
 
+def get_admin_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            u.id,
+            u.user_code,
+            u.username,
+            u.display_name,
+            u.is_admin,
+            u.line_user_id,
+            u.created_at,
+
+            COUNT(c.id) AS total_cards,
+
+            SUM(
+                CASE
+                    WHEN c.status = 'holding' THEN 1
+                    ELSE 0
+                END
+            ) AS holding_cards,
+
+            SUM(
+                CASE
+                    WHEN c.status = 'sold' THEN 1
+                    ELSE 0
+                END
+            ) AS sold_cards
+
+        FROM users u
+        LEFT JOIN cards c
+            ON u.id = c.user_id
+
+        GROUP BY
+            u.id,
+            u.user_code,
+            u.username,
+            u.display_name,
+            u.is_admin,
+            u.line_user_id,
+            u.created_at
+
+        ORDER BY u.created_at DESC
+    """
+
+    cursor.execute(sql)
+    users = cursor.fetchall()
+
+    conn.close()
+    return users
 
 def bind_line_user_to_account(user_id, line_user_id):
     conn = get_connection()
@@ -811,6 +881,72 @@ def delete_user_account(user_id):
     conn.commit()
     conn.close()
 
+def get_admin_cards(keyword=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            c.*,
+            u.user_code,
+            u.username,
+            u.display_name AS owner_display_name
+        FROM cards c
+        LEFT JOIN users u
+            ON c.user_id = u.id
+        WHERE 1 = 1
+    """
+
+    params = []
+
+    if keyword:
+        if is_postgres():
+            sql += """
+                AND (
+                    c.card_name ILIKE ?
+                    OR c.card_display_name ILIKE ?
+                    OR c.card_number ILIKE ?
+                    OR c.grade ILIKE ?
+                    OR c.product_url ILIKE ?
+                    OR u.user_code ILIKE ?
+                    OR u.username ILIKE ?
+                    OR u.display_name ILIKE ?
+                )
+            """
+        else:
+            sql += """
+                AND (
+                    c.card_name LIKE ?
+                    OR c.card_display_name LIKE ?
+                    OR c.card_number LIKE ?
+                    OR c.grade LIKE ?
+                    OR c.product_url LIKE ?
+                    OR u.user_code LIKE ?
+                    OR u.username LIKE ?
+                    OR u.display_name LIKE ?
+                )
+            """
+
+        search_keyword = f"%{keyword}%"
+        params.extend([
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword
+        ])
+
+    sql += " ORDER BY c.created_at DESC"
+
+    execute_sql(cursor, sql, params)
+    cards = cursor.fetchall()
+
+    conn.close()
+    return cards
+
 # =========================
 # Migration Helpers
 # =========================
@@ -925,6 +1061,7 @@ def migrate_db():
     """
     add_user_column_if_not_exists("user_code", "TEXT")
     add_user_column_if_not_exists("display_name", "TEXT")
+    add_user_column_if_not_exists("is_admin", "INTEGER DEFAULT 0")
     add_user_column_if_not_exists("line_user_id", "TEXT")
     add_user_column_if_not_exists("line_bind_code", "TEXT")
     add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")
@@ -1070,3 +1207,67 @@ def get_dashboard_full_summary(user_id=None):
     conn.close()
 
     return holding, sold
+
+def get_admin_overview_stats():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM users")
+    total_users = cursor.fetchone()["count"] or 0
+
+    execute_sql(
+        cursor,
+        """
+        SELECT COUNT(*) AS count
+        FROM users
+        WHERE line_user_id IS NOT NULL
+        AND line_user_id != ''
+        """
+    )
+    bound_users = cursor.fetchone()["count"] or 0
+
+    unbound_users = total_users - bound_users
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM cards")
+    total_cards = cursor.fetchone()["count"] or 0
+
+    execute_sql(
+        cursor,
+        "SELECT COUNT(*) AS count FROM cards WHERE status = 'holding'"
+    )
+    holding_cards = cursor.fetchone()["count"] or 0
+
+    execute_sql(
+        cursor,
+        "SELECT COUNT(*) AS count FROM cards WHERE status = 'sold'"
+    )
+    sold_cards = cursor.fetchone()["count"] or 0
+
+    execute_sql(
+        cursor,
+        """
+        SELECT COUNT(*) AS count
+        FROM cards
+        WHERE DATE(created_at) = CURRENT_DATE
+        """
+        if is_postgres()
+        else
+        """
+        SELECT COUNT(*) AS count
+        FROM cards
+        WHERE DATE(created_at) = DATE('now')
+        """
+    )
+    today_new_cards = cursor.fetchone()["count"] or 0
+
+    conn.close()
+
+    return {
+        "total_users": total_users,
+        "bound_users": bound_users,
+        "unbound_users": unbound_users,
+        "total_cards": total_cards,
+        "holding_cards": holding_cards,
+        "sold_cards": sold_cards,
+        "today_new_cards": today_new_cards
+    }
