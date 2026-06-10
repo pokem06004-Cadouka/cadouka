@@ -576,6 +576,73 @@ def build_pro_market_summary(product_url):
             "grades": []
         }
 
+def build_pro_history_data(card, selected_grade):
+    product_url = card.get("product_url") or ""
+
+    if not product_url:
+        return {
+            "available": False,
+            "message": "這張卡尚未設定商品網址，無法取得歷史成交資料。",
+            "grade": selected_grade,
+            "jpy_rate": None,
+            "prices": []
+        }
+
+    product_id = get_product_id(product_url)
+
+    if not product_id:
+        return {
+            "available": False,
+            "message": "商品網址格式異常，無法取得歷史成交資料。",
+            "grade": selected_grade,
+            "jpy_rate": None,
+            "prices": []
+        }
+
+    try:
+        price_url = build_sales_history_url(
+            product_id,
+            condition=selected_grade,
+            page=1,
+            per_page=20
+        )
+
+        prices = getprice(price_url)
+        jpy_rate = get_jpy_spot_sell()
+
+        history_prices = []
+
+        for item in (prices or [])[:10]:
+            jpy_price = parse_jpy_price(item.get("price"))
+
+            history_prices.append({
+                "date": item.get("date") or "-",
+                "grade": item.get("condition") or selected_grade,
+                "price_jpy": jpy_price or 0,
+                "price_twd": round(jpy_price * jpy_rate) if jpy_price and jpy_rate else 0
+            })
+
+        return {
+            "available": True,
+            "message": "",
+            "grade": selected_grade,
+            "jpy_rate": jpy_rate,
+            "prices": history_prices
+        }
+
+    except Exception as e:
+        print("Pro 歷史成交錯誤：", e)
+        traceback.print_exc()
+
+        return {
+            "available": False,
+            "message": "取得歷史成交資料時發生錯誤，請稍後再試。",
+            "grade": selected_grade,
+            "jpy_rate": None,
+            "prices": []
+        }
+
+
 def get_market_price_by_product_url(product_url):
     """
     用 SNKRDUNK 商品網址抓最新 PSA10 平均成交價，並換算成台幣。
@@ -1535,6 +1602,46 @@ def pro_page():
         membership_level=get_membership_level(user)
     )
 
+@app.route("/cards/<int:card_id>/pro-history")
+@login_required
+def card_pro_history_page(card_id):
+    user_id = current_user_id()
+    user = current_user()
+
+    card = get_card_by_id(card_id, user_id=user_id)
+
+    if not card:
+        return "找不到這張卡牌", 404
+
+    if not is_pro_user(user):
+        flash("此功能為 Cadouka Pro 會員功能", "warning")
+        return redirect(f"/cards/{card_id}")
+
+    selected_grade = request.args.get("grade", "PSA10").strip()
+
+    allowed_grades = ["PSA10", "PSA9", "PSA8以下"]
+
+    if selected_grade not in allowed_grades:
+        selected_grade = "PSA10"
+
+    card_dict = dict(card)
+    card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
+
+    history_data = build_pro_history_data(
+        card_dict,
+        selected_grade
+    )
+
+    return render_template(
+        "card_pro_history.html",
+        card=card_dict,
+        selected_grade=selected_grade,
+        history_data=history_data,
+        membership_level=get_membership_level(user),
+        is_pro=is_pro_user(user)
+    )
+
+
 @app.route("/cards/<int:card_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_card_page(card_id):
@@ -2381,12 +2488,20 @@ def handle_postback(event):
             prices = getprice(price_url)
             jpy_rate = get_jpy_spot_sell()
 
+            line_user = get_user_by_line_user_id(line_user_id)
+
+            if line_user and is_pro_user(line_user):
+                history_display_limit = 10
+            else:
+                history_display_limit = 5
+
             history_flex_message = create_history_flex(
                 product,
                 prices,
                 selected_grade,
                 jpy_rate,
-                index
+                index,
+                display_limit=history_display_limit
             )
 
             safe_add_line_log(

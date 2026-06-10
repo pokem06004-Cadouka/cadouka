@@ -249,75 +249,85 @@
 </div>
 
 <div class="cost-breakdown detail-section-card pro-analysis-card">
-    <h2>Cadouka Pro 進階分析</h2>
+    <div class="pro-compact-title-row">
+        <div>
+            <h2>Cadouka Pro 進階分析</h2>
+            <p>PSA 等級行情摘要與會員專屬歷史成交資料。</p>
+        </div>
+
+        {% if is_pro and pro_market_summary and pro_market_summary.jpy_rate %}
+            <span class="pro-rate-pill">
+                日圓匯率：{{ "%.4f"|format(pro_market_summary.jpy_rate) }}
+            </span>
+        {% endif %}
+    </div>
 
     {% if is_pro %}
-        <div class="pro-unlocked-box">
-            <div class="pro-analysis-header">
-                <div>
-                    <h3>PSA 市場行情摘要</h3>
-                    <p>
-                        根據商品網址取得近期成交資料，顯示 PSA10、PSA9、PSA8以下的成交行情。
-                    </p>
-                </div>
-
-                {% if pro_market_summary and pro_market_summary.jpy_rate %}
-                    <span class="pro-rate-pill">
-                        日圓匯率：{{ "%.4f"|format(pro_market_summary.jpy_rate) }}
-                    </span>
-                {% endif %}
-            </div>
+        <div class="pro-unlocked-box pro-unlocked-box-compact">
 
             {% if pro_market_summary and pro_market_summary.available %}
-                <div class="pro-market-grid">
-                    {% for item in pro_market_summary.grades %}
-                        <div class="pro-market-grade-card">
-                            <div class="pro-market-grade-header">
-                                <h4>{{ item.grade }}</h4>
-                                <span>24h 成交 {{ item.count_24h }} 筆</span>
-                            </div>
+                <div class="pro-summary-table-wrap">
+                    <table class="pro-summary-table">
+                        <thead>
+                            <tr>
+                                <th>等級</th>
+                                <th>24h</th>
+                                <th>最高</th>
+                                <th>平均</th>
+                                <th>最低</th>
+                                <th>歷史</th>
+                            </tr>
+                        </thead>
 
-                            {% if item.has_data %}
-                                <div class="pro-market-price-grid">
-                                    <div class="pro-market-price-box">
-                                        <span>最高</span>
-                                        <strong>¥{{ "{:,.0f}".format(item.highest_jpy or 0) }}</strong>
-                                        <small>NT${{ "{:,.0f}".format(item.highest_twd or 0) }}</small>
-                                    </div>
+                        <tbody>
+                            {% for item in pro_market_summary.grades %}
+                                <tr>
+                                    <td class="pro-grade-cell">
+                                        {{ item.grade }}
+                                    </td>
 
-                                    <div class="pro-market-price-box">
-                                        <span>平均</span>
-                                        <strong>¥{{ "{:,.0f}".format(item.average_jpy or 0) }}</strong>
-                                        <small>NT${{ "{:,.0f}".format(item.average_twd or 0) }}</small>
-                                    </div>
+                                    <td>
+                                        {{ item.count_24h }} 筆
+                                    </td>
 
-                                    <div class="pro-market-price-box">
-                                        <span>最低</span>
-                                        <strong>¥{{ "{:,.0f}".format(item.lowest_jpy or 0) }}</strong>
-                                        <small>NT${{ "{:,.0f}".format(item.lowest_twd or 0) }}</small>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="pro-market-empty">
-                                    目前沒有 {{ item.grade }} 成交資料。
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                                    {% if item.has_data %}
+                                        <td>
+                                            <strong>¥{{ "{:,.0f}".format(item.highest_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.highest_twd or 0) }}</small>
+                                        </td>
+
+                                        <td>
+                                            <strong>¥{{ "{:,.0f}".format(item.average_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.average_twd or 0) }}</small>
+                                        </td>
+
+                                        <td>
+                                            <strong>¥{{ "{:,.0f}".format(item.lowest_jpy or 0) }}</strong>
+                                            <small>NT${{ "{:,.0f}".format(item.lowest_twd or 0) }}</small>
+                                        </td>
+                                    {% else %}
+                                        <td colspan="3" class="pro-summary-empty">
+                                            目前沒有成交資料
+                                        </td>
+                                    {% endif %}
+
+                                    <td>
+                                        {% if card.product_url %}
+                                            <a
+                                                href="/cards/{{ card.id }}/pro-history?grade={{ item.grade }}"
+                                                class="pro-history-link"
+                                            >
+                                                歷史成交
+                                            </a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-
-                {% if card.product_url %}
-                    <div class="pro-analysis-actions">
-                        <a
-                            href="{{ card.product_url }}"
-                            class="btn-secondary"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            查看商品來源
-                        </a>
-                    </div>
-                {% endif %}
             {% else %}
                 <div class="pro-market-empty">
                     {{ pro_market_summary.message if pro_market_summary else "目前無法取得市場分析資料。" }}

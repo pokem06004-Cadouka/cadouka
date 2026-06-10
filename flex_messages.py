@@ -371,7 +371,7 @@ def create_grade_summary_flex(product, prices_by_conditions, jpy_rate=None, prod
         contents=bubble
     )
 
-def create_history_flex(product, prices, condition_label, jpy_rate=None, product_index=None):
+def create_history_flex(product, prices, condition_label, jpy_rate=None, product_index=None, display_limit=5):
     product_name = product["name"] if product["name"] else "未命名商品"
     product_url = product["url"]
 
@@ -410,7 +410,7 @@ def create_history_flex(product, prices, condition_label, jpy_rate=None, product
     )
 
     if prices:
-        for idx, p in enumerate(prices[:10]):
+        for idx, p in enumerate(prices[:display_limit]):
             jpy_price = format_jpy_price(p["price"])
 
             if jpy_price is not None:
