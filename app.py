@@ -181,9 +181,9 @@ def create_main_quick_reply():
     return QuickReply(
         items=[
             QuickReplyButton(
-                action=MessageAction(
-                    label="使用教學",
-                    text="使用教學"
+                action=URIAction(
+                    label="卡牌倉庫",
+                    uri=f"{base_url}/cards"
                 )
             ),
             QuickReplyButton(
@@ -194,14 +194,14 @@ def create_main_quick_reply():
             ),
             QuickReplyButton(
                 action=MessageAction(
-                    label="解除綁定",
-                    text="解除綁定"
+                    label="使用教學",
+                    text="使用教學"
                 )
             ),
             QuickReplyButton(
-                action=URIAction(
-                    label="卡牌倉庫",
-                    uri=f"{base_url}/cards"
+                action=MessageAction(
+                    label="解除綁定",
+                    text="解除綁定"
                 )
             )
         ]
@@ -1801,7 +1801,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text="Cadouka 常用功能\n請選擇你要使用的功能：",
+                text="Cadouka 常用功能：",
                 quick_reply=create_main_quick_reply()
             )
         )
@@ -1811,7 +1811,7 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text="Cadouka 使用教學\n請選擇你想查看的項目：",
+                text="Cadouka 使用教學：",
                 quick_reply=create_tutorial_quick_reply()
             )
         )
