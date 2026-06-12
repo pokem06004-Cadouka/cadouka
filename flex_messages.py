@@ -1209,7 +1209,7 @@ def create_product_image_grid_messages(products):
             )
 
         bubble = BubbleContainer(
-            size="mega",
+            size="giga",
             body=BoxComponent(
                 layout="vertical",
                 spacing="md",
