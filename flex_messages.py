@@ -375,6 +375,7 @@ def create_grade_summary_flex(
         )
 
     bubble = BubbleContainer(
+        size="giga",
         hero=ImageComponent(
             url=image_url,
             size="full",
@@ -593,6 +594,7 @@ def create_history_flex(product, prices, condition_label, jpy_rate=None, product
         add_card_action_data = f"action=add_card&grade={quote(condition_label)}"
 
     bubble = BubbleContainer(
+        size="giga",
         body=BoxComponent(
             layout="vertical",
             spacing="sm",
@@ -822,6 +824,7 @@ def create_price_bubble_for_condition(product, prices, condition_label, jpy_rate
         add_card_action_data = f"action=add_card&grade={quote(condition_label)}"
 
     return BubbleContainer(
+        size="giga",
         hero=ImageComponent(
             url=image_url,
             size="full",
@@ -1071,6 +1074,7 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
         add_card_action_data = "action=add_card"
 
     bubble = BubbleContainer(
+        size="giga",
         hero=ImageComponent(
             url=image_url,
             size="full",
