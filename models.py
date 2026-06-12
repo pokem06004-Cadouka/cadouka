@@ -1202,7 +1202,7 @@ def count_admin_line_logs():
     return result["count"] or 0
 
 
-def get_line_search_popular_keywords(limit=20):
+def get_line_search_popular_keywords(limit=50):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -1229,7 +1229,7 @@ def get_line_search_popular_keywords(limit=20):
     return rows
 
 
-def get_line_search_no_result_keywords(limit=20):
+def get_line_search_no_result_keywords(limit=50):
     conn = get_connection()
     cursor = conn.cursor()
 

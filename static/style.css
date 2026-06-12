@@ -4717,3 +4717,14 @@ a {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   Admin Line Search Stats Stack
+========================= */
+
+.admin-stats-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 22px;
+}

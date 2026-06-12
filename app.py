@@ -1234,8 +1234,8 @@ def admin_line_search_stats_page():
 
     per_page = 20
 
-    popular_keywords = get_line_search_popular_keywords(limit=20)
-    no_result_keywords = get_line_search_no_result_keywords(limit=20)
+    popular_keywords = get_line_search_popular_keywords(limit=50)
+    no_result_keywords = get_line_search_no_result_keywords(limit=50)
 
     total_items = count_recent_line_search_logs()
 
