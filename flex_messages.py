@@ -1226,21 +1226,14 @@ def create_product_image_grid_messages(products):
                     BoxComponent(
                         layout="vertical",
                         padding_all="md",
-                        background_color="#111827",
+                        background_color="#DBEAFE",
                         corner_radius="md",
                         contents=[
                             TextComponent(
                                 text="Cadouka Search",
                                 size="lg",
                                 weight="bold",
-                                color="#FFFFFF",
-                                wrap=True
-                            ),
-                            TextComponent(
-                                text="請點選你要查價的商品",
-                                size="sm",
-                                color="#D1D5DB",
-                                margin="xs",
+                                color="#1E3A8A",
                                 wrap=True
                             )
                         ]
