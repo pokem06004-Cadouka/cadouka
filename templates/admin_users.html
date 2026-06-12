@@ -12,6 +12,12 @@
     </div>
 </div>
 
+<div class="list-tools">
+    <div class="page-subtitle">
+        共 {{ total_items }} 位用戶，每頁 {{ per_page }} 位。
+    </div>
+</div>
+
 <div class="admin-table-card">
     <div class="admin-table-scroll">
         <table class="admin-table">
@@ -47,7 +53,7 @@
 
                         <td>
                             <form
-                                action="/cdk-console/users/{{ user.id }}/membership"
+                                action="/cdk-console/users/{{ user.id }}/membership?page={{ current_page }}"
                                 method="post"
                                 class="inline-admin-form"
                             >
@@ -92,6 +98,53 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="pagination-bar">
+    {% if current_page > 1 %}
+        <a
+            href="/cdk-console/users?page={{ current_page - 1 }}"
+            class="pagination-btn"
+        >
+            上一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">上一頁</span>
+    {% endif %}
+
+    <div class="pagination-number-group">
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == current_page %}
+                <span class="pagination-number active">{{ p }}</span>
+            {% elif p <= 2 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                <a
+                    href="/cdk-console/users?page={{ p }}"
+                    class="pagination-number"
+                >
+                    {{ p }}
+                </a>
+            {% elif p == 3 and current_page > 4 %}
+                <span class="pagination-ellipsis">...</span>
+            {% elif p == total_pages - 2 and current_page < total_pages - 3 %}
+                <span class="pagination-ellipsis">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if current_page < total_pages %}
+        <a
+            href="/cdk-console/users?page={{ current_page + 1 }}"
+            class="pagination-btn"
+        >
+            下一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">下一頁</span>
+    {% endif %}
+
+    <span class="pagination-total">
+        第 {{ current_page }} / {{ total_pages }} 頁
+    </span>
 </div>
 
 {% endblock %}

@@ -469,7 +469,7 @@ def get_user_by_line_user_id(line_user_id):
     conn.close()
     return user
 
-def get_admin_users():
+def get_admin_users(limit=None, offset=0):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -517,11 +517,28 @@ def get_admin_users():
         ORDER BY u.id DESC
     """
 
-    cursor.execute(sql)
+    params = []
+
+    if limit is not None:
+        sql += " LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+    execute_sql(cursor, sql, params)
     users = cursor.fetchall()
 
     conn.close()
     return users
+
+
+def count_admin_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM users")
+    result = cursor.fetchone()
+
+    conn.close()
+    return result["count"] or 0
 
 def bind_line_user_to_account(user_id, line_user_id):
     conn = get_connection()
@@ -956,16 +973,8 @@ def delete_user_account(user_id):
     conn.commit()
     conn.close()
 
-def get_admin_cards(keyword=None):
-    conn = get_connection()
-    cursor = conn.cursor()
-
+def _admin_cards_search_clause(keyword):
     sql = """
-        SELECT
-            c.*,
-            u.user_code,
-            u.username,
-            u.display_name AS owner_display_name
         FROM cards c
         LEFT JOIN users u
             ON c.user_id = u.id
@@ -1014,13 +1023,46 @@ def get_admin_cards(keyword=None):
             search_keyword
         ])
 
-    sql += " ORDER BY c.created_at DESC"
+    return sql, params
+
+
+def get_admin_cards(keyword=None, limit=None, offset=0):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    from_sql, params = _admin_cards_search_clause(keyword)
+
+    sql = """
+        SELECT
+            c.*,
+            u.user_code,
+            u.username,
+            u.display_name AS owner_display_name
+    """ + from_sql + " ORDER BY c.created_at DESC"
+
+    if limit is not None:
+        sql += " LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
 
     execute_sql(cursor, sql, params)
     cards = cursor.fetchall()
 
     conn.close()
     return cards
+
+
+def count_admin_cards(keyword=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    from_sql, params = _admin_cards_search_clause(keyword)
+    sql = "SELECT COUNT(*) AS count " + from_sql
+
+    execute_sql(cursor, sql, params)
+    result = cursor.fetchone()
+
+    conn.close()
+    return result["count"] or 0
 
 
 # =========================
@@ -1087,7 +1129,7 @@ def add_line_log(line_user_id=None, user_id=None, action="", result="", message=
     conn.close()
 
 
-def get_admin_line_logs(limit=200):
+def get_admin_line_logs(limit=200, offset=0):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -1105,14 +1147,25 @@ def get_admin_line_logs(limit=200):
         LEFT JOIN users u
             ON l.user_id = u.id
         ORDER BY l.created_at DESC
-        LIMIT ?
+        LIMIT ? OFFSET ?
     """
 
-    execute_sql(cursor, sql, [limit])
+    execute_sql(cursor, sql, [limit, offset])
     logs = cursor.fetchall()
 
     conn.close()
     return logs
+
+
+def count_admin_line_logs():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM line_logs")
+    result = cursor.fetchone()
+
+    conn.close()
+    return result["count"] or 0
 
 
 # =========================

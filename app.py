@@ -95,9 +95,12 @@ from models import (
 
     get_admin_overview_stats,
     get_admin_users,
+    count_admin_users,
     get_admin_cards,
+    count_admin_cards,
     add_line_log,
     get_admin_line_logs,
+    count_admin_line_logs,
 
     add_search_alias,
     get_all_search_aliases,
@@ -1058,7 +1061,7 @@ def admin_update_user_membership_page(user_id):
     update_user_membership_level(user_id, membership_level)
 
     flash("會員等級已更新", "success")
-    return redirect("/cdk-console/users")
+    return redirect(request.referrer or "/cdk-console/users")
 
 @app.route("/cdk-console")
 @login_required
@@ -1076,11 +1079,39 @@ def admin_dashboard_page():
 @login_required
 @admin_required
 def admin_users_page():
-    users = get_admin_users()
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 20
+    total_items = count_admin_users()
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+
+    users = get_admin_users(
+        limit=per_page,
+        offset=offset
+    )
 
     return render_template(
         "admin_users.html",
-        users=users
+        users=users,
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
     )
 
 
@@ -1090,7 +1121,32 @@ def admin_users_page():
 def admin_cards_page():
     keyword = request.args.get("keyword", "").strip()
 
-    cards = get_admin_cards(keyword=keyword)
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 20
+    total_items = count_admin_cards(keyword=keyword)
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+
+    cards = get_admin_cards(
+        keyword=keyword,
+        limit=per_page,
+        offset=offset
+    )
 
     card_list = []
 
@@ -1102,18 +1158,50 @@ def admin_cards_page():
     return render_template(
         "admin_cards.html",
         cards=card_list,
-        keyword=keyword
+        keyword=keyword,
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
     )
 
 @app.route("/cdk-console/line-logs")
 @login_required
 @admin_required
 def admin_line_logs_page():
-    logs = get_admin_line_logs(limit=200)
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 20
+    total_items = count_admin_line_logs()
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+
+    logs = get_admin_line_logs(
+        limit=per_page,
+        offset=offset
+    )
 
     return render_template(
         "admin_line_logs.html",
-        logs=logs
+        logs=logs,
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
     )
 
 
