@@ -101,6 +101,10 @@ from models import (
     add_line_log,
     get_admin_line_logs,
     count_admin_line_logs,
+    get_line_search_popular_keywords,
+    get_line_search_no_result_keywords,
+    get_recent_line_search_logs,
+    count_recent_line_search_logs,
 
     add_search_alias,
     get_all_search_aliases,
@@ -366,7 +370,15 @@ def create_unbound_quick_reply():
 # LINE Log Helper
 # =========================
 
-def safe_add_line_log(line_user_id=None, action="", result="", message=""):
+def safe_add_line_log(
+    line_user_id=None,
+    action="",
+    result="",
+    message="",
+    raw_keyword="",
+    resolved_keyword="",
+    product_count=None
+):
     try:
         user = get_user_by_line_user_id(line_user_id) if line_user_id else None
         user_id = user["id"] if user else None
@@ -376,7 +388,10 @@ def safe_add_line_log(line_user_id=None, action="", result="", message=""):
             user_id=user_id,
             action=action,
             result=result,
-            message=message
+            message=message,
+            raw_keyword=raw_keyword,
+            resolved_keyword=resolved_keyword,
+            product_count=product_count
         )
     except Exception as e:
         print("LINE log 寫入失敗：", e)
@@ -1204,6 +1219,51 @@ def admin_line_logs_page():
         per_page=per_page
     )
 
+
+@app.route("/cdk-console/line-search-stats")
+@login_required
+@admin_required
+def admin_line_search_stats_page():
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        page = 1
+
+    if page < 1:
+        page = 1
+
+    per_page = 20
+
+    popular_keywords = get_line_search_popular_keywords(limit=20)
+    no_result_keywords = get_line_search_no_result_keywords(limit=20)
+
+    total_items = count_recent_line_search_logs()
+
+    if total_items == 0:
+        total_pages = 1
+    else:
+        total_pages = (total_items + per_page - 1) // per_page
+
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * per_page
+
+    recent_logs = get_recent_line_search_logs(
+        limit=per_page,
+        offset=offset
+    )
+
+    return render_template(
+        "admin_line_search_stats.html",
+        popular_keywords=popular_keywords,
+        no_result_keywords=no_result_keywords,
+        recent_logs=recent_logs,
+        current_page=page,
+        total_pages=total_pages,
+        total_items=total_items,
+        per_page=per_page
+    )
 
 @app.route("/cdk-console/search-aliases", methods=["GET", "POST"])
 @login_required
@@ -2887,7 +2947,10 @@ def handle_message(event):
                 line_user_id=line_user_id,
                 action="search",
                 result="no_result",
-                message=f"查無商品：{card_id} → {resolved_keyword}"
+                message=f"查無商品：{card_id} → {resolved_keyword}",
+                raw_keyword=card_id,
+                resolved_keyword=resolved_keyword,
+                product_count=0
             )
 
             line_bot_api.reply_message(
@@ -2902,7 +2965,10 @@ def handle_message(event):
             line_user_id=line_user_id,
             action="search",
             result="success",
-            message=f"查價成功：{card_id} → {resolved_keyword}，找到 {len(products)} 筆商品"
+            message=f"查價成功：{card_id} → {resolved_keyword}，找到 {len(products)} 筆商品",
+            raw_keyword=card_id,
+            resolved_keyword=resolved_keyword,
+            product_count=len(products)
         )
 
         flex_message = create_product_image_grid_messages(products)
@@ -2920,7 +2986,10 @@ def handle_message(event):
             line_user_id=line_user_id,
             action="search",
             result="failed",
-            message="搜尋時發生錯誤"
+            message="搜尋時發生錯誤",
+            raw_keyword=card_id,
+            resolved_keyword=card_id,
+            product_count=0
         )
 
         line_bot_api.reply_message(

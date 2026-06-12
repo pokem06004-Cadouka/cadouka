@@ -122,6 +122,9 @@ def init_db():
             action TEXT,
             result TEXT,
             message TEXT,
+            raw_keyword TEXT,
+            resolved_keyword TEXT,
+            product_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -210,6 +213,9 @@ def init_db():
             action TEXT,
             result TEXT,
             message TEXT,
+            raw_keyword TEXT,
+            resolved_keyword TEXT,
+            product_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -1082,6 +1088,9 @@ def create_line_logs_table_if_not_exists():
             action TEXT,
             result TEXT,
             message TEXT,
+            raw_keyword TEXT,
+            resolved_keyword TEXT,
+            product_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -1094,6 +1103,9 @@ def create_line_logs_table_if_not_exists():
             action TEXT,
             result TEXT,
             message TEXT,
+            raw_keyword TEXT,
+            resolved_keyword TEXT,
+            product_count INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -1102,9 +1114,23 @@ def create_line_logs_table_if_not_exists():
     conn.close()
 
 
-def add_line_log(line_user_id=None, user_id=None, action="", result="", message=""):
+def add_line_log(
+    line_user_id=None,
+    user_id=None,
+    action="",
+    result="",
+    message="",
+    raw_keyword="",
+    resolved_keyword="",
+    product_count=None
+):
     conn = get_connection()
     cursor = conn.cursor()
+
+    try:
+        product_count_value = int(product_count) if product_count is not None else 0
+    except:
+        product_count_value = 0
 
     sql = """
         INSERT INTO line_logs (
@@ -1112,9 +1138,12 @@ def add_line_log(line_user_id=None, user_id=None, action="", result="", message=
             user_id,
             action,
             result,
-            message
+            message,
+            raw_keyword,
+            resolved_keyword,
+            product_count
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     execute_sql(cursor, sql, [
@@ -1122,12 +1151,14 @@ def add_line_log(line_user_id=None, user_id=None, action="", result="", message=
         user_id,
         action,
         result,
-        message
+        message,
+        raw_keyword or "",
+        resolved_keyword or "",
+        product_count_value
     ])
 
     conn.commit()
     conn.close()
-
 
 def get_admin_line_logs(limit=200, offset=0):
     conn = get_connection()
@@ -1139,6 +1170,9 @@ def get_admin_line_logs(limit=200, offset=0):
             l.action,
             l.result,
             l.message,
+            l.raw_keyword,
+            l.resolved_keyword,
+            l.product_count,
             l.created_at,
             u.user_code,
             u.username,
@@ -1162,6 +1196,111 @@ def count_admin_line_logs():
     cursor = conn.cursor()
 
     execute_sql(cursor, "SELECT COUNT(*) AS count FROM line_logs")
+    result = cursor.fetchone()
+
+    conn.close()
+    return result["count"] or 0
+
+
+def get_line_search_popular_keywords(limit=20):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            raw_keyword,
+            COUNT(*) AS search_count,
+            SUM(CASE WHEN result = 'success' THEN 1 ELSE 0 END) AS success_count,
+            SUM(CASE WHEN result = 'no_result' THEN 1 ELSE 0 END) AS no_result_count,
+            MAX(created_at) AS latest_at
+        FROM line_logs
+        WHERE action = 'search'
+        AND raw_keyword IS NOT NULL
+        AND raw_keyword != ''
+        GROUP BY raw_keyword
+        ORDER BY search_count DESC, latest_at DESC
+        LIMIT ?
+    """
+
+    execute_sql(cursor, sql, [limit])
+    rows = cursor.fetchall()
+
+    conn.close()
+    return rows
+
+
+def get_line_search_no_result_keywords(limit=20):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            raw_keyword,
+            COUNT(*) AS no_result_count,
+            MAX(created_at) AS latest_at
+        FROM line_logs
+        WHERE action = 'search'
+        AND result = 'no_result'
+        AND raw_keyword IS NOT NULL
+        AND raw_keyword != ''
+        GROUP BY raw_keyword
+        ORDER BY no_result_count DESC, latest_at DESC
+        LIMIT ?
+    """
+
+    execute_sql(cursor, sql, [limit])
+    rows = cursor.fetchall()
+
+    conn.close()
+    return rows
+
+
+def get_recent_line_search_logs(limit=50, offset=0):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            l.id,
+            l.raw_keyword,
+            l.resolved_keyword,
+            l.product_count,
+            l.result,
+            l.message,
+            l.created_at,
+            u.user_code,
+            u.username,
+            u.display_name
+        FROM line_logs l
+        LEFT JOIN users u
+            ON l.user_id = u.id
+        WHERE l.action = 'search'
+        AND l.raw_keyword IS NOT NULL
+        AND l.raw_keyword != ''
+        ORDER BY l.created_at DESC
+        LIMIT ? OFFSET ?
+    """
+
+    execute_sql(cursor, sql, [limit, offset])
+    rows = cursor.fetchall()
+
+    conn.close()
+    return rows
+
+
+def count_recent_line_search_logs():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) AS count
+        FROM line_logs
+        WHERE action = 'search'
+        AND raw_keyword IS NOT NULL
+        AND raw_keyword != ''
+    """
+
+    execute_sql(cursor, sql)
     result = cursor.fetchone()
 
     conn.close()
@@ -2249,6 +2388,40 @@ def add_user_column_if_not_exists(column_name, column_definition):
 
     conn.close()
 
+def add_line_log_column_if_not_exists(column_name, column_definition):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'line_logs'
+        """)
+
+        columns = cursor.fetchall()
+        existing_columns = [col["column_name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE line_logs ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
+
+    else:
+        cursor.execute("PRAGMA table_info(line_logs)")
+        columns = cursor.fetchall()
+        existing_columns = [col["name"] for col in columns]
+
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE line_logs ADD COLUMN {column_name} {column_definition}"
+            )
+            conn.commit()
+
+    conn.close()
+
+
 def backfill_user_codes():
     conn = get_connection()
     cursor = conn.cursor()
@@ -2314,6 +2487,9 @@ def migrate_db():
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
 
     create_line_logs_table_if_not_exists()
+    add_line_log_column_if_not_exists("raw_keyword", "TEXT")
+    add_line_log_column_if_not_exists("resolved_keyword", "TEXT")
+    add_line_log_column_if_not_exists("product_count", "INTEGER DEFAULT 0")
     create_search_aliases_table_if_not_exists()
     create_search_tags_tables_if_not_exists()
 

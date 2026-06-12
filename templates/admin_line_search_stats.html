@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="/cdk-console" class="back-link">← 回到後台總覽</a>
+
+<div class="form-page-header">
+    <div>
+        <p class="eyebrow">LINE Search Stats</p>
+        <h1>LINE 搜尋統計</h1>
+        <p class="page-subtitle">
+            查看使用者實際輸入的搜尋詞、熱門搜尋與查無商品紀錄，方便補充搜尋別名。
+        </p>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-card">
+        <span>熱門搜尋數</span>
+        <strong>{{ popular_keywords|length }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>查無商品關鍵字</span>
+        <strong>{{ no_result_keywords|length }}</strong>
+    </div>
+
+    <div class="summary-card">
+        <span>最近搜尋紀錄</span>
+        <strong>{{ total_items }}</strong>
+    </div>
+</div>
+
+<div class="admin-stats-grid">
+
+    <div class="admin-table-card">
+        <div class="admin-stats-card-header">
+            <div>
+                <h2>熱門搜尋 TOP 20</h2>
+                <p>依照 raw_keyword 搜尋次數排序。</p>
+            </div>
+        </div>
+
+        <div class="admin-table-scroll">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>搜尋詞</th>
+                        <th>次數</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in popular_keywords %}
+                        <tr>
+                            <td class="admin-name-cell">
+                                {{ item.raw_keyword or "-" }}
+                            </td>
+                            <td>
+                                <strong>{{ item.search_count or 0 }}</strong>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="2" class="empty-cell">
+                                目前沒有熱門搜尋資料。
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-table-card">
+        <div class="admin-stats-card-header">
+            <div>
+                <h2>查無商品 TOP 20</h2>
+                <p>可以優先檢查是否需要新增搜尋別名。</p>
+            </div>
+        </div>
+
+        <div class="admin-table-scroll">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>搜尋詞</th>
+                        <th>次數</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in no_result_keywords %}
+                        <tr>
+                            <td class="admin-name-cell">
+                                {{ item.raw_keyword or "-" }}
+                            </td>
+                            <td>
+                                <strong>{{ item.search_count or 0 }}</strong>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="2" class="empty-cell">
+                                目前沒有查無商品紀錄。
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="list-tools">
+    <div class="page-subtitle">
+        最近搜尋紀錄共 {{ total_items }} 筆，每頁 {{ per_page }} 筆。
+    </div>
+</div>
+
+<div class="admin-table-card">
+    <div class="admin-table-scroll">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>時間</th>
+                    <th>Raw Keyword</th>
+                    <th>用戶編號</th>
+                    <th>用戶</th>
+                    <th>結果</th>
+                    <th>找到商品</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.created_at }}</td>
+
+                        <td class="admin-name-cell">
+                            <strong>{{ log.raw_keyword or "-" }}</strong>
+                        </td>
+
+                        <td>{{ log.user_code or "未綁定" }}</td>
+
+                        <td>{{ log.display_name or log.username or "-" }}</td>
+
+                        <td>
+                            {% if log.result == "success" %}
+                                <span class="status-pill status-holding">success</span>
+                            {% elif log.result == "failed" %}
+                                <span class="status-pill status-sold">failed</span>
+                            {% elif log.result == "no_result" %}
+                                <span class="status-pill status-neutral">no result</span>
+                            {% elif log.result == "unbound" %}
+                                <span class="status-pill status-neutral">unbound</span>
+                            {% else %}
+                                <span class="status-pill status-neutral">{{ log.result or "-" }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ log.product_count or 0 }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-cell">
+                            目前沒有搜尋紀錄。
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="pagination-bar">
+    {% if current_page > 1 %}
+        <a
+            href="/cdk-console/line-search-stats?page={{ current_page - 1 }}"
+            class="pagination-btn"
+        >
+            上一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">上一頁</span>
+    {% endif %}
+
+    <div class="pagination-number-group">
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == current_page %}
+                <span class="pagination-number active">{{ p }}</span>
+            {% elif p <= 2 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                <a
+                    href="/cdk-console/line-search-stats?page={{ p }}"
+                    class="pagination-number"
+                >
+                    {{ p }}
+                </a>
+            {% elif p == 3 and current_page > 4 %}
+                <span class="pagination-ellipsis">...</span>
+            {% elif p == total_pages - 2 and current_page < total_pages - 3 %}
+                <span class="pagination-ellipsis">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if current_page < total_pages %}
+        <a
+            href="/cdk-console/line-search-stats?page={{ current_page + 1 }}"
+            class="pagination-btn"
+        >
+            下一頁
+        </a>
+    {% else %}
+        <span class="pagination-btn disabled">下一頁</span>
+    {% endif %}
+
+    <span class="pagination-total">
+        第 {{ current_page }} / {{ total_pages }} 頁
+    </span>
+</div>
+
+{% endblock %}
