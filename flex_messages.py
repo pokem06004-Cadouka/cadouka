@@ -1152,18 +1152,21 @@ def create_product_image_grid_messages(products):
     messages = []
 
     # LINE 一次 reply 最多 5 則訊息
-    # 一則 Flex 顯示 10 個商品：2 欄 x 5 列
-    # 所以最多一次顯示 50 個商品
-    max_products = min(len(products), 50)
+    # 這裡改成最多顯示 30 個商品
+    # 一則 Flex：3 欄 x 5 排 = 15 個商品
+    max_products = min(len(products), 30)
     products = products[:max_products]
 
-    for page_start in range(0, len(products), 10):
-        page_products = products[page_start:page_start + 10]
+    items_per_message = 15
+    items_per_row = 3
+
+    for page_start in range(0, len(products), items_per_message):
+        page_products = products[page_start:page_start + items_per_message]
 
         rows = []
 
-        for row_start in range(0, len(page_products), 2):
-            row_products = page_products[row_start:row_start + 2]
+        for row_start in range(0, len(page_products), items_per_row):
+            row_products = page_products[row_start:row_start + items_per_row]
 
             row_contents = []
 
@@ -1190,8 +1193,8 @@ def create_product_image_grid_messages(products):
                     )
                 )
 
-            # 如果最後一排只有 1 張，補空白，避免圖片變形
-            while len(row_contents) < 2:
+            # 如果最後一排不足 3 張，補空白，避免圖片被拉大
+            while len(row_contents) < items_per_row:
                 row_contents.append(
                     BoxComponent(
                         layout="vertical",
@@ -1203,7 +1206,7 @@ def create_product_image_grid_messages(products):
             rows.append(
                 BoxComponent(
                     layout="horizontal",
-                    spacing="md",
+                    spacing="sm",
                     contents=row_contents
                 )
             )
@@ -1212,7 +1215,7 @@ def create_product_image_grid_messages(products):
             size="giga",
             body=BoxComponent(
                 layout="vertical",
-                spacing="md",
+                spacing="sm",
                 contents=rows
             )
         )
