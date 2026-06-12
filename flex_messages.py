@@ -1151,17 +1151,16 @@ def create_price_flex_carousel(
 def create_product_image_grid_messages(products):
     messages = []
 
-    # LINE 一次 reply 最多 5 則訊息
-    # 這裡改成最多顯示 30 個商品
-    # 一則 Flex：3 欄 x 5 排 = 15 個商品
+    # LINE 最多顯示前 30 個商品
     max_products = min(len(products), 30)
-    products = products[:max_products]
+    display_products = products[:max_products]
 
-    items_per_message = 15
-    items_per_row = 3
+    # 一則 Flex：4 欄 x 5 排 = 20 個商品
+    items_per_message = 20
+    items_per_row = 4
 
-    for page_start in range(0, len(products), items_per_message):
-        page_products = products[page_start:page_start + items_per_message]
+    for page_start in range(0, len(display_products), items_per_message):
+        page_products = display_products[page_start:page_start + items_per_message]
 
         rows = []
 
@@ -1193,7 +1192,7 @@ def create_product_image_grid_messages(products):
                     )
                 )
 
-            # 如果最後一排不足 3 張，補空白，避免圖片被拉大
+            # 如果最後一排不足 4 張，補空白，避免圖片被拉大
             while len(row_contents) < items_per_row:
                 row_contents.append(
                     BoxComponent(
@@ -1206,7 +1205,7 @@ def create_product_image_grid_messages(products):
             rows.append(
                 BoxComponent(
                     layout="horizontal",
-                    spacing="sm",
+                    spacing="xs",
                     contents=row_contents
                 )
             )
@@ -1215,7 +1214,7 @@ def create_product_image_grid_messages(products):
             size="giga",
             body=BoxComponent(
                 layout="vertical",
-                spacing="sm",
+                spacing="xs",
                 contents=rows
             )
         )

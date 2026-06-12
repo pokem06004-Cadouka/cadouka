@@ -30,59 +30,32 @@ PRO_CONDITIONS = ["PSA10", "PSA9", "PSA8以下", "A", "B"]
 # Search Products
 # =========================
 
-def search_products(card_id, max_results=30):
+def search_products(card_id):
     keyword = quote(card_id, safe="")
+    url = f"https://snkrdunk.com/search?keywords={keyword}"
+
+    request_obj = req.Request(url, headers=headers)
+
+    with req.urlopen(request_obj) as response:
+        data = response.read().decode("utf-8")
+
+    root = bs4.BeautifulSoup(data, "html.parser")
+
+    container = root.find(
+        "div",
+        class_="styles-module-scss-module__LqnJBW__scrollContainer"
+    )
 
     products = []
-    seen_urls = set()
 
-    # 先嘗試抓多頁
-    # 如果 SNKRDUNK 搜尋頁支援 page 參數，就能抓到超過 20 筆
-    # 如果不支援，第二頁會跟第一頁重複，我們會自動停止
-    for page in range(1, 6):
-        if page == 1:
-            url = f"https://snkrdunk.com/search?keywords={keyword}"
-        else:
-            url = f"https://snkrdunk.com/search?keywords={keyword}&page={page}"
-
-        try:
-            request_obj = req.Request(url, headers=headers)
-
-            with req.urlopen(request_obj) as response:
-                data = response.read().decode("utf-8")
-        except Exception as e:
-            print(f"搜尋第 {page} 頁失敗：", e)
-            break
-
-        root = bs4.BeautifulSoup(data, "html.parser")
-
-        container = root.find(
-            "div",
-            class_="styles-module-scss-module__LqnJBW__scrollContainer"
-        )
-
-        if not container:
-            print(f"第 {page} 頁找不到商品 container")
-            break
-
+    if container:
         a_tags = container.find_all("a")
-
-        page_added_count = 0
 
         for a in a_tags:
             href = a.get("href")
 
-            if not href:
-                continue
-
             if href and not href.startswith("http"):
                 href = "https://snkrdunk.com" + href
-
-            # 避免不同頁抓到重複商品
-            if href in seen_urls:
-                continue
-
-            seen_urls.add(href)
 
             img = a.find("img")
             src = img.get("src") if img else None
@@ -98,20 +71,12 @@ def search_products(card_id, max_results=30):
             else:
                 label = a.get("aria-label", "")
 
-            products.append({
-                "name": label,
-                "url": href,
-                "image": src
-            })
-
-            page_added_count += 1
-
-            if len(products) >= max_results:
-                return products
-
-        # 如果這一頁沒有新增任何商品，代表 page 可能無效或到底了
-        if page_added_count == 0:
-            break
+            if href:
+                products.append({
+                    "name": label,
+                    "url": href,
+                    "image": src
+                })
 
     return products
 
