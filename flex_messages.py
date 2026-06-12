@@ -1225,15 +1225,15 @@ def create_product_image_grid_messages(products):
                 contents=[
                     BoxComponent(
                         layout="vertical",
-                        padding_all="md",
-                        background_color="#DBEAFE",
-                        corner_radius="md",
+                        padding_top="sm",
+                        padding_bottom="xs",
                         contents=[
                             TextComponent(
                                 text="Cadouka Search",
                                 size="lg",
                                 weight="bold",
-                                color="#1E3A8A",
+                                color="#374151",
+                                align="center",
                                 wrap=True
                             )
                         ]
