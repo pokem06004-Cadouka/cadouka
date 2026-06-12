@@ -1151,11 +1151,12 @@ def create_price_flex_carousel(
 def create_product_image_grid_messages(products):
     messages = []
 
-    # LINE 最多顯示前 30 個商品
+    # LINE 一次 reply 最多 5 則訊息
+    # 這裡維持最多顯示 30 個商品
+    # 一則 Flex：4 欄 x 5 排 = 20 個商品
     max_products = min(len(products), 30)
     display_products = products[:max_products]
 
-    # 一則 Flex：4 欄 x 5 排 = 20 個商品
     items_per_message = 20
     items_per_row = 4
 
@@ -1177,12 +1178,16 @@ def create_product_image_grid_messages(products):
                     BoxComponent(
                         layout="vertical",
                         flex=1,
+                        padding_all="xs",
+                        background_color="#FFFFFF",
+                        corner_radius="md",
                         contents=[
                             ImageComponent(
                                 url=image_url,
                                 size="full",
                                 aspect_ratio="1:1",
                                 aspect_mode="cover",
+                                corner_radius="sm",
                                 action=PostbackAction(
                                     label=f"選擇商品 {index + 1}",
                                     data=f"action=select&index={index}"
@@ -1214,8 +1219,39 @@ def create_product_image_grid_messages(products):
             size="giga",
             body=BoxComponent(
                 layout="vertical",
-                spacing="xs",
-                contents=rows
+                background_color="#F3F4F6",
+                padding_all="md",
+                spacing="sm",
+                contents=[
+                    BoxComponent(
+                        layout="vertical",
+                        padding_all="md",
+                        background_color="#111827",
+                        corner_radius="md",
+                        contents=[
+                            TextComponent(
+                                text="Cadouka Search",
+                                size="lg",
+                                weight="bold",
+                                color="#FFFFFF",
+                                wrap=True
+                            ),
+                            TextComponent(
+                                text="請點選你要查價的商品",
+                                size="sm",
+                                color="#D1D5DB",
+                                margin="xs",
+                                wrap=True
+                            )
+                        ]
+                    ),
+                    BoxComponent(
+                        layout="vertical",
+                        spacing="xs",
+                        margin="md",
+                        contents=rows
+                    )
+                ]
             )
         )
 
