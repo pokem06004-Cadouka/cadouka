@@ -4746,3 +4746,7 @@ a {
     display: block;
 }
 
+.card-list-cropped-img {
+    transform: scale(0.9);
+    transform-origin: center center;
+}
