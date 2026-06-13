@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import font_manager, rcParams
+from matplotlib.ticker import MaxNLocator
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
@@ -411,7 +412,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             "day": day_text or "-"       # X 軸只顯示日
         })
 
-    fig, ax = plt.subplots(figsize=(8.8, 4.4), dpi=200)
+    fig, ax = plt.subplots(figsize=(10.2, 5.2), dpi=200)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -486,35 +487,21 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
                 zorder=1
             )
 
-        # =========================
-        # 找月份切換點
-        # =========================
-        month_positions = []
-        month_labels = []
+    # 只顯示第一個月份，固定放在左下角
+    # 位置：X軸日期左邊、Y軸數字下面
+    first_month = valid_items[0]["month"] if valid_items and valid_items[0]["month"] else ""
 
-        previous_month = None
-
-        for index, item in enumerate(valid_items):
-            current_month = item["month"]
-
-            if current_month and (index == 0 or current_month != previous_month):
-                month_positions.append(index + 1)
-                month_labels.append(f"{current_month}月")
-
-            previous_month = current_month
-
-        # 在各月份第一筆資料的下方顯示月份
-        for month_x, month_label in zip(month_positions, month_labels):
-            ax.text(
-                month_x,
-                -0.18,
-                month_label,
-                transform=ax.get_xaxis_transform(),
-                fontsize=22,
-                color="#777777",
-                ha="center",
-                va="top"
-            )
+    if first_month:
+        ax.text(
+            0.0,
+            -0.18,
+            f"{first_month}月",
+            transform=ax.transAxes,
+            fontsize=22,
+            color="#777777",
+            ha="right",
+            va="top"
+        )
 
         # Y 軸數字
         ax.tick_params(
@@ -563,7 +550,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.tight_layout(pad=0.8)
+    fig.subplots_adjust(left=0.16, bottom=0.24, right=0.98, top=0.96)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -586,8 +573,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    canvas_width = 1400
-    canvas_height = 840
+    canvas_width = 1500
+    canvas_height = 920
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
@@ -604,7 +591,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     small_font = get_font(18, bold=False)
 
     # 外層白色卡片
-    outer_box = (24, 24, canvas_width - 24, canvas_height - 24)
+    outer_box = (12, 12, canvas_width - 12, canvas_height - 12)
     draw.rounded_rectangle(
         outer_box,
         radius=28,
@@ -691,7 +678,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 右側座標
     # =========================
     right_x = 520
-    right_w = 800
+    right_w = 900
 
     # =========================
     # 商品名稱（整條，無底色）
@@ -772,7 +759,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     chart_image = create_contain_image(
         chart_image,
-        (760, 390),
+        (860, 460),
         bg_color=(255, 255, 255)
     )
 
