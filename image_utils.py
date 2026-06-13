@@ -431,7 +431,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     if product_image:
         product_box = create_contain_image(
             product_image,
-            (360, 520),
+            (200, 300),
             bg_color=(250, 250, 250)
         )
 
