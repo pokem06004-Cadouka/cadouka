@@ -358,7 +358,7 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
     return canvas
 
 
-def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=18):
+def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=20):
     """
     回傳 PIL Image（乾淨折線圖）
     - 使用抓到的全部筆數
