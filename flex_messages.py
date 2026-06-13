@@ -1319,7 +1319,7 @@ def create_market_image_card_flex(
             style="secondary",
             height="sm",
             action=PostbackAction(
-                label="PSA8以下",
+                label="PSA8↓",
                 data=f"action=select&index={product_index}&grade={quote('PSA8以下')}",
                 display_text="查看 PSA8以下"
             ),
@@ -1358,18 +1358,6 @@ def create_market_image_card_flex(
             size="full",
             aspect_ratio="4:3",
             aspect_mode="fit"
-        ),
-        body=BoxComponent(
-            layout="vertical",
-            spacing="sm",
-            contents=[
-                TextComponent(
-                    text=f"目前顯示：{selected_grade}",
-                    size="sm",
-                    color="#666666",
-                    wrap=True
-                )
-            ]
         ),
         footer=BoxComponent(
             layout="vertical",

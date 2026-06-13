@@ -1,13 +1,15 @@
 import io
-from PIL import Image, ImageChops,ImageDraw, ImageFont
 import os
 import uuid
-import textwrap
 import urllib.request as req
+from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib import font_manager, rcParams
+
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from config import headers
 
@@ -73,35 +75,83 @@ def download_image_bytes(image_url):
         return None
 
 
-def get_font(size=24, bold=False):
-    """
-    盡量找支援中日文的字型。
-    Windows / Linux 都嘗試。
-    """
-    font_candidates = []
+BASE_DIR = Path(__file__).resolve().parent
+FONT_DIR = BASE_DIR / "fonts"
 
+
+def get_font(size=24, bold=False):
     if bold:
-        font_candidates = [
+        font_names = [
+            "NotoSansTC-Bold.ttf",
+            "NotoSansCJKtc-Bold.otf",
+            "NotoSansCJKjp-Bold.otf"
+        ]
+        system_fonts = [
             "C:/Windows/Fonts/msjhbd.ttc",
             "C:/Windows/Fonts/meiryo.ttc",
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         ]
     else:
-        font_candidates = [
+        font_names = [
+            "NotoSansTC-Regular.ttf",
+            "NotoSansCJKtc-Regular.otf",
+            "NotoSansCJKjp-Regular.otf"
+        ]
+        system_fonts = [
             "C:/Windows/Fonts/msjh.ttc",
             "C:/Windows/Fonts/meiryo.ttc",
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
         ]
 
-    for path in font_candidates:
+    for font_name in font_names:
+        font_path = FONT_DIR / font_name
+
         try:
-            return ImageFont.truetype(path, size=size)
+            if font_path.exists():
+                return ImageFont.truetype(str(font_path), size=size)
+        except Exception as e:
+            print("Pillow 字型載入失敗：", font_path, e, flush=True)
+
+    for font_path in system_fonts:
+        try:
+            return ImageFont.truetype(font_path, size=size)
         except:
             continue
 
     return ImageFont.load_default()
+
+
+def setup_matplotlib_font():
+    font_names = [
+        "NotoSansTC-Regular.ttf",
+        "NotoSansCJKtc-Regular.otf",
+        "NotoSansCJKjp-Regular.otf"
+    ]
+
+    for font_name in font_names:
+        font_path = FONT_DIR / font_name
+
+        try:
+            if font_path.exists():
+                font_manager.fontManager.addfont(str(font_path))
+                font_prop = font_manager.FontProperties(fname=str(font_path))
+                font_name = font_prop.get_name()
+
+                rcParams["font.family"] = font_name
+                rcParams["axes.unicode_minus"] = False
+
+                print("matplotlib 使用字型：", font_name, flush=True)
+                return
+        except Exception as e:
+            print("matplotlib 字型載入失敗：", font_path, e, flush=True)
+
+    rcParams["axes.unicode_minus"] = False
+    print("matplotlib 找不到 CJK 字型，使用預設字型", flush=True)
+
+
+setup_matplotlib_font()
 
 
 def text_width(draw, text, font):
