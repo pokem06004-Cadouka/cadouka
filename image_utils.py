@@ -553,7 +553,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     fig.subplots_adjust(left=0.15, bottom=0.20, right=0.98, top=0.96)
 
     output = io.BytesIO()
-    fig.savefig(output, format="png", bbox_inches="tight", facecolor="True")
+    fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
     output.seek(0)
