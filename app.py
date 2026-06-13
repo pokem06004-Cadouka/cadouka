@@ -3004,10 +3004,15 @@ def handle_postback(event):
     line_user_id = event.source.user_id
     data = event.postback.data
 
+
+    print("收到 Postback：", data, flush=True)
+
     try:
         params = parse_qs(data)
 
         action = params.get("action", [""])[0]
+
+        print("Postback action：", action, flush=True)
 
         products = user_products.get(line_user_id)
 
@@ -3026,8 +3031,14 @@ def handle_postback(event):
             return
 
             if action == "select":
+
+                print("進入 select", flush=True)
+
                 index = int(params.get("index", [0])[0])
                 selected_grade = params.get("grade", ["PSA10"])[0] or "PSA10"
+
+                print("index =", index, "selected_grade =", selected_grade, flush=True)
+
 
                 if index >= len(products):
                     line_bot_api.reply_message(
@@ -3058,6 +3069,9 @@ def handle_postback(event):
                 )
 
                 prices = getprice(price_url)
+
+                print("成交資料筆數：", len(prices or []), flush=True)
+
                 jpy_rate = get_jpy_spot_sell()
 
                 filename = generate_market_card_image(
@@ -3066,6 +3080,9 @@ def handle_postback(event):
                     selected_grade=selected_grade,
                     jpy_rate=jpy_rate
                 )
+
+
+                print("產生圖卡檔名：", filename, flush=True)
 
                 base_url = get_base_url()
                 card_image_url = f"{base_url}/static/generated/{filename}"
@@ -3085,10 +3102,16 @@ def handle_postback(event):
                     message=f"點選商品查看 {selected_grade} 圖卡"
                 )
 
+
+                print("準備回傳 LINE Flex", flush=True)
+
                 line_bot_api.reply_message(
                     event.reply_token,
                     market_flex_message
                 )
+
+                print("LINE Flex 已送出", flush=True)
+                
                 return
 
         if action == "history":
