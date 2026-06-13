@@ -358,14 +358,16 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
     return canvas
 
 
-def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=22):
+def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=26):
     """
-    回傳 PIL Image（日期切換點 + 淡虛線版本）
+    回傳 PIL Image（日期切換點 + 跨月份月份標示版本）
 
     功能：
     - 使用抓到的全部筆數
     - 每筆資料在線上有一個點
     - X 軸只標「日期切換點」
+    - X 軸只顯示「日期」
+    - 跨月份時，在該月份第一筆資料下方顯示「xx月」
     - 日期切換點往上畫淡虛線
     - 顯示 X / Y 軸線
     - 不做大面積填色
@@ -381,15 +383,32 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             continue
 
         raw_date = item.get("date")
-        date_label = short_date_text(raw_date)
+        date_text = short_date_text(raw_date)  # 例如 26/06/10 或 06/10
 
-        # 如果是 26/06/10 這種格式，X 軸只顯示 06/10
-        if len(date_label) == 8 and date_label[2] == "/" and date_label[5] == "/":
-            date_label = date_label[3:]
+        month_text = ""
+        day_text = ""
+        full_date_key = date_text
+
+        parts = date_text.split("/")
+
+        # 預期像 26/06/10
+        if len(parts) == 3:
+            month_text = parts[1]
+            day_text = parts[2]
+
+        # 預期像 06/10
+        elif len(parts) == 2:
+            month_text = parts[0]
+            day_text = parts[1]
+
+        else:
+            day_text = date_text
 
         valid_items.append({
             "price": jpy_price,
-            "date": date_label or "-"
+            "date_key": full_date_key,   # 判斷日期切換
+            "month": month_text,         # 顯示月份
+            "day": day_text or "-"       # X 軸只顯示日
         })
 
     fig, ax = plt.subplots(figsize=(8.8, 4.4), dpi=200)
@@ -412,21 +431,21 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         )
 
         # =========================
-        # 找日期切換點
+        # 找日期切換點（一天一個）
         # =========================
         date_tick_positions = []
         date_tick_labels = []
 
-        previous_date = None
+        previous_date_key = None
 
         for index, item in enumerate(valid_items):
-            current_date = item["date"]
+            current_date_key = item["date_key"]
 
-            if index == 0 or current_date != previous_date:
+            if index == 0 or current_date_key != previous_date_key:
                 date_tick_positions.append(index + 1)
-                date_tick_labels.append(current_date)
+                date_tick_labels.append(item["day"])   # X 軸只顯示日期
 
-            previous_date = current_date
+            previous_date_key = current_date_key
 
         # 如果日期切換點太多，最多顯示 6 個，避免太擠
         max_tick_count = 6
@@ -445,14 +464,14 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             date_tick_positions = [date_tick_positions[i] for i in selected_indexes]
             date_tick_labels = [date_tick_labels[i] for i in selected_indexes]
 
-        # X 軸標日期
+        # X 軸顯示日期
         ax.set_xticks(date_tick_positions)
-        ax.set_xticklabels(date_tick_labels, fontsize=13, color="#777777")
+        ax.set_xticklabels(date_tick_labels, fontsize=22, color="#777777")
 
         ax.tick_params(
             axis="x",
             length=0,
-            pad=8,
+            pad=10,
             colors="#777777"
         )
 
@@ -467,7 +486,37 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
                 zorder=1
             )
 
-        # Y 軸數字小一點
+        # =========================
+        # 找月份切換點
+        # =========================
+        month_positions = []
+        month_labels = []
+
+        previous_month = None
+
+        for index, item in enumerate(valid_items):
+            current_month = item["month"]
+
+            if current_month and (index == 0 or current_month != previous_month):
+                month_positions.append(index + 1)
+                month_labels.append(f"{current_month}月")
+
+            previous_month = current_month
+
+        # 在各月份第一筆資料的下方顯示月份
+        for month_x, month_label in zip(month_positions, month_labels):
+            ax.text(
+                month_x,
+                -0.18,
+                month_label,
+                transform=ax.get_xaxis_transform(),
+                fontsize=22,
+                color="#777777",
+                ha="center",
+                va="top"
+            )
+
+        # Y 軸數字
         ax.tick_params(
             axis="y",
             labelsize=y_tick_font_size,
@@ -494,9 +543,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         ax.set_xlabel("")
         ax.set_ylabel("")
 
-        # 留一點邊界，避免點貼邊
+        # 留一點邊界
         ax.margins(x=0.04, y=0.16)
-
         ax.set_axisbelow(True)
 
     else:
@@ -515,7 +563,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.tight_layout(pad=0.6)
+    fig.tight_layout(pad=0.8)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -524,6 +572,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     output.seek(0)
     chart_image = Image.open(output).convert("RGB")
     return chart_image
+
+
 
 def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate=None):
     """
@@ -717,7 +767,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     chart_image = generate_price_chart_image(
         prices,
         selected_grade=selected_grade,
-        y_tick_font_size=22
+        y_tick_font_size=26
     )
 
     chart_image = create_contain_image(
