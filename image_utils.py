@@ -380,8 +380,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    canvas_width = 1200
-    canvas_height = 640
+    canvas_width = 1400
+    canvas_height = 840
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
@@ -408,7 +408,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 左側商品圖（回到上一版比較平衡的設定）
     # =========================
-    left_box = (58, 88, 470, 690)
+    left_box = (58, 88, 600, 690)
 
     draw.rounded_rectangle(
         left_box,
