@@ -1356,7 +1356,7 @@ def create_market_image_card_flex(
         hero=ImageComponent(
             url=card_image_url,
             size="full",
-            aspect_ratio="15:8",
+            aspect_ratio="5:3",
             aspect_mode="fit"
         ),
         footer=BoxComponent(

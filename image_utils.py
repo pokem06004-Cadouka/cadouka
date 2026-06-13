@@ -300,7 +300,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10"):
 
         valid_items.append(jpy_price)
 
-    fig, ax = plt.subplots(figsize=(7.6, 3.2), dpi=180)
+    fig, ax = plt.subplots(figsize=(8.8, 4.4), dpi=200)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -310,7 +310,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10"):
         ax.plot(
             x_values,
             y_values,
-            linewidth=2.4,
+            linewidth=3.0,
             solid_capstyle="round",
             solid_joinstyle="round"
         )
@@ -331,7 +331,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10"):
             xy=(last_x, last_y),
             xytext=(8, 0),
             textcoords="offset points",
-            fontsize=9,
+            fontsize=10,
             va="center"
         )
 
@@ -404,25 +404,25 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    canvas_width = 1200
-    canvas_height = 640
+    canvas_width = 1400
+    canvas_height = 840
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
 
     # 字型
-    title_font = get_font(30, bold=True)
+    title_font = get_font(38, bold=True)
     grade_font = get_font(24, bold=True)
 
-    stat_label_font = get_font(17, bold=True)
-    stat_jpy_font = get_font(24, bold=True)
-    stat_twd_font = get_font(15, bold=False)
+    stat_label_font = get_font(20, bold=True)
+    stat_jpy_font = get_font(30, bold=True)
+    stat_twd_font = get_font(17, bold=False)
 
-    footer_font = get_font(19, bold=False)
-    small_font = get_font(16, bold=False)
+    footer_font = get_font(22, bold=False)
+    small_font = get_font(18, bold=False)
 
     # 外層白色卡片
-    outer_box = (28, 28, canvas_width - 28, canvas_height - 28)
+    outer_box = (24, 24, canvas_width - 24, canvas_height - 24)
     draw.rounded_rectangle(
         outer_box,
         radius=28,
@@ -432,7 +432,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 左側商品圖
     # =========================
-    left_box = (58, 70, 420, 520)
+    left_box = (58, 88, 500, 690)
 
     draw.rounded_rectangle(
         left_box,
@@ -457,7 +457,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     if product_image:
         product_box = create_contain_image(
             product_image,
-            (310, 390),
+            (360, 500),
             bg_color=(250, 250, 250)
         )
 
@@ -477,17 +477,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 右上商品名稱 header
     # =========================
-    right_x = 455
-    right_w = 690
+    right_x = 540
+    right_w = 800
 
-    header_box = (right_x, 70, right_x + right_w, 132)
-    draw.rounded_rectangle(
-        header_box,
-        radius=18,
-        fill="#FFF1F2",
-        outline="#F4C7CD",
-        width=1
-    )
 
     title_lines = wrap_text_by_width(
         draw=draw,
@@ -500,8 +492,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     title_text = title_lines[0] if title_lines else product_name
 
     draw.text(
-        (right_x + 22, 86),
-        title_text,
+        (right_x, 92),
+        product_name,
         fill="#222222",
         font=title_font
     )
@@ -509,31 +501,23 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # Grade badge
     # =========================
-    badge_box = (right_x, 156, right_x + 170, 210)
-
-    draw.rounded_rectangle(
-        badge_box,
-        radius=16,
-        fill="#EEF4FF",
-        outline="#D8E5FF",
-        width=1
-    )
 
     draw.text(
-        (badge_box[0] + 20, badge_box[1] + 13),
+        (right_x, 160),
         selected_grade,
-        fill="#2F5FE8",
+        fill="#2F5FE8",   # 如果你要保留藍字
         font=grade_font
     )
 
+    grade_font = get_font(30, bold=True)
     # =========================
     # 最高 / 平均 / 最低
     # =========================
-    stat_start_x = right_x + 195
-    stat_y = 150
-    stat_gap = 14
-    stat_w = 155
-    stat_h = 72
+    stat_start_x = right_x + 130
+    stat_y = 145
+    stat_gap = 18
+    stat_w = 185
+    stat_h = 105
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -587,7 +571,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 折線圖區
     # =========================
-    chart_bg_box = (right_x, 245, right_x + right_w, 520)
+    chart_bg_box = (right_x, 275, right_x + right_w, 705)
 
     draw.rounded_rectangle(
         chart_bg_box,
@@ -604,11 +588,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     chart_image = create_contain_image(
         chart_image,
-        (640, 230),
+        (760, 360),
         bg_color=(255, 255, 255)
     )
 
-    card.paste(chart_image, (right_x + 25, 268))
+    card.paste(chart_image, (right_x + 18, 300))
 
     # =========================
     # 底部資訊
@@ -619,14 +603,14 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         rate_text = "台灣銀行日圓即期匯率：取得失敗"
 
     draw.text(
-        (58, 558),
+        (58, 740),
         rate_text,
         fill="#444444",
         font=footer_font
     )
 
     draw.text(
-        (455, 558),
+        (540, 740),
         "資料來源：SNKRDUNK",
         fill="#777777",
         font=footer_font
@@ -638,7 +622,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         count_text = "成交筆數：0 筆"
 
     draw.text(
-        (980, 560),
+        (1130, 742),
         count_text,
         fill="#999999",
         font=small_font
