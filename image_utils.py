@@ -519,16 +519,27 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         # 不再使用 create_contain_image 包成 product_box
         # =========================
 
-        target_w = 405
-        target_h = 570
+        target_w = 420
+        target_h = 590
 
         try:
             resample_filter = Image.Resampling.LANCZOS
         except AttributeError:
             resample_filter = Image.LANCZOS
 
-        product_image.thumbnail(
-            (target_w, target_h),
+        # 允許圖片放大，保持比例塞進左側區塊
+        original_w, original_h = product_image.size
+
+        scale = min(
+            target_w / original_w,
+            target_h / original_h
+        )
+
+        new_w = int(original_w * scale)
+        new_h = int(original_h * scale)
+
+        product_image = product_image.resize(
+            (new_w, new_h),
             resample_filter
         )
 
