@@ -4838,6 +4838,6 @@ a {
     object-fit: contain !important;
     display: block !important;
 
-    transform: scale(1.05);
+    transform: scale(0.7);
     transform-origin: center center;
 }
