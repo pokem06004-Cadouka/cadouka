@@ -719,8 +719,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     draw.text((90, bottom_stat_y + 26), selected_grade, fill="#2F5FE8", font=grade_font)
 
-    stat_start_x = 240
-    stat_gap = 70
+    stat_start_x = 600
+    stat_gap = 55
     stat_w = 220
 
     stat_items = [
@@ -759,10 +759,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     footer_color = "#666666"
 
     # 同一排的上下位置
-    footer_y = 850
+    footer_y = 825
 
     # 左邊資料來源的位置
-    source_x = 850
+    source_x = 825
 
     # 右邊匯率右對齊，右側保留足夠寬度給較長的小數
     rate_area_right = canvas_width - 70
