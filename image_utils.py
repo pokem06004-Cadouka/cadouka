@@ -413,7 +413,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             "day": day_text or "-"
         })
 
-    fig, ax = plt.subplots(figsize=(10.4, 5.4), dpi=200)
+    # 圖表本體加大，讓下方統計搬走後的空間可以被折線圖吃掉
+    fig, ax = plt.subplots(figsize=(11.2, 6.0), dpi=200)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -492,7 +493,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             first_tick_x = date_tick_positions[0]
             ax.text(
                 first_tick_x - 0.35,
-                -0.09,
+                -0.08,
                 f"{first_month}月",
                 transform=ax.get_xaxis_transform(),
                 fontsize=22,
@@ -549,7 +550,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.subplots_adjust(left=0.15, bottom=0.22, right=0.98, top=0.96)
+    fig.subplots_adjust(left=0.15, bottom=0.20, right=0.98, top=0.96)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -564,6 +565,13 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     """
     產生市場圖卡，存到 static/generated/
     回傳檔名（不是完整 URL）
+
+    版面：
+    - 左側商品圖維持目前大小
+    - 上方只放商品名稱
+    - 折線圖放大並往上移
+    - PSA / 最高 / 平均 / 最低 移到下方資訊區
+    - 右下角只保留匯率與資料來源
     """
     ensure_generated_dir()
 
@@ -571,14 +579,13 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    # 整張圖加大，白色背景更滿
     canvas_width = 1520
     canvas_height = 940
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
 
-    # 字型：除了商品圖片以外，其他文字都加大
+    # 字型
     title_font = get_font(52, bold=True)
     grade_font = get_font(36, bold=True)
 
@@ -588,7 +595,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     footer_font = get_font(26, bold=False)
 
-    # 外層白色卡片：縮小外圍灰邊，圓角更乾淨
+    # 外層白色卡片：圓角更乾淨
     outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
     draw.rounded_rectangle(
         outer_box,
@@ -597,7 +604,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     )
 
     # =========================
-    # 左側商品圖：維持目前圖片大小，不再放大
+    # 左側商品圖：維持目前圖片大小
     # =========================
     left_box = (58, 88, 500, 690)
 
@@ -690,19 +697,36 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         font=title_font_dynamic
     )
 
-    # PSA 等級
+    # =========================
+    # 放大後的折線圖：往上移，吃掉原本統計區空間
+    # =========================
+    chart_image = generate_price_chart_image(
+        prices,
+        selected_grade=selected_grade,
+        y_tick_font_size=26
+    )
+
+    chart_image = create_contain_image(
+        chart_image,
+        (950, 585),
+        bg_color=(255, 255, 255)
+    )
+
+    card.paste(chart_image, (right_x - 4, 126))
+
+    # =========================
+    # 下方統計區：PSA10 / 最高 / 平均 / 最低
+    # =========================
+    bottom_stat_y = 742
+
     draw.text(
-        (right_x, 174),
+        (90, bottom_stat_y + 38),
         selected_grade,
         fill="#2F5FE8",
         font=grade_font
     )
 
-    # =========================
-    # 最高 / 平均 / 最低
-    # =========================
-    stat_start_x = right_x + 150
-    stat_y = 146
+    stat_start_x = 230
     stat_gap = 36
     stat_w = 210
 
@@ -714,7 +738,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     for idx, (label, value) in enumerate(stat_items):
         x1 = stat_start_x + idx * (stat_w + stat_gap)
-        y1 = stat_y
+        y1 = bottom_stat_y
 
         # label
         label_w = text_width(draw, label, stat_label_font)
@@ -746,23 +770,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         )
 
     # =========================
-    # 折線圖區：放大圖表空間
-    # =========================
-    chart_image = generate_price_chart_image(
-        prices,
-        selected_grade=selected_grade,
-        y_tick_font_size=26
-    )
-
-    chart_image = create_contain_image(
-        chart_image,
-        (930, 500),
-        bg_color=(255, 255, 255)
-    )
-
-    card.paste(chart_image, (right_x + 6, 292))
-
-    # =========================
     # 右下角資訊：刪除成交筆數，只保留匯率與資料來源
     # =========================
     if jpy_rate:
@@ -773,8 +780,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
     footer_color = "#666666"
     footer_right_x = canvas_width - 70
-    footer_y_1 = 808
-    footer_y_2 = 852
+    footer_y_1 = 800
+    footer_y_2 = 844
 
     rate_w = text_width(draw, rate_text, footer_font)
     source_w = text_width(draw, source_text, footer_font)
