@@ -4810,7 +4810,7 @@ a {
         max-height: none !important;
         border-radius: 0 !important;
 
-        transform: scale(1);
+        transform: scale(1.2);
         transform-origin: center center;
     }
 }
