@@ -358,15 +358,18 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
     return canvas
 
 
-def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=20):
+def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=22):
     """
-    回傳 PIL Image（乾淨折線圖）
+    回傳 PIL Image（日期切換點 + 淡虛線版本）
+
+    功能：
     - 使用抓到的全部筆數
-    - 不顯示日期刻度
-    - 不做大面積填色
-    - 每筆資料在線上顯示一個點
+    - 每筆資料在線上有一個點
+    - X 軸只標「日期切換點」
+    - 日期切換點往上畫淡虛線
     - 顯示 X / Y 軸線
-    - Y 軸數字縮小
+    - 不做大面積填色
+    - 不顯示折線旁價格文字
     """
     valid_items = []
 
@@ -377,14 +380,25 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         if jpy_price is None:
             continue
 
-        valid_items.append(jpy_price)
+        raw_date = item.get("date")
+        date_label = short_date_text(raw_date)
+
+        # 如果是 26/06/10 這種格式，X 軸只顯示 06/10
+        if len(date_label) == 8 and date_label[2] == "/" and date_label[5] == "/":
+            date_label = date_label[3:]
+
+        valid_items.append({
+            "price": jpy_price,
+            "date": date_label or "-"
+        })
 
     fig, ax = plt.subplots(figsize=(8.8, 4.4), dpi=200)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
-        y_values = valid_items
+        y_values = [item["price"] for item in valid_items]
 
+        # 折線 + 每筆資料的小圓點
         ax.plot(
             x_values,
             y_values,
@@ -393,14 +407,67 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             markersize=5,
             markeredgewidth=1.2,
             solid_capstyle="round",
-            solid_joinstyle="round"
+            solid_joinstyle="round",
+            zorder=3
         )
 
-        # 不顯示日期刻度，但保留 X 軸線
-        ax.set_xticks([])
-        ax.tick_params(axis="x", length=0, labelbottom=False)
+        # =========================
+        # 找日期切換點
+        # =========================
+        date_tick_positions = []
+        date_tick_labels = []
 
-        # Y 軸數字縮小
+        previous_date = None
+
+        for index, item in enumerate(valid_items):
+            current_date = item["date"]
+
+            if index == 0 or current_date != previous_date:
+                date_tick_positions.append(index + 1)
+                date_tick_labels.append(current_date)
+
+            previous_date = current_date
+
+        # 如果日期切換點太多，最多顯示 6 個，避免太擠
+        max_tick_count = 6
+
+        if len(date_tick_positions) > max_tick_count:
+            selected_indexes = []
+
+            for i in range(max_tick_count):
+                selected_index = round(
+                    i * (len(date_tick_positions) - 1) / (max_tick_count - 1)
+                )
+                selected_indexes.append(selected_index)
+
+            selected_indexes = sorted(set(selected_indexes))
+
+            date_tick_positions = [date_tick_positions[i] for i in selected_indexes]
+            date_tick_labels = [date_tick_labels[i] for i in selected_indexes]
+
+        # X 軸標日期
+        ax.set_xticks(date_tick_positions)
+        ax.set_xticklabels(date_tick_labels, fontsize=13, color="#777777")
+
+        ax.tick_params(
+            axis="x",
+            length=0,
+            pad=8,
+            colors="#777777"
+        )
+
+        # 日期切換點：淡淡的垂直虛線
+        for tick_x in date_tick_positions:
+            ax.axvline(
+                x=tick_x,
+                linestyle="--",
+                linewidth=0.9,
+                alpha=0.22,
+                color="#9CA3AF",
+                zorder=1
+            )
+
+        # Y 軸數字小一點
         ax.tick_params(
             axis="y",
             labelsize=y_tick_font_size,
@@ -408,7 +475,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             colors="#666666"
         )
 
-        # 淡淡的水平參考線
+        # 淡淡水平線
         ax.grid(axis="y", alpha=0.12, linewidth=0.8)
         ax.grid(axis="x", visible=False)
 
@@ -427,8 +494,10 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         ax.set_xlabel("")
         ax.set_ylabel("")
 
-        # 留一點邊界
-        ax.margins(x=0.03, y=0.15)
+        # 留一點邊界，避免點貼邊
+        ax.margins(x=0.04, y=0.16)
+
+        ax.set_axisbelow(True)
 
     else:
         ax.text(
@@ -446,7 +515,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.tight_layout(pad=0.4)
+    fig.tight_layout(pad=0.6)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -648,7 +717,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     chart_image = generate_price_chart_image(
         prices,
         selected_grade=selected_grade,
-        y_tick_font_size=18
+        y_tick_font_size=22
     )
 
     chart_image = create_contain_image(
