@@ -496,14 +496,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     if product_image_bytes:
         try:
-            debug_id = uuid.uuid4().hex[:8]
-
-            # 1. 輸出原始抓到的圖
-            save_debug_image(
-                product_image_bytes,
-                f"debug_{debug_id}_01_original.png"
-            )
-
             cropped_output = crop_white_border(
                 product_image_bytes,
                 crop_left=0,
@@ -511,12 +503,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
                 crop_right=0,
                 crop_bottom=0,
                 auto_crop=True
-            )
-
-            # 2. 輸出裁切後的圖
-            save_debug_image(
-                cropped_output,
-                f"debug_{debug_id}_02_cropped.png"
             )
 
             product_image = Image.open(cropped_output).convert("RGB")
@@ -528,21 +514,29 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         product_image = None
 
     if product_image:
-        product_box = create_contain_image(
-            product_image,
-            (380, 560),
-            bg_color=(250, 250, 250)
+        # =========================
+        # 直接把裁切後的商品圖放大後貼進左側區塊
+        # 不再使用 create_contain_image 包成 product_box
+        # =========================
+
+        target_w = 405
+        target_h = 570
+
+        try:
+            resample_filter = Image.Resampling.LANCZOS
+        except AttributeError:
+            resample_filter = Image.LANCZOS
+
+        product_image.thumbnail(
+            (target_w, target_h),
+            resample_filter
         )
 
-        save_debug_image(
-            product_box,
-            f"debug_{debug_id}_03_product_box.png"
-        )
+        paste_x = left_box[0] + ((left_box[2] - left_box[0]) - product_image.width) // 2
+        paste_y = left_box[1] + ((left_box[3] - left_box[1]) - product_image.height) // 2
 
-        paste_x = left_box[0] + ((left_box[2] - left_box[0]) - product_box.width) // 2
-        paste_y = left_box[1] + ((left_box[3] - left_box[1]) - product_box.height) // 2
+        card.paste(product_image, (paste_x, paste_y))
 
-        card.paste(product_box, (paste_x, paste_y))
     else:
         placeholder_font = get_font(28, bold=True)
         draw.text(
@@ -552,11 +546,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
             font=placeholder_font
         )
 
-    # =========================
-    # 右側座標
-    # =========================
-    right_x = 520
-    right_w = 800
+        # =========================
+        # 右側座標
+        # =========================
+        right_x = 520
+        right_w = 800
 
     # =========================
     # 商品名稱（整條，無底色）
