@@ -415,6 +415,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
 
     # 圖表本體加大，讓下方統計搬走後的空間可以被折線圖吃掉
     fig, ax = plt.subplots(figsize=(11.2, 6.0), dpi=200)
+    fig.patch.set_alpha(0)   # 整張 matplotlib 圖背景透明
+    ax.set_facecolor("none") # 圖表區背景透明
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -553,11 +555,11 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     fig.subplots_adjust(left=0.15, bottom=0.20, right=0.98, top=0.96)
 
     output = io.BytesIO()
-    fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
+    fig.savefig(output, format="png", bbox_inches="tight", facecolor="True")
     plt.close(fig)
 
     output.seek(0)
-    chart_image = Image.open(output).convert("RGB")
+    chart_image = Image.open(output).convert("RGBA")
     return chart_image
 
 
@@ -707,7 +709,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     chart_image = create_contain_image(
         chart_image,
         (950, 585),
-        bg_color=(255, 255, 255)
+        bg_color=None
     )
 
     card.paste(chart_image, (right_x + 6, 180))
