@@ -711,12 +711,12 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         bg_color=(255, 255, 255)
     )
 
-    card.paste(chart_image, (right_x + 6, 230))
+    card.paste(chart_image, (right_x + 6, 180))
 
     # =========================
     # 下方統計區：PSA10 / 最高 / 平均 / 最低
     # =========================
-    bottom_stat_y = 690
+    bottom_stat_y = 800
 
     draw.text(
         (90, bottom_stat_y + 38),
