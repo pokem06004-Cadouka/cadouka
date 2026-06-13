@@ -332,7 +332,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10"):
             xytext=(8, 0),
             textcoords="offset points",
             fontsize=10,
-            va="center"
+            va="center" 
         )
 
         # 不顯示日期刻度
