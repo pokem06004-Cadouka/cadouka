@@ -746,7 +746,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         draw.text((x1 + (stat_w - twd_w) / 2, y1 + 102), twd_text, fill="#999999", font=stat_twd_font)
 
     # =========================
-    # 右下角資訊：刪除成交筆數，只保留匯率與資料來源
+    # 右下角資訊：同一排左右放
+    # 左邊：資料來源；右邊：台灣銀行日圓即期匯率
+    # 匯率不強制補小數位，保留抓到的原始值
     # =========================
     if jpy_rate:
         rate_text = f"台灣銀行日圓即期匯率：{jpy_rate}"
@@ -755,23 +757,28 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     source_text = "資料來源：SNKRDUNK"
     footer_color = "#666666"
-    footer_right_x = canvas_width - 70
-    footer_y_1 = 815
-    footer_y_2 = 860
 
-    rate_w = text_width(draw, rate_text, footer_font)
-    source_w = text_width(draw, source_text, footer_font)
+    # 同一排的上下位置
+    footer_y = 850
+
+    # 左邊資料來源的位置
+    source_x = 850
+
+    # 右邊匯率右對齊，右側保留足夠寬度給較長的小數
+    rate_area_right = canvas_width - 70
 
     draw.text(
-        (footer_right_x - rate_w, footer_y_1),
-        rate_text,
+        (source_x, footer_y),
+        source_text,
         fill=footer_color,
         font=footer_font
     )
 
+    rate_w = text_width(draw, rate_text, footer_font)
+
     draw.text(
-        (footer_right_x - source_w, footer_y_2),
-        source_text,
+        (rate_area_right - rate_w, footer_y),
+        rate_text,
         fill=footer_color,
         font=footer_font
     )
