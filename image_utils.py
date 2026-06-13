@@ -408,7 +408,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 左側商品圖（回到上一版比較平衡的設定）
     # =========================
-    left_box = (58, 88, 600, 790)
+    left_box = (58, 88, 500, 690)
 
     draw.rounded_rectangle(
         left_box,
@@ -431,7 +431,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     if product_image:
         product_box = create_contain_image(
             product_image,
-            (300, 430),
+            (360, 520),
             bg_color=(250, 250, 250)
         )
 
