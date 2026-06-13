@@ -588,9 +588,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 字型
     title_font = get_font(52, bold=True)
     grade_font = get_font(44, bold=True)
-    stat_label_font = get_font(32, bold=True)
-    stat_jpy_font = get_font(46, bold=True)
-    stat_twd_font = get_font(28, bold=False)
+    stat_label_font = get_font(34, bold=True)
+    stat_jpy_font = get_font(42, bold=True)
+    stat_twd_font = get_font(30, bold=False)
     footer_font = get_font(20, bold=False)
 
     # 外層白色卡片：圓角更乾淨
@@ -762,7 +762,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 880
+    footer_y = 900
 
     # 整組最右邊的位置
     footer_right_x = canvas_width - 55
