@@ -212,6 +212,51 @@ def parse_jpy_price(price):
     except:
         return None
 
+def format_jpy_text(value):
+    try:
+        return f"¥{int(value):,}"
+    except:
+        return "¥-"
+
+
+def format_twd_text(jpy_value, jpy_rate):
+    if not jpy_rate:
+        return "約 NT$-"
+
+    try:
+        twd_value = round(int(jpy_value) * float(jpy_rate))
+        return f"約 NT${twd_value:,}"
+    except:
+        return "約 NT$-"
+
+
+def calculate_price_stats_for_card(prices):
+    valid_prices = []
+
+    for item in prices or []:
+        jpy_price = parse_jpy_price(item.get("price"))
+
+        if jpy_price is not None:
+            valid_prices.append(jpy_price)
+
+    if not valid_prices:
+        return {
+            "has_data": False,
+            "highest": 0,
+            "average": 0,
+            "lowest": 0,
+            "latest": 0,
+            "count": 0
+        }
+
+    return {
+        "has_data": True,
+        "highest": max(valid_prices),
+        "average": round(sum(valid_prices) / len(valid_prices)),
+        "lowest": min(valid_prices),
+        "latest": valid_prices[0],
+        "count": len(valid_prices)
+    }
 
 def short_date_text(date_text):
     text = str(date_text or "").strip().replace("-", "/")
@@ -238,59 +283,81 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
 
 def generate_price_chart_image(prices, selected_grade="PSA10"):
     """
-    回傳 PIL Image（折線圖）
+    回傳 PIL Image（乾淨純折線圖）
+    - 使用抓到的全部筆數
+    - 不顯示日期刻度
+    - 不做大面積填色
+    - 只保留簡化座標軸與乾淨折線
     """
     valid_items = []
 
-    # 通常 API 回來多半是新到舊，這裡反轉成舊到新
+    # API 多半是新到舊，這裡反轉成舊到新，折線才會是時間往右走
     for item in reversed(prices or []):
         jpy_price = parse_jpy_price(item.get("price"))
-        date_text = short_date_text(item.get("date"))
 
         if jpy_price is None:
             continue
 
-        valid_items.append({
-            "date": date_text or "-",
-            "price": jpy_price
-        })
+        valid_items.append(jpy_price)
 
-    fig, ax = plt.subplots(figsize=(7.4, 3.1), dpi=180)
+    fig, ax = plt.subplots(figsize=(7.6, 3.2), dpi=180)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
-        y_values = [item["price"] for item in valid_items]
+        y_values = valid_items
 
-        ax.plot(x_values, y_values, linewidth=2.2, marker="o", markersize=4)
-        ax.fill_between(x_values, y_values, alpha=0.12)
+        # 純折線，不做大面積填色
+        ax.plot(
+            x_values,
+            y_values,
+            linewidth=2.4,
+            solid_capstyle="round",
+            solid_joinstyle="round"
+        )
 
-        tick_indexes = []
-        if len(valid_items) == 1:
-            tick_indexes = [0]
-        elif len(valid_items) == 2:
-            tick_indexes = [0, 1]
-        else:
-            tick_indexes = [0, len(valid_items) // 2, len(valid_items) - 1]
-
-        tick_positions = [i + 1 for i in tick_indexes]
-        tick_labels = [valid_items[i]["date"] for i in tick_indexes]
-
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels(tick_labels, fontsize=8)
-
-        ax.set_title(f"{selected_grade} 成交走勢", fontsize=12)
-        ax.set_ylabel("JPY", fontsize=9)
-        ax.grid(alpha=0.25)
-
+        # 只標最後一個點，讓圖乾淨
         last_x = x_values[-1]
         last_y = y_values[-1]
+
+        ax.scatter(
+            [last_x],
+            [last_y],
+            s=34,
+            zorder=3
+        )
+
         ax.annotate(
             f"¥{last_y:,}",
             xy=(last_x, last_y),
-            xytext=(6, 6),
+            xytext=(8, 0),
             textcoords="offset points",
-            fontsize=9
+            fontsize=9,
+            va="center"
         )
+
+        # 不顯示日期刻度
+        ax.set_xticks([])
+
+        # Y 軸簡化：只留少量刻度
+        ax.tick_params(axis="y", labelsize=8, length=0, colors="#777777")
+        ax.tick_params(axis="x", length=0)
+
+        # 淡淡的水平參考線
+        ax.grid(axis="y", alpha=0.16, linewidth=0.8)
+        ax.grid(axis="x", visible=False)
+
+        # 拿掉多餘邊框
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["bottom"].set_color("#DDDDDD")
+        ax.spines["left"].set_color("#DDDDDD")
+
+        # 讓線不要貼邊
+        ax.margins(x=0.04, y=0.18)
+
+        # 不放標題，標題改由外面的圖卡負責
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
     else:
         ax.text(
@@ -299,12 +366,16 @@ def generate_price_chart_image(prices, selected_grade="PSA10"):
             f"查無 {selected_grade} 成交資料",
             ha="center",
             va="center",
-            fontsize=12
+            fontsize=13,
+            color="#777777"
         )
         ax.set_xticks([])
         ax.set_yticks([])
 
-    fig.tight_layout()
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    fig.tight_layout(pad=0.6)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -319,30 +390,56 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     """
     產生市場圖卡，存到 static/generated/
     回傳檔名（不是完整 URL）
+
+    版面：
+    - 左側大商品圖
+    - 右上商品名稱
+    - 右側第二列：等級 + 最高 / 平均 / 最低
+    - 右側中間：乾淨折線圖
+    - 底部：台銀匯率 + 資料來源
     """
     ensure_generated_dir()
 
     product_name = format_product_name_for_card(product.get("name"))
     image_url = product.get("image") or ""
+    stats = calculate_price_stats_for_card(prices)
 
     canvas_width = 1200
-    canvas_height = 760
+    canvas_height = 640
 
-    card = Image.new("RGB", (canvas_width, canvas_height), "#F3F5F8")
+    card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
 
-    # 外框
+    # 字型
+    title_font = get_font(30, bold=True)
+    grade_font = get_font(24, bold=True)
+
+    stat_label_font = get_font(17, bold=True)
+    stat_jpy_font = get_font(24, bold=True)
+    stat_twd_font = get_font(15, bold=False)
+
+    footer_font = get_font(19, bold=False)
+    small_font = get_font(16, bold=False)
+
+    # 外層白色卡片
+    outer_box = (28, 28, canvas_width - 28, canvas_height - 28)
     draw.rounded_rectangle(
-        (24, 24, canvas_width - 24, canvas_height - 24),
+        outer_box,
         radius=28,
         fill="white"
     )
 
-    # 左側商品圖區
+    # =========================
+    # 左側商品圖
+    # =========================
+    left_box = (58, 70, 420, 520)
+
     draw.rounded_rectangle(
-        (56, 56, 356, 356),
+        left_box,
         radius=24,
-        fill="#F8F8F8"
+        fill="#FAFAFA",
+        outline="#E9ECF2",
+        width=2
     )
 
     product_image_bytes = download_image_bytes(image_url)
@@ -358,62 +455,194 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         product_image = None
 
     if product_image:
-        product_box = create_contain_image(product_image, (260, 260), bg_color=(248, 248, 248))
-        card.paste(product_box, (76, 76))
-    else:
-        placeholder_font = get_font(26, bold=True)
-        draw.text((120, 185), "No Image", fill="#999999", font=placeholder_font)
+        product_box = create_contain_image(
+            product_image,
+            (310, 390),
+            bg_color=(250, 250, 250)
+        )
 
-    # 標題
-    title_font = get_font(34, bold=True)
-    subtitle_font = get_font(22, bold=False)
-    badge_font = get_font(22, bold=True)
-    footer_font = get_font(22, bold=False)
-    small_font = get_font(18, bold=False)
+        paste_x = left_box[0] + ((left_box[2] - left_box[0]) - product_box.width) // 2
+        paste_y = left_box[1] + ((left_box[3] - left_box[1]) - product_box.height) // 2
+
+        card.paste(product_box, (paste_x, paste_y))
+    else:
+        placeholder_font = get_font(28, bold=True)
+        draw.text(
+            (left_box[0] + 110, left_box[1] + 190),
+            "No Image",
+            fill="#999999",
+            font=placeholder_font
+        )
+
+    # =========================
+    # 右上商品名稱 header
+    # =========================
+    right_x = 455
+    right_w = 690
+
+    header_box = (right_x, 70, right_x + right_w, 132)
+    draw.rounded_rectangle(
+        header_box,
+        radius=18,
+        fill="#FFF1F2",
+        outline="#F4C7CD",
+        width=1
+    )
 
     title_lines = wrap_text_by_width(
         draw=draw,
         text=product_name,
         font=title_font,
-        max_width=720,
-        max_lines=3
+        max_width=right_w - 44,
+        max_lines=1
     )
 
-    title_y = 70
-    for line in title_lines:
-        draw.text((400, title_y), line, fill="#222222", font=title_font)
-        title_y += 44
+    title_text = title_lines[0] if title_lines else product_name
 
-    # grade badge
-    badge_text = f"目前顯示：{selected_grade}"
-    badge_x1 = 400
-    badge_y1 = max(title_y + 10, 180)
-    badge_x2 = badge_x1 + 220
-    badge_y2 = badge_y1 + 44
+    draw.text(
+        (right_x + 22, 86),
+        title_text,
+        fill="#222222",
+        font=title_font
+    )
+
+    # =========================
+    # Grade badge
+    # =========================
+    badge_box = (right_x, 156, right_x + 170, 210)
 
     draw.rounded_rectangle(
-        (badge_x1, badge_y1, badge_x2, badge_y2),
-        radius=18,
-        fill="#EEF3FF"
+        badge_box,
+        radius=16,
+        fill="#EEF4FF",
+        outline="#D8E5FF",
+        width=1
     )
-    draw.text((badge_x1 + 16, badge_y1 + 10), badge_text, fill="#315EFB", font=badge_font)
 
-    # chart 區塊
-    chart_bg_box = (400, 250, 1138, 570)
-    draw.rounded_rectangle(chart_bg_box, radius=24, fill="#FFFFFF", outline="#E8EAF0")
+    draw.text(
+        (badge_box[0] + 20, badge_box[1] + 13),
+        selected_grade,
+        fill="#2F5FE8",
+        font=grade_font
+    )
 
-    chart_image = generate_price_chart_image(prices, selected_grade=selected_grade)
-    chart_image = create_contain_image(chart_image, (700, 270), bg_color=(255, 255, 255))
-    card.paste(chart_image, (420, 275))
+    # =========================
+    # 最高 / 平均 / 最低
+    # =========================
+    stat_start_x = right_x + 195
+    stat_y = 150
+    stat_gap = 14
+    stat_w = 155
+    stat_h = 72
 
-    # footer 匯率
+    stat_items = [
+        ("最高", stats["highest"]),
+        ("平均", stats["average"]),
+        ("最低", stats["lowest"])
+    ]
+
+    for idx, (label, value) in enumerate(stat_items):
+        x1 = stat_start_x + idx * (stat_w + stat_gap)
+        y1 = stat_y
+        x2 = x1 + stat_w
+        y2 = y1 + stat_h
+
+        draw.rounded_rectangle(
+            (x1, y1, x2, y2),
+            radius=16,
+            fill="#FFFFFF",
+            outline="#E9ECF2",
+            width=1
+        )
+
+        # label
+        label_w = text_width(draw, label, stat_label_font)
+        draw.text(
+            (x1 + (stat_w - label_w) / 2, y1 + 8),
+            label,
+            fill="#777777",
+            font=stat_label_font
+        )
+
+        # 日幣
+        jpy_text = format_jpy_text(value)
+        jpy_w = text_width(draw, jpy_text, stat_jpy_font)
+        draw.text(
+            (x1 + (stat_w - jpy_w) / 2, y1 + 28),
+            jpy_text,
+            fill="#222222",
+            font=stat_jpy_font
+        )
+
+        # 台幣小字
+        twd_text = format_twd_text(value, jpy_rate)
+        twd_w = text_width(draw, twd_text, stat_twd_font)
+        draw.text(
+            (x1 + (stat_w - twd_w) / 2, y1 + 55),
+            twd_text,
+            fill="#999999",
+            font=stat_twd_font
+        )
+
+    # =========================
+    # 折線圖區
+    # =========================
+    chart_bg_box = (right_x, 245, right_x + right_w, 520)
+
+    draw.rounded_rectangle(
+        chart_bg_box,
+        radius=22,
+        fill="#FFFFFF",
+        outline="#E9ECF2",
+        width=1
+    )
+
+    chart_image = generate_price_chart_image(
+        prices,
+        selected_grade=selected_grade
+    )
+
+    chart_image = create_contain_image(
+        chart_image,
+        (640, 230),
+        bg_color=(255, 255, 255)
+    )
+
+    card.paste(chart_image, (right_x + 25, 268))
+
+    # =========================
+    # 底部資訊
+    # =========================
     if jpy_rate:
         rate_text = f"台灣銀行日圓即期匯率：{jpy_rate}"
     else:
         rate_text = "台灣銀行日圓即期匯率：取得失敗"
 
-    draw.text((60, 640), rate_text, fill="#444444", font=footer_font)
-    draw.text((60, 682), "資料來源：SNKRDUNK", fill="#888888", font=small_font)
+    draw.text(
+        (58, 558),
+        rate_text,
+        fill="#444444",
+        font=footer_font
+    )
+
+    draw.text(
+        (455, 558),
+        "資料來源：SNKRDUNK",
+        fill="#777777",
+        font=footer_font
+    )
+
+    if stats["has_data"]:
+        count_text = f"成交筆數：{stats['count']} 筆"
+    else:
+        count_text = "成交筆數：0 筆"
+
+    draw.text(
+        (980, 560),
+        count_text,
+        fill="#999999",
+        font=small_font
+    )
 
     filename = f"market_card_{uuid.uuid4().hex}.png"
     output_path = os.path.join(GENERATED_DIR, filename)
