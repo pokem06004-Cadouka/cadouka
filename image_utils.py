@@ -588,11 +588,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 字型
     title_font = get_font(52, bold=True)
     grade_font = get_font(44, bold=True)
-    stat_label_font = get_font(28, bold=True)
+    stat_label_font = get_font(32, bold=True)
     stat_jpy_font = get_font(46, bold=True)
-    stat_twd_font = get_font(24, bold=False)
-
-    footer_font = get_font(26, bold=False)
+    stat_twd_font = get_font(28, bold=False)
+    footer_font = get_font(32, bold=False)
 
     # 外層白色卡片：圓角更乾淨
     outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
@@ -718,16 +717,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 800
 
-    draw.text(
-        (90, bottom_stat_y + 38),
-        selected_grade,
-        fill="#2F5FE8",
-        font=grade_font
-    )
+    draw.text((90, bottom_stat_y + 26), selected_grade, fill="#2F5FE8", font=grade_font)
 
-    stat_start_x = 245
-    stat_gap = 44
-    stat_w = 200
+    stat_start_x = 240
+    stat_gap = 70
+    stat_w = 220
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -741,32 +735,15 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
         # label
         label_w = text_width(draw, label, stat_label_font)
-        draw.text(
-            (x1 + (stat_w - label_w) / 2, y1),
-            label,
-            fill="#777777",
-            font=stat_label_font
-        )
+        draw.text((x1 + (stat_w - label_w) / 2, y1), label, fill="#777777", font=stat_label_font)
 
-        # 日幣
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
-        draw.text(
-            (x1 + (stat_w - jpy_w) / 2, y1 + 30),
-            jpy_text,
-            fill="#222222",
-            font=stat_jpy_font
-        )
+        draw.text((x1 + (stat_w - jpy_w) / 2, y1 + 40), jpy_text, fill="#222222", font=stat_jpy_font)
 
-        # 台幣小字
         twd_text = format_twd_text(value, jpy_rate)
         twd_w = text_width(draw, twd_text, stat_twd_font)
-        draw.text(
-            (x1 + (stat_w - twd_w) / 2, y1 + 76),
-            twd_text,
-            fill="#999999",
-            font=stat_twd_font
-        )
+        draw.text((x1 + (stat_w - twd_w) / 2, y1 + 102), twd_text, fill="#999999", font=stat_twd_font)
 
     # =========================
     # 右下角資訊：刪除成交筆數，只保留匯率與資料來源
@@ -779,8 +756,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
     footer_color = "#666666"
     footer_right_x = canvas_width - 70
-    footer_y_1 = 800
-    footer_y_2 = 844
+    footer_y_1 = 815
+    footer_y_2 = 860
 
     rate_w = text_width(draw, rate_text, footer_font)
     source_w = text_width(draw, source_text, footer_font)
