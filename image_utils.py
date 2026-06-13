@@ -591,7 +591,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_label_font = get_font(32, bold=True)
     stat_jpy_font = get_font(46, bold=True)
     stat_twd_font = get_font(28, bold=False)
-    footer_font = get_font(24, bold=False)
+    footer_font = get_font(20, bold=False)
 
     # 外層白色卡片：圓角更乾淨
     outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
@@ -715,12 +715,12 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 下方統計區：PSA10 / 最高 / 平均 / 最低
     # =========================
-    bottom_stat_y = 700
+    bottom_stat_y = 715
 
     draw.text((90, bottom_stat_y + 26), selected_grade, fill="#2F5FE8", font=grade_font)
 
-    stat_start_x = 675
-    stat_gap = 55
+    stat_start_x = 680
+    stat_gap = 60
     stat_w = 220
 
     stat_items = [
@@ -751,7 +751,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 匯率不強制補小數位，保留抓到的原始值
     # =========================
    # 右下角資訊：同一排，整組靠右下
-    footer_font = get_font(24, bold=False)
+    footer_font = get_font(20, bold=False)
     footer_color = "#666666"
 
     if jpy_rate:
