@@ -361,14 +361,14 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
 
 def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=26):
     """
-    回傳 PIL Image（日期切換點 + 跨月份月份標示版本）
+    回傳 PIL Image（日期切換點 + 單一月份標示版本）
 
     功能：
     - 使用抓到的全部筆數
     - 每筆資料在線上有一個點
     - X 軸只標「日期切換點」
-    - X 軸只顯示「日期」
-    - 跨月份時，在該月份第一筆資料下方顯示「xx月」
+    - X 軸只顯示「日期」或 API 回傳的簡短時間文字
+    - 只顯示第一個月份，放在第一個 X 軸日期左邊
     - 日期切換點往上畫淡虛線
     - 顯示 X / Y 軸線
     - 不做大面積填色
@@ -384,7 +384,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             continue
 
         raw_date = item.get("date")
-        date_text = short_date_text(raw_date)  # 例如 26/06/10 或 06/10
+        date_text = short_date_text(raw_date)  # 例如 26/06/10、06/10、1日前
 
         month_text = ""
         day_text = ""
@@ -403,16 +403,17 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             day_text = parts[1]
 
         else:
+            # 如果 API 回傳 1日前、11時間前，就直接顯示原文字
             day_text = date_text
 
         valid_items.append({
             "price": jpy_price,
-            "date_key": full_date_key,   # 判斷日期切換
-            "month": month_text,         # 顯示月份
-            "day": day_text or "-"       # X 軸只顯示日
+            "date_key": full_date_key,
+            "month": month_text,
+            "day": day_text or "-"
         })
 
-    fig, ax = plt.subplots(figsize=(10.2, 5.2), dpi=200)
+    fig, ax = plt.subplots(figsize=(10.4, 5.4), dpi=200)
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -425,7 +426,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             linewidth=2.8,
             marker="o",
             markersize=5,
-            markeredgewidth=1.2,
+            markeredgewidth=1.1,
             solid_capstyle="round",
             solid_joinstyle="round",
             zorder=3
@@ -436,7 +437,6 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         # =========================
         date_tick_positions = []
         date_tick_labels = []
-
         previous_date_key = None
 
         for index, item in enumerate(valid_items):
@@ -444,7 +444,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
 
             if index == 0 or current_date_key != previous_date_key:
                 date_tick_positions.append(index + 1)
-                date_tick_labels.append(item["day"])   # X 軸只顯示日期
+                date_tick_labels.append(item["day"])
 
             previous_date_key = current_date_key
 
@@ -461,18 +461,16 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
                 selected_indexes.append(selected_index)
 
             selected_indexes = sorted(set(selected_indexes))
-
             date_tick_positions = [date_tick_positions[i] for i in selected_indexes]
             date_tick_labels = [date_tick_labels[i] for i in selected_indexes]
 
         # X 軸顯示日期
         ax.set_xticks(date_tick_positions)
         ax.set_xticklabels(date_tick_labels, fontsize=22, color="#777777")
-
         ax.tick_params(
             axis="x",
             length=0,
-            pad=10,
+            pad=9,
             colors="#777777"
         )
 
@@ -482,28 +480,29 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
                 x=tick_x,
                 linestyle="--",
                 linewidth=0.9,
-                alpha=0.22,
+                alpha=0.20,
                 color="#9CA3AF",
                 zorder=1
             )
 
-    # 只顯示第一個月份，固定放在左下角
-    # 位置：X軸日期左邊、Y軸數字下面
-    first_month = valid_items[0]["month"] if valid_items and valid_items[0]["month"] else ""
+        # 只顯示第一個月份，放在第一個 X 軸日期左邊，不顯示 7月 / 8月
+        first_month = valid_items[0]["month"] if valid_items and valid_items[0]["month"] else ""
 
-    if first_month:
-        ax.text(
-            0.0,
-            -0.18,
-            f"{first_month}月",
-            transform=ax.transAxes,
-            fontsize=22,
-            color="#777777",
-            ha="right",
-            va="top"
-        )
+        if first_month and date_tick_positions:
+            first_tick_x = date_tick_positions[0]
+            ax.text(
+                first_tick_x - 0.35,
+                -0.09,
+                f"{first_month}月",
+                transform=ax.get_xaxis_transform(),
+                fontsize=22,
+                color="#777777",
+                ha="right",
+                va="top"
+            )
 
-        # Y 軸數字
+        # Y 軸數字與刻度數量
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5, min_n_ticks=4))
         ax.tick_params(
             axis="y",
             labelsize=y_tick_font_size,
@@ -541,7 +540,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             f"查無 {selected_grade} 成交資料",
             ha="center",
             va="center",
-            fontsize=18,
+            fontsize=20,
             color="#777777"
         )
         ax.set_xticks([])
@@ -550,7 +549,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-    fig.subplots_adjust(left=0.16, bottom=0.24, right=0.98, top=0.96)
+    fig.subplots_adjust(left=0.15, bottom=0.22, right=0.98, top=0.96)
 
     output = io.BytesIO()
     fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
@@ -559,7 +558,6 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     output.seek(0)
     chart_image = Image.open(output).convert("RGB")
     return chart_image
-
 
 
 def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate=None):
@@ -573,39 +571,39 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    canvas_width = 1500
-    canvas_height = 920
+    # 整張圖加大，白色背景更滿
+    canvas_width = 1520
+    canvas_height = 940
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
 
-    # 字型
-    title_font = get_font(44, bold=True)
-    grade_font = get_font(30, bold=True)
+    # 字型：除了商品圖片以外，其他文字都加大
+    title_font = get_font(52, bold=True)
+    grade_font = get_font(36, bold=True)
 
-    stat_label_font = get_font(20, bold=True)
-    stat_jpy_font = get_font(30, bold=True)
-    stat_twd_font = get_font(17, bold=False)
+    stat_label_font = get_font(24, bold=True)
+    stat_jpy_font = get_font(38, bold=True)
+    stat_twd_font = get_font(22, bold=False)
 
-    footer_font = get_font(22, bold=False)
-    small_font = get_font(18, bold=False)
+    footer_font = get_font(26, bold=False)
 
-    # 外層白色卡片
-    outer_box = (12, 12, canvas_width - 12, canvas_height - 12)
+    # 外層白色卡片：縮小外圍灰邊，圓角更乾淨
+    outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
     draw.rounded_rectangle(
         outer_box,
-        radius=28,
+        radius=18,
         fill="white"
     )
 
     # =========================
-    # 左側商品圖（回到上一版比較平衡的設定）
+    # 左側商品圖：維持目前圖片大小，不再放大
     # =========================
     left_box = (58, 88, 500, 690)
 
     draw.rounded_rectangle(
         left_box,
-        radius=24,
+        radius=12,
         fill="#FAFAFA"
     )
 
@@ -631,11 +629,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         product_image = None
 
     if product_image:
-        # =========================
-        # 直接把裁切後的商品圖放大後貼進左側區塊
-        # 不再使用 create_contain_image 包成 product_box
-        # =========================
-
         target_w = 420
         target_h = 590
 
@@ -666,9 +659,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         card.paste(product_image, (paste_x, paste_y))
 
     else:
-        placeholder_font = get_font(28, bold=True)
+        placeholder_font = get_font(30, bold=True)
         draw.text(
-            (left_box[0] + 110, left_box[1] + 190),
+            (left_box[0] + 120, left_box[1] + 250),
             "No Image",
             fill="#999999",
             font=placeholder_font
@@ -678,36 +671,40 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 右側座標
     # =========================
     right_x = 520
-    right_w = 900
+    right_w = 930
 
-    # =========================
-    # 商品名稱（整條，無底色）
-    # =========================
+    # 商品名稱：加大，若太長就自動微縮，避免超出右側
+    title_x = right_x
+    title_y = 72
+    title_font_size = 52
+    title_font_dynamic = title_font
+
+    while text_width(draw, product_name, title_font_dynamic) > right_w and title_font_size > 40:
+        title_font_size -= 2
+        title_font_dynamic = get_font(title_font_size, bold=True)
+
     draw.text(
-        (right_x, 82),
+        (title_x, title_y),
         product_name,
         fill="#222222",
-        font=title_font
+        font=title_font_dynamic
     )
 
-    # =========================
-    # PSA 等級（只有文字，不要藍底）
-    # =========================
+    # PSA 等級
     draw.text(
-        (right_x, 182),
+        (right_x, 174),
         selected_grade,
         fill="#2F5FE8",
         font=grade_font
     )
 
     # =========================
-    # 最高 / 平均 / 最低（不要框線）
+    # 最高 / 平均 / 最低
     # =========================
-    stat_start_x = right_x + 125
-    stat_y = 162
-    stat_gap = 28
-    stat_w = 180
-    stat_h = 92
+    stat_start_x = right_x + 150
+    stat_y = 146
+    stat_gap = 36
+    stat_w = 210
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -722,7 +719,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         # label
         label_w = text_width(draw, label, stat_label_font)
         draw.text(
-            (x1 + (stat_w - label_w) / 2, y1 + 2),
+            (x1 + (stat_w - label_w) / 2, y1),
             label,
             fill="#777777",
             font=stat_label_font
@@ -732,7 +729,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
         draw.text(
-            (x1 + (stat_w - jpy_w) / 2, y1 + 24),
+            (x1 + (stat_w - jpy_w) / 2, y1 + 30),
             jpy_text,
             fill="#222222",
             font=stat_jpy_font
@@ -742,14 +739,14 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         twd_text = format_twd_text(value, jpy_rate)
         twd_w = text_width(draw, twd_text, stat_twd_font)
         draw.text(
-            (x1 + (stat_w - twd_w) / 2, y1 + 60),
+            (x1 + (stat_w - twd_w) / 2, y1 + 76),
             twd_text,
             fill="#999999",
             font=stat_twd_font
         )
 
     # =========================
-    # 折線圖區（不要框線）
+    # 折線圖區：放大圖表空間
     # =========================
     chart_image = generate_price_chart_image(
         prices,
@@ -759,44 +756,41 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     chart_image = create_contain_image(
         chart_image,
-        (860, 460),
+        (930, 500),
         bg_color=(255, 255, 255)
     )
 
-    card.paste(chart_image, (right_x + 10, 285))
+    card.paste(chart_image, (right_x + 6, 292))
 
     # =========================
-    # 底部資訊
+    # 右下角資訊：刪除成交筆數，只保留匯率與資料來源
     # =========================
     if jpy_rate:
         rate_text = f"台灣銀行日圓即期匯率：{jpy_rate}"
     else:
         rate_text = "台灣銀行日圓即期匯率：取得失敗"
 
+    source_text = "資料來源：SNKRDUNK"
+    footer_color = "#666666"
+    footer_right_x = canvas_width - 70
+    footer_y_1 = 808
+    footer_y_2 = 852
+
+    rate_w = text_width(draw, rate_text, footer_font)
+    source_w = text_width(draw, source_text, footer_font)
+
     draw.text(
-        (58, 740),
+        (footer_right_x - rate_w, footer_y_1),
         rate_text,
-        fill="#444444",
+        fill=footer_color,
         font=footer_font
     )
 
     draw.text(
-        (520, 740),
-        "資料來源：SNKRDUNK",
-        fill="#777777",
+        (footer_right_x - source_w, footer_y_2),
+        source_text,
+        fill=footer_color,
         font=footer_font
-    )
-
-    if stats["has_data"]:
-        count_text = f"成交筆數：{stats['count']} 筆"
-    else:
-        count_text = "成交筆數：0 筆"
-
-    draw.text(
-        (1130, 742),
-        count_text,
-        fill="#999999",
-        font=small_font
     )
 
     filename = f"market_card_{uuid.uuid4().hex}.png"
