@@ -1294,3 +1294,122 @@ def create_product_image_grid_messages(products):
         )
 
     return messages
+
+def create_market_image_card_flex(
+    product,
+    card_image_url,
+    product_index,
+    selected_grade="PSA10",
+    is_pro=False
+):
+    product_url = product["url"]
+
+    grade_buttons = [
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=PostbackAction(
+                label="PSA9",
+                data=f"action=select&index={product_index}&grade=PSA9",
+                display_text="查看 PSA9"
+            ),
+            flex=1
+        ),
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=PostbackAction(
+                label="PSA8以下",
+                data=f"action=select&index={product_index}&grade={quote('PSA8以下')}",
+                display_text="查看 PSA8以下"
+            ),
+            flex=1
+        )
+    ]
+
+    if is_pro:
+        grade_buttons.extend([
+            ButtonComponent(
+                style="secondary",
+                height="sm",
+                action=PostbackAction(
+                    label="A",
+                    data=f"action=select&index={product_index}&grade=A",
+                    display_text="查看 A"
+                ),
+                flex=1
+            ),
+            ButtonComponent(
+                style="secondary",
+                height="sm",
+                action=PostbackAction(
+                    label="B",
+                    data=f"action=select&index={product_index}&grade=B",
+                    display_text="查看 B"
+                ),
+                flex=1
+            )
+        ])
+
+    bubble = BubbleContainer(
+        size="giga",
+        hero=ImageComponent(
+            url=card_image_url,
+            size="full",
+            aspect_ratio="4:3",
+            aspect_mode="fit"
+        ),
+        body=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=[
+                TextComponent(
+                    text=f"目前顯示：{selected_grade}",
+                    size="sm",
+                    color="#666666",
+                    wrap=True
+                )
+            ]
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            spacing="sm",
+            contents=[
+                BoxComponent(
+                    layout="horizontal",
+                    spacing="sm",
+                    contents=grade_buttons
+                ),
+                BoxComponent(
+                    layout="horizontal",
+                    spacing="sm",
+                    contents=[
+                        ButtonComponent(
+                            style="primary",
+                            height="sm",
+                            action=PostbackAction(
+                                label="加入倉庫",
+                                data=f"action=add_card&index={product_index}&grade={quote(selected_grade)}",
+                                display_text="加入倉庫"
+                            ),
+                            flex=1
+                        ),
+                        ButtonComponent(
+                            style="secondary",
+                            height="sm",
+                            action=URIAction(
+                                label="前往商品頁",
+                                uri=product_url
+                            ),
+                            flex=1
+                        )
+                    ]
+                )
+            ]
+        )
+    )
+
+    return FlexSendMessage(
+        alt_text=f"{selected_grade} 折線圖卡片",
+        contents=bubble
+    )

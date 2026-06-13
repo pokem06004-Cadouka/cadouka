@@ -59,11 +59,12 @@ from flex_messages import (
     create_price_flex,
     create_price_flex_carousel,
     create_grade_summary_flex,
-    create_history_flex
+    create_history_flex,
+    create_market_image_card_flex
 )
 
 from exchange import get_jpy_spot_sell
-from image_utils import crop_white_border
+from image_utils import crop_white_border, generate_market_card_image
 
 from models import (
     init_db,
@@ -3024,63 +3025,71 @@ def handle_postback(event):
             )
             return
 
-        if action == "select":
-            index = int(params.get("index", [0])[0])
+            if action == "select":
+                index = int(params.get("index", [0])[0])
+                selected_grade = params.get("grade", ["PSA10"])[0] or "PSA10"
 
-            if index >= len(products):
+                if index >= len(products):
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="商品選擇錯誤，請重新搜尋。")
+                    )
+                    return
+
+                product = products[index]
+                product_url = product["url"]
+                product_id = get_product_id(product_url)
+
+                line_user = get_user_by_line_user_id(line_user_id)
+                line_is_pro = bool(line_user and is_pro_user(line_user))
+
+                if selected_grade in ["A", "B"] and not line_is_pro:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="A / B 行情圖卡為 Cadouka Pro 會員功能。")
+                    )
+                    return
+
+                price_url = build_sales_history_url(
+                    product_id,
+                    condition=selected_grade,
+                    page=1,
+                    per_page=20
+                )
+
+                prices = getprice(price_url)
+                jpy_rate = get_jpy_spot_sell()
+
+                filename = generate_market_card_image(
+                    product=product,
+                    prices=prices,
+                    selected_grade=selected_grade,
+                    jpy_rate=jpy_rate
+                )
+
+                base_url = get_base_url()
+                card_image_url = f"{base_url}/static/generated/{filename}"
+
+                market_flex_message = create_market_image_card_flex(
+                    product=product,
+                    card_image_url=card_image_url,
+                    product_index=index,
+                    selected_grade=selected_grade,
+                    is_pro=line_is_pro
+                )
+
+                safe_add_line_log(
+                    line_user_id=line_user_id,
+                    action="select_product",
+                    result="success",
+                    message=f"點選商品查看 {selected_grade} 圖卡"
+                )
+
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text="商品選擇錯誤，請重新搜尋。")
+                    market_flex_message
                 )
                 return
-
-            product = products[index]
-            product_url = product["url"]
-
-            product_id = get_product_id(product_url)
-
-            line_user = get_user_by_line_user_id(line_user_id)
-
-            if line_user and is_pro_user(line_user):
-                condition_order = get_pro_conditions()
-            else:
-                condition_order = get_base_conditions()
-
-            prices_by_conditions = get_prices_by_conditions(
-                product_id,
-                conditions=condition_order
-            )
-
-            jpy_rate = get_jpy_spot_sell()
-
-            try:
-                price_flex_message = create_grade_summary_flex(
-                    product,
-                    prices_by_conditions,
-                    jpy_rate,
-                    index,
-                    condition_order=condition_order
-                )
-            except TypeError:
-                price_flex_message = create_grade_summary_flex(
-                    product,
-                    prices_by_conditions,
-                    jpy_rate,
-                    index
-                )
-
-            safe_add_line_log(
-                line_user_id=line_user_id,
-                action="select_product",
-                result="success",
-                message="點選商品查看行情"
-            )
-
-            line_bot_api.reply_message(
-                event.reply_token,
-                price_flex_message
-            )
-            return
 
         if action == "history":
             index = int(params.get("index", [0])[0])
