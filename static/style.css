@@ -4747,6 +4747,6 @@ a {
 }
 
 .card-list-cropped-img {
-    transform: scale(1.35);
+    transform: scale(1);
     transform-origin: center center;
 }
