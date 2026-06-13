@@ -13,6 +13,20 @@ from linebot.models import (
 from urllib.parse import quote
 from config import BASE_URL
 
+def format_product_name_for_line(product_name):
+    """
+    LINE 顯示用商品名稱：
+    只保留 [ 以前的文字。
+    例如：
+    ピカチュウ [PSA10] xxx
+    -> ピカチュウ
+    """
+    text = str(product_name or "未命名商品").strip()
+
+    if "[" in text:
+        text = text.split("[", 1)[0].strip()
+
+    return text or "未命名商品"
 
 def safe_image_url(image_url):
     if not image_url or not image_url.startswith("http"):
@@ -345,17 +359,46 @@ def create_grade_summary_flex(
     product_index=None,
     condition_order=None
 ):
-    product_name = product["name"] if product["name"] else "未命名商品"
+    raw_product_name = product["name"] if product["name"] else "未命名商品"
+    product_name = format_product_name_for_line(raw_product_name)
+
     product_url = product["url"]
     image_url = safe_image_url(product["image"])
 
     body_contents = [
-        TextComponent(
-            text=product_name,
-            weight="bold",
-            size="lg",
-            color="#222222",
-            wrap=True
+        BoxComponent(
+            layout="horizontal",
+            spacing="md",
+            margin="none",
+            contents=[
+                BoxComponent(
+                    layout="vertical",
+                    flex=2,
+                    contents=[
+                        ImageComponent(
+                            url=image_url,
+                            size="full",
+                            aspect_ratio="1:1",
+                            aspect_mode="cover",
+                            corner_radius="md"
+                        )
+                    ]
+                ),
+                BoxComponent(
+                    layout="vertical",
+                    flex=3,
+                    justify_content="center",
+                    contents=[
+                        TextComponent(
+                            text=product_name,
+                            weight="bold",
+                            size="md",
+                            color="#222222",
+                            wrap=True
+                        )
+                    ]
+                )
+            ]
         )
     ]
 
@@ -376,12 +419,6 @@ def create_grade_summary_flex(
 
     bubble = BubbleContainer(
         size="giga",
-        hero=ImageComponent(
-            url=image_url,
-            size="full",
-            aspect_ratio="4:3",
-            aspect_mode="fit"
-        ),
         body=BoxComponent(
             layout="vertical",
             spacing="sm",
@@ -1243,6 +1280,7 @@ def create_product_image_grid_messages(products):
                         spacing="xs",
                         margin="md",
                         contents=rows
+                        
                     )
                 ]
             )
