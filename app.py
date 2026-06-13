@@ -3034,7 +3034,7 @@ def handle_postback(event):
             )
             return
 
-            if action == "select":
+        if action == "select":
 
                 print("進入 select", flush=True)
 
