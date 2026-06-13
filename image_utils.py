@@ -715,11 +715,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 下方統計區：PSA10 / 最高 / 平均 / 最低
     # =========================
-    bottom_stat_y = 800
+    bottom_stat_y = 600
 
     draw.text((90, bottom_stat_y + 26), selected_grade, fill="#2F5FE8", font=grade_font)
 
-    stat_start_x = 600
+    stat_start_x = 650
     stat_gap = 55
     stat_w = 220
 
@@ -750,22 +750,34 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 左邊：資料來源；右邊：台灣銀行日圓即期匯率
     # 匯率不強制補小數位，保留抓到的原始值
     # =========================
+   # 右下角資訊：同一排，整組靠右下
+    footer_font = get_font(32, bold=False)
+    footer_color = "#666666"
+
     if jpy_rate:
         rate_text = f"台灣銀行日圓即期匯率：{jpy_rate}"
     else:
         rate_text = "台灣銀行日圓即期匯率：取得失敗"
 
     source_text = "資料來源：SNKRDUNK"
-    footer_color = "#666666"
 
-    # 同一排的上下位置
-    footer_y = 825
+    # 上下位置：數字越大越往下
+    footer_y = 880
 
-    # 左邊資料來源的位置
-    source_x = 825
+    # 整組最右邊的位置
+    footer_right_x = canvas_width - 55
 
-    # 右邊匯率右對齊，右側保留足夠寬度給較長的小數
-    rate_area_right = canvas_width - 70
+    # 兩段文字中間距離
+    footer_gap = 36
+
+    rate_w = text_width(draw, rate_text, footer_font)
+    source_w = text_width(draw, source_text, footer_font)
+
+    # 右邊：匯率，右對齊
+    rate_x = footer_right_x - rate_w
+
+    # 左邊：資料來源，貼著匯率左邊
+    source_x = rate_x - footer_gap - source_w
 
     draw.text(
         (source_x, footer_y),
@@ -774,10 +786,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         font=footer_font
     )
 
-    rate_w = text_width(draw, rate_text, footer_font)
-
     draw.text(
-        (rate_area_right - rate_w, footer_y),
+        (rate_x, footer_y),
         rate_text,
         fill=footer_color,
         font=footer_font
