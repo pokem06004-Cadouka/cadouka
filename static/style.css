@@ -4758,3 +4758,30 @@ a {
 .mobile-card-image-link {
     border-radius: 0 !important;
 }
+
+/* card_detail 圖片：桌機 + 手機，取消圓角 */
+.detail-image-box,
+.detail-image-box-polished,
+.detail-img,
+.detail-img-polished,
+.detail-cropped-img {
+    border-radius: 0 !important;
+}
+
+/* card_detail 裁切後圖片顯示方式 */
+.detail-image-box,
+.detail-image-box-polished {
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+}
+
+.detail-cropped-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(0.8);
+    transform-origin: center center;
+}
