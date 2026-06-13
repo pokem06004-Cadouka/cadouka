@@ -3016,6 +3016,10 @@ def handle_postback(event):
 
         products = user_products.get(line_user_id)
 
+
+        print("products =", products, flush=True)
+        print("products count =", len(products) if products else 0, flush=True)
+
         if not products:
             safe_add_line_log(
                 line_user_id=line_user_id,
@@ -3111,7 +3115,7 @@ def handle_postback(event):
                 )
 
                 print("LINE Flex 已送出", flush=True)
-                
+
                 return
 
         if action == "history":
