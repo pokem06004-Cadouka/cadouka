@@ -546,16 +546,17 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
             font=placeholder_font
         )
 
-        # =========================
-        # 右側座標
-        # =========================
-        right_x = 520
-        right_w = 800
+    # =========================
+    # 右側座標
+    # =========================
+    right_x = 520
+    right_w = 800
 
     # =========================
     # 商品名稱（整條，無底色）
     # =========================
     draw.text(
+        (right_x, 88),
         product_name,
         fill="#222222",
         font=title_font
