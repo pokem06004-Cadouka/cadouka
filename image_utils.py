@@ -13,44 +13,88 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from config import headers
 
-def crop_white_border(image_bytes, tolerance=15):
+def crop_white_border(
+    image_bytes,
+    tolerance=15,
+    crop_left=0,
+    crop_top=0,
+    crop_right=0,
+    crop_bottom=0,
+    auto_crop=True
+):
     """
-    自動裁掉圖片四周白邊或透明邊。
-    適合一般商品圖。
-    如果圖片本身有透明背景，會先鋪成白底，避免變黑。
+    裁切商品圖。
+
+    功能：
+    1. auto_crop=True 時，先自動裁掉透明邊 / 白邊。
+    2. 再依照 crop_left / crop_top / crop_right / crop_bottom
+       手動裁掉指定像素。
+
+    參數意思：
+    crop_left   = 左邊再裁掉多少 px
+    crop_top    = 上面再裁掉多少 px
+    crop_right  = 右邊再裁掉多少 px
+    crop_bottom = 下面再裁掉多少 px
+    auto_crop   = 是否先自動裁白邊
     """
     image = Image.open(io.BytesIO(image_bytes))
 
-    # 如果是透明背景圖片，先用 alpha 找內容範圍
-    if image.mode in ("RGBA", "LA") or "transparency" in image.info:
-        image = image.convert("RGBA")
+    # =========================
+    # 1. 先自動裁透明邊 / 白邊
+    # =========================
+    if auto_crop:
+        # 透明背景：先用 alpha 找內容範圍
+        if image.mode in ("RGBA", "LA") or "transparency" in image.info:
+            image = image.convert("RGBA")
 
-        alpha = image.getchannel("A")
-        bbox = alpha.getbbox()
+            alpha = image.getchannel("A")
+            bbox = alpha.getbbox()
 
-        if bbox:
-            image = image.crop(bbox)
+            if bbox:
+                image = image.crop(bbox)
 
-        # 透明背景鋪成白底，避免變黑
-        white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
-        white_bg.paste(image, (0, 0), image)
-        image = white_bg.convert("RGB")
+            # 透明背景鋪成白底，避免變黑
+            white_bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
+            white_bg.paste(image, (0, 0), image)
+            image = white_bg.convert("RGB")
+
+        else:
+            image = image.convert("RGB")
+
+            # 自動裁白邊
+            bg = Image.new("RGB", image.size, (255, 255, 255))
+            diff = ImageChops.difference(image, bg)
+            diff = ImageChops.add(diff, diff, 2.0, -tolerance)
+
+            bbox = diff.getbbox()
+
+            if bbox:
+                image = image.crop(bbox)
 
     else:
         image = image.convert("RGB")
 
-        # 裁白邊
-        bg = Image.new("RGB", image.size, (255, 255, 255))
-        diff = ImageChops.difference(image, bg)
-        diff = ImageChops.add(diff, diff, 2.0, -tolerance)
+    # =========================
+    # 2. 再手動裁上下左右
+    # =========================
+    width, height = image.size
 
-        bbox = diff.getbbox()
+    left = max(0, int(crop_left or 0))
+    top = max(0, int(crop_top or 0))
+    right = max(0, int(crop_right or 0))
+    bottom = max(0, int(crop_bottom or 0))
 
-        if bbox:
-            image = image.crop(bbox)
+    crop_x1 = left
+    crop_y1 = top
+    crop_x2 = width - right
+    crop_y2 = height - bottom
+
+    # 避免裁到壞掉
+    if crop_x2 > crop_x1 and crop_y2 > crop_y1:
+        image = image.crop((crop_x1, crop_y1, crop_x2, crop_y2))
 
     output = io.BytesIO()
-    image.save(output, format="JPEG", quality=95)
+    image.save(output, format="PNG", quality=95)
     output.seek(0)
 
     return output
@@ -420,7 +464,14 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     if product_image_bytes:
         try:
-            cropped_output = crop_white_border(product_image_bytes)
+            cropped_output = crop_white_border(
+            product_image_bytes,
+            crop_left=10,
+            crop_top=20,
+            crop_right=10,
+            crop_bottom=20,
+            auto_crop=True
+        )
             product_image = Image.open(cropped_output).convert("RGB")
         except Exception as e:
             print("商品圖裁切失敗：", e)
