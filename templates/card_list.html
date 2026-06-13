@@ -256,7 +256,10 @@
 
                         <a href="/cards/{{ card.id }}" class="card-image-link">
                             {% if card.image_url %}
-                                <img src="{{ card.image_url }}" class="list-card-img">
+                                <img
+                                    src="/crop-image?url={{ card.image_url | urlencode }}"
+                                    class="list-card-img card-list-cropped-img"
+                                >
                             {% else %}
                                 <div class="list-no-img">No Image</div>
                             {% endif %}
@@ -383,7 +386,10 @@
 
                     <a href="/cards/{{ card.id }}" class="mobile-card-image-link">
                         {% if card.image_url %}
-                            <img src="{{ card.image_url }}" class="mobile-card-img">
+                            <img
+                                src="/crop-image?url={{ card.image_url | urlencode }}"
+                                class="mobile-card-img card-list-cropped-img"
+                            >
                         {% else %}
                             <div class="mobile-card-no-img">No Image</div>
                         {% endif %}
