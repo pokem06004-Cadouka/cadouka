@@ -105,6 +105,38 @@ GENERATED_DIR = os.path.join("static", "generated")
 def ensure_generated_dir():
     os.makedirs(GENERATED_DIR, exist_ok=True)
 
+def save_debug_image(image_data, filename):
+    """
+    把 debug 圖片存到 static/generated/
+    image_data 可以是：
+    - bytes
+    - BytesIO
+    - PIL Image
+    """
+    ensure_generated_dir()
+
+    output_path = os.path.join(GENERATED_DIR, filename)
+
+    try:
+        if isinstance(image_data, Image.Image):
+            image = image_data.convert("RGB")
+
+        elif isinstance(image_data, io.BytesIO):
+            image_data.seek(0)
+            image = Image.open(image_data).convert("RGB")
+
+        else:
+            image = Image.open(io.BytesIO(image_data)).convert("RGB")
+
+        image.save(output_path, format="PNG")
+
+        print("DEBUG 圖片已輸出：", output_path, flush=True)
+
+        return output_path
+
+    except Exception as e:
+        print("DEBUG 圖片輸出失敗：", e, flush=True)
+        return None
 
 def download_image_bytes(image_url):
     if not image_url or not str(image_url).startswith("http"):
@@ -464,17 +496,33 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     if product_image_bytes:
         try:
+            debug_id = uuid.uuid4().hex[:8]
+
+            # 1. 輸出原始抓到的圖
+            save_debug_image(
+                product_image_bytes,
+                f"debug_{debug_id}_01_original.png"
+            )
+
             cropped_output = crop_white_border(
-            product_image_bytes,
-            crop_left=10,
-            crop_top=20,
-            crop_right=10,
-            crop_bottom=20,
-            auto_crop=True
-        )
+                product_image_bytes,
+                crop_left=0,
+                crop_top=0,
+                crop_right=0,
+                crop_bottom=0,
+                auto_crop=True
+            )
+
+            # 2. 輸出裁切後的圖
+            save_debug_image(
+                cropped_output,
+                f"debug_{debug_id}_02_cropped.png"
+            )
+
             product_image = Image.open(cropped_output).convert("RGB")
+
         except Exception as e:
-            print("商品圖裁切失敗：", e)
+            print("商品圖裁切失敗：", e, flush=True)
             product_image = None
     else:
         product_image = None
@@ -484,6 +532,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
             product_image,
             (380, 560),
             bg_color=(250, 250, 250)
+        )
+
+        save_debug_image(
+            product_box,
+            f"debug_{debug_id}_03_product_box.png"
         )
 
         paste_x = left_box[0] + ((left_box[2] - left_box[0]) - product_box.width) // 2
