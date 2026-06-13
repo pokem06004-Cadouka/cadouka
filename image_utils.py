@@ -380,8 +380,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
-    canvas_width = 1400
-    canvas_height = 840
+    canvas_width = 1200
+    canvas_height = 640
 
     card = Image.new("RGB", (canvas_width, canvas_height), "#F4F6FA")
     draw = ImageDraw.Draw(card)
