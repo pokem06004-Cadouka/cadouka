@@ -276,8 +276,9 @@ def wrap_text_by_width(draw, text, font, max_width, max_lines=3):
 def format_product_name_for_card(product_name):
     text = str(product_name or "未命名商品").strip()
 
-    if "[" in text:
-        text = text.split("[", 1)[0].strip()
+    # 顯示到 ]，包含 ]
+    if "]" in text:
+        text = text.split("]", 1)[0].strip() + "]"
 
     return text or "未命名商品"
 
