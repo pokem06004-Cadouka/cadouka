@@ -4750,3 +4750,11 @@ a {
     transform: scale(0.9);
     transform-origin: center center;
 }
+
+/* card_list 圖片取消圓角：桌機 + 手機 */
+.list-card-img,
+.mobile-card-img,
+.card-image-link,
+.mobile-card-image-link {
+    border-radius: 0 !important;
+}
