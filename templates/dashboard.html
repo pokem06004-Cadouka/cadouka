@@ -118,7 +118,10 @@
                             <a href="/cards/{{ card.id }}" class="holding-rank-item">
                                 <div class="holding-rank-image-box">
                                     {% if card.image_url %}
-                                        <img src="{{ card.image_url }}" class="holding-rank-img">
+                                        <img
+                                            src="/crop-image?url={{ card.image_url | urlencode }}"
+                                            class="holding-rank-img holding-rank-cropped-img"
+                                        >
                                     {% else %}
                                         <div class="holding-rank-no-img">No Image</div>
                                     {% endif %}
@@ -146,7 +149,10 @@
                             <a href="/cards/{{ card.id }}" class="holding-rank-item">
                                 <div class="holding-rank-image-box">
                                     {% if card.image_url %}
-                                        <img src="{{ card.image_url }}" class="holding-rank-img">
+                                        <img
+                                            src="/crop-image?url={{ card.image_url | urlencode }}"
+                                            class="holding-rank-img holding-rank-cropped-img"
+                                        >
                                     {% else %}
                                         <div class="holding-rank-no-img">No Image</div>
                                     {% endif %}

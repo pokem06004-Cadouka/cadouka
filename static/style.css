@@ -4814,3 +4814,30 @@ a {
         transform-origin: center center;
     }
 }
+
+/* =========================
+   Dashboard 持有概況圖片：裁白邊 + 無圓角
+   桌機 + 手機共用
+   ========================= */
+
+.holding-rank-image-box {
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    background: #fafafa !important;
+}
+
+.holding-rank-img,
+.holding-rank-cropped-img,
+.holding-rank-no-img {
+    border-radius: 0 !important;
+}
+
+.holding-rank-cropped-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
+
+    transform: scale(1.05);
+    transform-origin: center center;
+}
