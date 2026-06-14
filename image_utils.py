@@ -361,15 +361,13 @@ def create_contain_image(image, target_size, bg_color=(255, 255, 255)):
 
 def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=26):
     """
-    回傳 PIL Image（日期切換點 + 單一月份標示版本）
+    回傳 PIL Image（X 軸只顯示最新一筆日期版本）
 
     功能：
     - 使用抓到的全部筆數
     - 每筆資料在線上有一個點
-    - X 軸只標「日期切換點」
-    - X 軸只顯示「日期」或 API 回傳的簡短時間文字
-    - 只顯示第一個月份，放在第一個 X 軸日期左邊
-    - 日期切換點往上畫淡虛線
+    - X 軸只顯示最新一筆成交日期 / 時間文字
+    - 最新一筆位置會顯示淡淡垂直虛線
     - 顯示 X / Y 軸線
     - 不做大面積填色
     - 不顯示折線旁價格文字
@@ -434,47 +432,24 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         )
 
         # =========================
-        # 找日期切換點（一天一個）
+        # X 軸只顯示最新一筆日期 / 時間
         # =========================
-        date_tick_positions = []
-        date_tick_labels = []
-        previous_date_key = None
+        latest_tick_x = len(valid_items)
+        latest_item = valid_items[-1]
 
-        for index, item in enumerate(valid_items):
-            current_date_key = item["date_key"]
+        # 如果有 month/day，就顯示 06/14 這種格式
+        # 如果 API 回傳 1日前、11時間前，就直接顯示原文字
+        if latest_item["month"] and latest_item["day"]:
+            latest_tick_label = f'{latest_item["month"]}/{latest_item["day"]}'
+        else:
+            latest_tick_label = latest_item["day"]
 
-            if index == 0 or current_date_key != previous_date_key:
-                date_tick_positions.append(index + 1)
-                date_tick_labels.append(item["day"])
-
-            previous_date_key = current_date_key
-
-            # 所有日期切換點都保留，用來畫虛線
-        all_date_tick_positions = date_tick_positions[:]
-        all_date_tick_labels = date_tick_labels[:]
-
-        # 只挑一部分日期來顯示文字，避免重疊
-        label_tick_positions = all_date_tick_positions[:]
-        label_tick_labels = all_date_tick_labels[:]
-
-        max_label_count = 4   # 你可以先試 4，通常比 6 穩很多
-
-        if len(label_tick_positions) > max_label_count:
-            selected_indexes = []
-
-            for i in range(max_label_count):
-                selected_index = round(
-                    i * (len(label_tick_positions) - 1) / (max_label_count - 1)
-                )
-                selected_indexes.append(selected_index)
-
-            selected_indexes = sorted(set(selected_indexes))
-            label_tick_positions = [label_tick_positions[i] for i in selected_indexes]
-            label_tick_labels = [label_tick_labels[i] for i in selected_indexes]
-
-        # X 軸只顯示部分日期文字
-        ax.set_xticks(label_tick_positions)
-        ax.set_xticklabels(label_tick_labels, fontsize=22, color="#777777")
+        ax.set_xticks([latest_tick_x])
+        ax.set_xticklabels(
+            [latest_tick_label],
+            fontsize=22,
+            color="#777777"
+        )
 
         ax.tick_params(
             axis="x",
@@ -483,41 +458,24 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
             colors="#777777"
         )
 
-        # 虛線照樣畫全部日期切換點
-        for tick_x in all_date_tick_positions:
-            ax.axvline(
-                x=tick_x,
-                linestyle="--",
-                linewidth=0.9,
-                alpha=0.20,
-                color="#9CA3AF",
-                zorder=1
-            )
+        # 最新一筆位置：淡淡的垂直虛線
+        ax.axvline(
+            x=latest_tick_x,
+            linestyle="--",
+            linewidth=0.9,
+            alpha=0.20,
+            color="#9CA3AF",
+            zorder=1
+        )
 
-            # 只顯示第一個月份，放在第一個 X 軸日期左邊，不顯示 7月 / 8月
-            first_month = valid_items[0]["month"] if valid_items and valid_items[0]["month"] else ""
-
-            if first_month and date_tick_positions:
-                first_tick_x = date_tick_positions[0]
-                ax.text(
-                    first_tick_x - 0.50,
-                    -0.05,
-                    f"{first_month}月",
-                    transform=ax.get_xaxis_transform(),
-                    fontsize=22,
-                    color="#777777",
-                    ha="right",
-                    va="top"
-                )
-
-            # Y 軸數字與刻度數量
-            ax.yaxis.set_major_locator(MaxNLocator(nbins=5, min_n_ticks=4))
-            ax.tick_params(
-                axis="y",
-                labelsize=y_tick_font_size,
-                length=0,
-                colors="#666666"
-            )
+        # Y 軸數字與刻度數量
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5, min_n_ticks=4))
+        ax.tick_params(
+            axis="y",
+            labelsize=y_tick_font_size,
+            length=0,
+            colors="#666666"
+        )
 
         # 淡淡水平線
         ax.grid(axis="y", alpha=0.12, linewidth=0.8)
@@ -567,7 +525,6 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     output.seek(0)
     chart_image = Image.open(output).convert("RGB")
     return chart_image
-
 
 def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate=None):
     """
