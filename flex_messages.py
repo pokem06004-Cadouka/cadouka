@@ -1362,6 +1362,7 @@ def create_market_image_card_flex(
         footer=BoxComponent(
             layout="vertical",
             spacing="sm",
+            background_color="#EAF0F7",
             contents=[
                 BoxComponent(
                     layout="horizontal",
