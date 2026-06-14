@@ -747,8 +747,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         font=badge_font
     )
 
-    # =========================
-    # 下方統計區：PSA10 / 最高 / 平均 / 最低
+   # =========================
+    # 下方統計區：最高 / 平均 / 最低（圓角方框）
     # =========================
     bottom_stat_y = 720
 
@@ -762,21 +762,54 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         ("最低", stats["lowest"])
     ]
 
+    # 方框樣式
+    stat_box_radius = 18
+    stat_box_outline = "#D9DFEA"
+    stat_box_fill = "#FFFFFF"
+    stat_box_width = 2
+    stat_box_height = 160
+
     for idx, (label, value) in enumerate(stat_items):
         x1 = stat_start_x + idx * (stat_w + stat_gap)
         y1 = bottom_stat_y
 
+        # 圓角方框
+        draw.rounded_rectangle(
+            (x1, y1 - 12, x1 + stat_w, y1 - 12 + stat_box_height),
+            radius=stat_box_radius,
+            fill=stat_box_fill,
+            outline=stat_box_outline,
+            width=stat_box_width
+        )
+
         # label
         label_w = text_width(draw, label, stat_label_font)
-        draw.text((x1 + (stat_w - label_w) / 2, y1), label, fill="#777777", font=stat_label_font)
+        draw.text(
+            (x1 + (stat_w - label_w) / 2, y1 + 6),
+            label,
+            fill="#777777",
+            font=stat_label_font
+        )
 
+        # 日幣
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
-        draw.text((x1 + (stat_w - jpy_w) / 2, y1 + 40), jpy_text, fill="#222222", font=stat_jpy_font)
+        draw.text(
+            (x1 + (stat_w - jpy_w) / 2, y1 + 44),
+            jpy_text,
+            fill="#222222",
+            font=stat_jpy_font
+        )
 
+        # 台幣
         twd_text = format_twd_text(value, jpy_rate)
         twd_w = text_width(draw, twd_text, stat_twd_font)
-        draw.text((x1 + (stat_w - twd_w) / 2, y1 + 102), twd_text, fill="#999999", font=stat_twd_font)
+        draw.text(
+            (x1 + (stat_w - twd_w) / 2, y1 + 110),
+            twd_text,
+            fill="#999999",
+            font=stat_twd_font
+        )
 
 
     # =========================
