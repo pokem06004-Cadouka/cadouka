@@ -732,7 +732,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     badge_outline = "#2F5FE8"   # 框線
     badge_text_color = "#2F5FE8"
 
-    badge_box_offset_y = 5
+    badge_box_offset_y = 2.5
 
     draw.rounded_rectangle(
         (
