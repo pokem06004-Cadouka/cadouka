@@ -715,15 +715,15 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # selected_grade 標籤（放在商品名稱下方，並蓋在折線圖上方）
     # =========================
     badge_text = str(selected_grade)
-    
-    badge_font = get_font(30, bold=True)
+
+    badge_font = get_font(25, bold=True)
 
     badge_text_w = text_width(draw, badge_text, badge_font)
     badge_padding_x = 22
     badge_padding_y = 12
 
-    badge_x = right_x
-    badge_y = 132   # 商品名稱下方
+    badge_x = right_x + 6
+    badge_y = 140   # 商品名稱下方
 
     badge_w = badge_text_w + badge_padding_x * 2
     badge_h = 30 + badge_padding_y * 2
@@ -734,7 +734,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     draw.rounded_rectangle(
         (badge_x, badge_y, badge_x + badge_w, badge_y + badge_h),
-        radius=14,
+        radius=24,
         fill=badge_fill,
         outline=badge_outline,
         width=2
