@@ -519,7 +519,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
     fig.subplots_adjust(left=0.15, bottom=0.20, right=0.98, top=0.96)
 
     output = io.BytesIO()
-    fig.savefig(output, format="png", bbox_inches="tight", facecolor="white")
+    fig.savefig(output, format="png", bbox_inches="tight", facecolor="#F8FAFC")
     plt.close(fig)
 
     output.seek(0)
@@ -558,7 +558,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (8, 24  , canvas_width - 8, canvas_height)
+    outer_box = (8, 40 , canvas_width - 8, canvas_height)
     draw.rounded_rectangle(
         outer_box,
         radius=20,
@@ -671,7 +671,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     chart_image = create_contain_image(
         chart_image,
         (950, 585),
-        bg_color=(255, 255, 255)
+        bg_color=(248, 250, 252)
     )
 
     card.paste(chart_image, (right_x + 6, 180))
