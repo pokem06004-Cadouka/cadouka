@@ -588,7 +588,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 字型
     title_font = get_font(52, bold=True)
 
-    stat_label_font = get_font(40, bold=True)
+    stat_label_font = get_font(42, bold=True)
     stat_jpy_font = get_font(46, bold=True)
     stat_twd_font = get_font(35, bold=False)
 
@@ -750,7 +750,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 下方統計區：最高 / 平均 / 最低（圓角方框）
     # =========================
-    bottom_stat_y = 720
+    bottom_stat_y = 725
 
     stat_start_x = 680
     stat_gap = 60
@@ -766,7 +766,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_box_radius = 18
     stat_box_outline = "#D9DFEA"
     stat_box_fill = "#FFFFFF"
-    stat_box_width = 2
+    stat_box_width = 3
     stat_box_height = 160
 
     for idx, (label, value) in enumerate(stat_items):
@@ -812,41 +812,46 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         )
 
 
-    # =========================
+   # =========================
     # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
-    latest_title_font = get_font(54, bold=True)
+    latest_title_font = get_font(42, bold=True)
 
     latest_x = 85
-    latest_y = 725
 
-    newprice_jpy_font = get_font(50, bold=True)
-    newpricw_twd_font = get_font(36, bold=False)
+    # 跟旁邊最高 / 平均 / 最低 用同一條基準線
+    latest_y = bottom_stat_y
+
+    newprice_jpy_font = get_font(46, bold=True)
+    newprice_twd_font = get_font(35, bold=False)
 
     latest_title = "最新成交價格"
     latest_value = stats["latest"]
 
+    # 標題：跟最高 / 平均 / 最低 同高度
     draw.text(
-        (latest_x, latest_y),
+        (latest_x, latest_y + 6),
         latest_title,
         fill="#2F5FE8",
         font=latest_title_font
     )
 
+    # 日幣：跟旁邊日幣同高度
     latest_jpy_text = format_jpy_text(latest_value)
     draw.text(
-        (latest_x+20, latest_y + 78),
+        (latest_x + 20, latest_y + 44),
         latest_jpy_text,
         fill="#222222",
         font=newprice_jpy_font
     )
 
+    # 台幣：跟旁邊台幣同高度
     latest_twd_text = format_twd_text(latest_value, jpy_rate)
     draw.text(
-        (latest_x+20, latest_y + 138),
+        (latest_x + 20, latest_y + 110),
         latest_twd_text,
         fill="#999999",
-        font=newpricw_twd_font
+        font=newprice_twd_font
     )
 
 
