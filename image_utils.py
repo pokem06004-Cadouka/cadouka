@@ -587,11 +587,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 字型
     title_font = get_font(52, bold=True)
-    grade_font = get_font(48, bold=True)
-    stat_label_font = get_font(38, bold=True)
-    stat_jpy_font = get_font(44, bold=True)
-    stat_twd_font = get_font(32, bold=False)
-    footer_font = get_font(20, bold=False)
+
+    stat_label_font = get_font(40, bold=True)
+    stat_jpy_font = get_font(46, bold=True)
+    stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
     outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
@@ -715,7 +714,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 下方統計區：PSA10 / 最高 / 平均 / 最低
     # =========================
-    bottom_stat_y = 715
+    bottom_stat_y = 720
 
     stat_start_x = 680
     stat_gap = 60
@@ -753,9 +752,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     latest_y = 725
 
     newprice_jpy_font = get_font(50, bold=True)
-    newpricw_twd_font = get_font(38, bold=False)
+    newpricw_twd_font = get_font(36, bold=False)
 
-    latest_title = f"{selected_grade}最新成交價格"
+    latest_title = "最新成交價格"
     latest_value = stats["latest"]
 
     draw.text(
@@ -767,7 +766,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     latest_jpy_text = format_jpy_text(latest_value)
     draw.text(
-        (latest_x+20, latest_y + 80),
+        (latest_x+20, latest_y + 78),
         latest_jpy_text,
         fill="#222222",
         font=newprice_jpy_font
@@ -775,7 +774,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     latest_twd_text = format_twd_text(latest_value, jpy_rate)
     draw.text(
-        (latest_x+20, latest_y + 140),
+        (latest_x+20, latest_y + 138),
         latest_twd_text,
         fill="#999999",
         font=newpricw_twd_font
