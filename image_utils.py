@@ -562,7 +562,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw.rounded_rectangle(
         outer_box,
         radius=18,
-        fill="#F3F6FA"
+        fill="#FAF7F1"
     )
 
     # =========================
