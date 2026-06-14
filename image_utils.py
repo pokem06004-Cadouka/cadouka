@@ -547,7 +547,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     canvas_width = 1520
     canvas_height = 940
 
-    card = Image.new("RGB", (canvas_width, canvas_height), "#FCFDFF")
+    card = Image.new("RGB", (canvas_width, canvas_height), "#EAF0F7")
     draw = ImageDraw.Draw(card)
 
     # 字型
