@@ -753,7 +753,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     bottom_stat_y = 722
 
     stat_start_x = 640
-    stat_gap = 50
+    stat_gap = 45
     stat_w = 250
 
     stat_items = [
@@ -766,7 +766,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_box_radius = 18
     stat_box_outline = "#D9DFEA"
     stat_box_fill = "#FFFFFF"
-    stat_box_width = 4
+    stat_box_width = 5
     stat_box_height = 178
 
     for idx, (label, value) in enumerate(stat_items):
@@ -775,7 +775,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
         # 圓角方框
         draw.rounded_rectangle(
-            (x1, y1 - 9, x1 + stat_w, y1 - 9 + stat_box_height),
+            (x1, y1 - 7, x1 + stat_w, y1 - 7 + stat_box_height),
             radius=stat_box_radius,
             fill=stat_box_fill,
             outline=stat_box_outline,
