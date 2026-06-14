@@ -722,8 +722,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     badge_padding_x = 22
     badge_padding_y = 10
 
-    badge_x = right_x + 6
-    badge_y = 140   # 商品名稱下方
+    badge_x = right_x + 10
+    badge_y = 160   # 商品名稱下方
 
     badge_w = badge_text_w + badge_padding_x * 2
     badge_h = 30 + badge_padding_y * 2
