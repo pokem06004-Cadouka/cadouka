@@ -747,10 +747,13 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
-    latest_title_font = get_font(30, bold=True)
+    latest_title_font = get_font(54, bold=True)
 
     latest_x = 90
-    latest_y = 685
+    latest_y = 725
+
+    newprice_jpy_font = get_font(48, bold=True)
+    newpricw_twd_font = get_font(34, bold=False)
 
     latest_title = f"{selected_grade}最新成交價格"
     latest_value = stats["latest"]
@@ -764,18 +767,18 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     latest_jpy_text = format_jpy_text(latest_value)
     draw.text(
-        (latest_x, latest_y + 60),
+        (latest_x+20, latest_y + 60),
         latest_jpy_text,
         fill="#222222",
-        font=stat_jpy_font
+        font=newprice_jpy_font
     )
 
     latest_twd_text = format_twd_text(latest_value, jpy_rate)
     draw.text(
-        (latest_x, latest_y + 92),
+        (latest_x+20, latest_y + 105),
         latest_twd_text,
         fill="#999999",
-        font=stat_twd_font
+        font=newpricw_twd_font
     )
 
 
