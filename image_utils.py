@@ -752,9 +752,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 725
 
-    stat_start_x = 665
+    stat_start_x = 650
     stat_gap = 60
-    stat_w = 250
+    stat_w = 220
 
     stat_items = [
         ("最高", stats["highest"]),
