@@ -824,8 +824,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     latest_title_font = get_font(49, bold=True)
 
-    latest_x = 85
-
     # 跟旁邊最高 / 平均 / 最低 用同一條基準線
     latest_y = bottom_stat_y
 
@@ -835,27 +833,35 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     latest_title = "最新成交價格"
     latest_value = stats["latest"]
 
-    # 標題：跟最高 / 平均 / 最低 同高度
+    latest_jpy_text = format_jpy_text(latest_value)
+    latest_twd_text = format_twd_text(latest_value, jpy_rate)
+
+    # 以左側圖片框置中
+    latest_center_x = (left_box[0] + left_box[2]) / 2
+
+    latest_title_w = text_width(draw, latest_title, latest_title_font)
+    latest_jpy_w = text_width(draw, latest_jpy_text, newprice_jpy_font)
+    latest_twd_w = text_width(draw, latest_twd_text, newprice_twd_font)
+
+    # 標題
     draw.text(
-        (latest_x, latest_y - 6),
+        (latest_center_x - latest_title_w / 2, latest_y - 6),
         latest_title,
         fill="#2F5FE8",
         font=latest_title_font
     )
 
-    # 日幣：跟旁邊日幣同高度
-    latest_jpy_text = format_jpy_text(latest_value)
+    # 日幣
     draw.text(
-        (latest_x + 20, latest_y + 48),
+        (latest_center_x - latest_jpy_w / 2, latest_y + 48),
         latest_jpy_text,
         fill="#222222",
         font=newprice_jpy_font
     )
 
-    # 台幣：跟旁邊台幣同高度
-    latest_twd_text = format_twd_text(latest_value, jpy_rate)
+    # 台幣
     draw.text(
-        (latest_x + 20, latest_y + 110),
+        (latest_center_x - latest_twd_w / 2, latest_y + 110),
         latest_twd_text,
         fill="#999999",
         font=newprice_twd_font
