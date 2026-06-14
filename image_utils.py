@@ -712,6 +712,42 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     card.paste(chart_image, (right_x + 6, 180))
 
     # =========================
+    # selected_grade 標籤（放在商品名稱下方，並蓋在折線圖上方）
+    # =========================
+    badge_text = str(selected_grade)
+    
+    badge_font = get_font(30, bold=True)
+
+    badge_text_w = text_width(draw, badge_text, badge_font)
+    badge_padding_x = 22
+    badge_padding_y = 12
+
+    badge_x = right_x
+    badge_y = 132   # 商品名稱下方
+
+    badge_w = badge_text_w + badge_padding_x * 2
+    badge_h = 30 + badge_padding_y * 2
+
+    badge_fill = "#EAF2FF"      # 底色
+    badge_outline = "#2F5FE8"   # 框線
+    badge_text_color = "#2F5FE8"
+
+    draw.rounded_rectangle(
+        (badge_x, badge_y, badge_x + badge_w, badge_y + badge_h),
+        radius=14,
+        fill=badge_fill,
+        outline=badge_outline,
+        width=2
+    )
+
+    draw.text(
+        (badge_x + badge_padding_x, badge_y + badge_padding_y - 2),
+        badge_text,
+        fill=badge_text_color,
+        font=badge_font
+    )
+
+    # =========================
     # 下方統計區：PSA10 / 最高 / 平均 / 最低
     # =========================
     bottom_stat_y = 720
