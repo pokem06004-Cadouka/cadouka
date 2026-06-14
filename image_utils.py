@@ -845,7 +845,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 標題
     draw.text(
-        (latest_center_x - latest_title_w / 2, latest_y - 6),
+        (latest_center_x - latest_title_w / 2, latest_y - 10),
         latest_title,
         fill="#2F5FE8",
         font=latest_title_font
