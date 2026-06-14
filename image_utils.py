@@ -720,7 +720,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     badge_text_w = text_width(draw, badge_text, badge_font)
     badge_padding_x = 22
-    badge_padding_y = 12
+    badge_padding_y = 10
 
     badge_x = right_x + 6
     badge_y = 140   # 商品名稱下方
@@ -737,7 +737,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         radius=24,
         fill=badge_fill,
         outline=badge_outline,
-        width=2
+        width=3
     )
 
     draw.text(
