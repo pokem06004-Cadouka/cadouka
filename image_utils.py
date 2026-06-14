@@ -752,9 +752,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 725
 
-    stat_start_x = 680
+    stat_start_x = 665
     stat_gap = 60
-    stat_w = 240
+    stat_w = 250
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -767,7 +767,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_box_outline = "#D9DFEA"
     stat_box_fill = "#FFFFFF"
     stat_box_width = 4
-    stat_box_height = 180
+    stat_box_height = 178
 
     for idx, (label, value) in enumerate(stat_items):
         x1 = stat_start_x + idx * (stat_w + stat_gap)
