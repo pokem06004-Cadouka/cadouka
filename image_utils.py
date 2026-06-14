@@ -547,7 +547,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     canvas_width = 1520
     canvas_height = 940
 
-    card = Image.new("RGB", (canvas_width, canvas_height), "#FCFCFC")
+    card = Image.new("RGB", (canvas_width, canvas_height), "#FCFDFF")
     draw = ImageDraw.Draw(card)
 
     # 字型
@@ -558,10 +558,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (0, 0, canvas_width, canvas_height)
+    outer_box = (8, 8, canvas_width - 8, canvas_height - 8)
     draw.rounded_rectangle(
         outer_box,
-        fill="#F4F6FA"
+        radius=18,
+        fill="#F3F6FA"
     )
 
     # =========================
