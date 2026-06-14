@@ -750,7 +750,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 下方統計區：最高 / 平均 / 最低（圓角方框）
     # =========================
-    bottom_stat_y = 722
+    bottom_stat_y = 718
 
     stat_start_x = 640
     stat_gap = 45
@@ -795,7 +795,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
         draw.text(
-            (x1 + (stat_w - jpy_w) / 2, y1 + 45),
+            (x1 + (stat_w - jpy_w) / 2, y1 + 48),
             jpy_text,
             fill="#222222",
             font=stat_jpy_font
