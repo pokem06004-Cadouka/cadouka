@@ -413,6 +413,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
 
     # 圖表本體加大，讓下方統計搬走後的空間可以被折線圖吃掉
     fig, ax = plt.subplots(figsize=(11.2, 6.0), dpi=200)
+    fig.patch.set_facecolor("#F8FAFC")
+    ax.set_facecolor("#F8FAFC")
 
     if valid_items:
         x_values = list(range(1, len(valid_items) + 1))
@@ -558,7 +560,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (8, 40 , canvas_width - 8, canvas_height)
+    outer_box = (8, 30 , canvas_width - 8, canvas_height)
     draw.rounded_rectangle(
         outer_box,
         radius=20,
