@@ -795,7 +795,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
         draw.text(
-            (x1 + (stat_w - jpy_w) / 2, y1 + 44),
+            (x1 + (stat_w - jpy_w) / 2, y1 + 48),
             jpy_text,
             fill="#222222",
             font=stat_jpy_font
@@ -815,7 +815,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
-    latest_title_font = get_font(42, bold=True)
+    latest_title_font = get_font(46, bold=True)
 
     latest_x = 85
 
@@ -839,7 +839,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 日幣：跟旁邊日幣同高度
     latest_jpy_text = format_jpy_text(latest_value)
     draw.text(
-        (latest_x + 20, latest_y + 44),
+        (latest_x + 20, latest_y + 48),
         latest_jpy_text,
         fill="#222222",
         font=newprice_jpy_font
