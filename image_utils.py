@@ -717,15 +717,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 715
 
-    latest_price_title = f"{selected_grade}最新成交價格"
-
-    draw.text(
-        (90, bottom_stat_y + 26),
-        latest_price_title,
-        fill="#2F5FE8",
-        font=grade_font
-    )
-
     stat_start_x = 680
     stat_gap = 60
     stat_w = 220
@@ -759,7 +750,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     latest_title_font = get_font(30, bold=True)
 
     latest_x = 90
-    latest_y = 715
+    latest_y = 685
 
     latest_title = f"{selected_grade}最新成交價格"
     latest_value = stats["latest"]
@@ -773,7 +764,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     latest_jpy_text = format_jpy_text(latest_value)
     draw.text(
-        (latest_x, latest_y + 40),
+        (latest_x, latest_y + 60),
         latest_jpy_text,
         fill="#222222",
         font=stat_jpy_font
@@ -781,7 +772,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     latest_twd_text = format_twd_text(latest_value, jpy_rate)
     draw.text(
-        (latest_x, latest_y + 102),
+        (latest_x, latest_y + 92),
         latest_twd_text,
         fill="#999999",
         font=stat_twd_font
