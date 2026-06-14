@@ -785,7 +785,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         # label
         label_w = text_width(draw, label, stat_label_font)
         draw.text(
-            (x1 + (stat_w - label_w) / 2, y1 + 3),
+            (x1 + (stat_w - label_w) / 2 , y1 ),
             label,
             fill="#777777",
             font=stat_label_font
