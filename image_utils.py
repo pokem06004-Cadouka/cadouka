@@ -449,30 +449,49 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
 
             previous_date_key = current_date_key
 
-        # 如果日期切換點太多，最多顯示 6 個，避免太擠
-        max_tick_count = 6
+        # 所有日期切換點都保留，用來畫虛線
+    all_date_tick_positions = date_tick_positions[:]
+    all_date_tick_labels = date_tick_labels[:]
 
-        if len(date_tick_positions) > max_tick_count:
-            selected_indexes = []
+    # 只挑一部分日期來顯示文字，避免重疊
+    label_tick_positions = all_date_tick_positions[:]
+    label_tick_labels = all_date_tick_labels[:]
 
-            for i in range(max_tick_count):
-                selected_index = round(
-                    i * (len(date_tick_positions) - 1) / (max_tick_count - 1)
-                )
-                selected_indexes.append(selected_index)
+    max_label_count = 4   # 你可以先試 4，通常比 6 穩很多
 
-            selected_indexes = sorted(set(selected_indexes))
-            date_tick_positions = [date_tick_positions[i] for i in selected_indexes]
-            date_tick_labels = [date_tick_labels[i] for i in selected_indexes]
+    if len(label_tick_positions) > max_label_count:
+        selected_indexes = []
 
-        # X 軸顯示日期
-        ax.set_xticks(date_tick_positions)
-        ax.set_xticklabels(date_tick_labels, fontsize=22, color="#777777")
-        ax.tick_params(
-            axis="x",
-            length=0,
-            pad=9,
-            colors="#777777"
+        for i in range(max_label_count):
+            selected_index = round(
+                i * (len(label_tick_positions) - 1) / (max_label_count - 1)
+            )
+            selected_indexes.append(selected_index)
+
+        selected_indexes = sorted(set(selected_indexes))
+        label_tick_positions = [label_tick_positions[i] for i in selected_indexes]
+        label_tick_labels = [label_tick_labels[i] for i in selected_indexes]
+
+    # X 軸只顯示部分日期文字
+    ax.set_xticks(label_tick_positions)
+    ax.set_xticklabels(label_tick_labels, fontsize=22, color="#777777")
+
+    ax.tick_params(
+        axis="x",
+        length=0,
+        pad=9,
+        colors="#777777"
+    )
+
+    # 虛線照樣畫全部日期切換點
+    for tick_x in all_date_tick_positions:
+        ax.axvline(
+            x=tick_x,
+            linestyle="--",
+            linewidth=0.9,
+            alpha=0.20,
+            color="#9CA3AF",
+            zorder=1
         )
 
         # 日期切換點：淡淡的垂直虛線
@@ -492,8 +511,8 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         if first_month and date_tick_positions:
             first_tick_x = date_tick_positions[0]
             ax.text(
-                first_tick_x - 0.35,
-                -0.08,
+                first_tick_x - 0.50,
+                -0.05,
                 f"{first_month}月",
                 transform=ax.get_xaxis_transform(),
                 fontsize=22,
