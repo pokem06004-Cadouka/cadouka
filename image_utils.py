@@ -573,7 +573,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 左側商品圖：維持目前圖片大小
     # =========================
-    left_box = (80, 134.5, 478, 676.5)
+    left_box = (80, 134, 478, 676)
 
     draw.rounded_rectangle(
         left_box,
