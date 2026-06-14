@@ -40,10 +40,13 @@
 
     <div class="detail-image-box detail-image-box-polished">
         {% if card.image_url %}
-            <img src="{{ card.image_url }}" class="detail-img detail-img-polished">
-        {% else %}
-            <div class="detail-no-img">No Image</div>
-        {% endif %}
+        <img
+            src="/crop-image?url={{ card.image_url | urlencode }}"
+            class="detail-img detail-img-polished detail-cropped-img"
+        >
+    {% else %}
+        <div class="detail-no-img">No Image</div>
+    {% endif %}
     </div>
 
     <div class="detail-info detail-info-polished">
