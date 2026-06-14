@@ -754,7 +754,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     stat_start_x = 680
     stat_gap = 60
-    stat_w = 220
+    stat_w = 240
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -766,8 +766,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_box_radius = 18
     stat_box_outline = "#D9DFEA"
     stat_box_fill = "#FFFFFF"
-    stat_box_width = 3
-    stat_box_height = 160
+    stat_box_width = 4
+    stat_box_height = 180
 
     for idx, (label, value) in enumerate(stat_items):
         x1 = stat_start_x + idx * (stat_w + stat_gap)
@@ -815,7 +815,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
-    latest_title_font = get_font(46, bold=True)
+    latest_title_font = get_font(49, bold=True)
 
     latest_x = 85
 
@@ -830,7 +830,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 標題：跟最高 / 平均 / 最低 同高度
     draw.text(
-        (latest_x, latest_y + 6),
+        (latest_x, latest_y - 6),
         latest_title,
         fill="#2F5FE8",
         font=latest_title_font
