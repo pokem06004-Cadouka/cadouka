@@ -424,9 +424,12 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         ax.plot(
             x_values,
             y_values,
-            linewidth=2.8,
+            color="#2454E6",
+            linewidth=3.4,
             marker="o",
-            markersize=5,
+            markersize=5.5,
+            markerfacecolor="#2454E6",
+            markeredgecolor="#2454E6",
             markeredgewidth=1.1,
             solid_capstyle="round",
             solid_joinstyle="round",
@@ -464,9 +467,9 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         ax.axvline(
             x=latest_tick_x,
             linestyle="--",
-            linewidth=0.9,
-            alpha=0.20,
-            color="#9CA3AF",
+            linewidth=1.2,
+            alpha=0.38,
+            color="#7E8BA0",
             zorder=1
         )
 
@@ -480,7 +483,7 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         )
 
         # 淡淡水平線
-        ax.grid(axis="y", alpha=0.12, linewidth=0.8)
+        ax.grid(axis="y", color="#C7D0DD", alpha=0.45, linewidth=0.9)
         ax.grid(axis="x", visible=False)
 
         # 顯示 X / Y 軸線
@@ -488,11 +491,11 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
         ax.spines["right"].set_visible(False)
 
         ax.spines["bottom"].set_visible(True)
-        ax.spines["bottom"].set_color("#D5DAE1")
+        ax.spines["bottom"].set_color("#B8C2D0")
         ax.spines["bottom"].set_linewidth(1.0)
 
         ax.spines["left"].set_visible(True)
-        ax.spines["left"].set_color("#D5DAE1")
+        ax.spines["left"].set_color("#B8C2D0")
         ax.spines["left"].set_linewidth(1.0)
 
         ax.set_xlabel("")
