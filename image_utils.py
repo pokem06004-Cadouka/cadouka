@@ -750,11 +750,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 下方統計區：最高 / 平均 / 最低（圓角方框）
     # =========================
-    bottom_stat_y = 725
+    bottom_stat_y = 722
 
-    stat_start_x = 650
+    stat_start_x = 660
     stat_gap = 60
-    stat_w = 220
+    stat_w = 250
 
     stat_items = [
         ("最高", stats["highest"]),
@@ -785,7 +785,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         # label
         label_w = text_width(draw, label, stat_label_font)
         draw.text(
-            (x1 + (stat_w - label_w) / 2, y1 + 6),
+            (x1 + (stat_w - label_w) / 2, y1 + 3),
             label,
             fill="#777777",
             font=stat_label_font
@@ -795,7 +795,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         jpy_text = format_jpy_text(value)
         jpy_w = text_width(draw, jpy_text, stat_jpy_font)
         draw.text(
-            (x1 + (stat_w - jpy_w) / 2, y1 + 48),
+            (x1 + (stat_w - jpy_w) / 2, y1 + 45),
             jpy_text,
             fill="#222222",
             font=stat_jpy_font
