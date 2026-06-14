@@ -1356,14 +1356,14 @@ def create_market_image_card_flex(
         hero=ImageComponent(
             url=card_image_url,
             size="full",
-            background_color="#EDE7DE",
+            background_color="#E7EDF3",
             aspect_ratio="5:3",
             aspect_mode="fit"
         ),
         footer=BoxComponent(
             layout="vertical",
             spacing="sm",
-            background_color="#EAF0F7",
+            background_color="#E7EDF3",
             contents=[
                 BoxComponent(
                     layout="horizontal",
