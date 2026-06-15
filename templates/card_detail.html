@@ -2,6 +2,148 @@
 
 {% block content %}
 
+<style>
+.cadouka-analysis-metrics {
+    margin: 4px 0 22px;
+}
+
+.cadouka-analysis-metrics-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.cadouka-analysis-metrics-head h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+}
+
+.cadouka-analysis-metrics-head p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.cadouka-analysis-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cadouka-analysis-metric-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 15px 14px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.cadouka-analysis-metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cadouka-analysis-metric-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.cadouka-analysis-metric-status {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.cadouka-analysis-metric-value {
+    font-size: 24px;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+.cadouka-analysis-metric-desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #6b7280;
+}
+
+.cadouka-analysis-metric-card.level-good {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.cadouka-analysis-metric-card.level-good .cadouka-analysis-metric-status {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.cadouka-analysis-metric-card.level-neutral {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.cadouka-analysis-metric-card.level-neutral .cadouka-analysis-metric-status {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.cadouka-analysis-metric-card.level-warning {
+    border-color: #fed7aa;
+    background: #fff7ed;
+}
+
+.cadouka-analysis-metric-card.level-warning .cadouka-analysis-metric-status {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.cadouka-analysis-metric-card.level-muted {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+}
+
+.cadouka-analysis-metric-card.level-muted .cadouka-analysis-metric-status {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+@media (max-width: 1100px) {
+    .cadouka-analysis-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .cadouka-analysis-metrics-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .cadouka-analysis-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cadouka-analysis-metric-card {
+        padding: 14px;
+    }
+}
+</style>
+
+
 <div class="detail-actions detail-actions-polished">
     <a href="/cards" class="back-link">← 回到卡牌倉庫</a>
 
@@ -267,6 +409,43 @@
     <div class="pro-unlocked-box pro-unlocked-box-compact">
 
             {% if pro_market_summary and pro_market_summary.available %}
+
+                {% set advanced_indicators = pro_market_summary.advanced_indicators or [] %}
+                {% if advanced_indicators %}
+                    <div class="cadouka-analysis-metrics">
+                        <div class="cadouka-analysis-metrics-head">
+                            <div>
+                                <h3>市場指標</h3>
+                                <p>
+                                    以下以 {{ pro_market_summary.analysis_grade or card.grade or "PSA10" }} 近期成交資料計算。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="cadouka-analysis-metrics-grid">
+                            {% for indicator in advanced_indicators %}
+                                <div class="cadouka-analysis-metric-card level-{{ indicator.level or 'neutral' }}">
+                                    <div class="cadouka-analysis-metric-top">
+                                        <span class="cadouka-analysis-metric-title">
+                                            {{ indicator.title }}
+                                        </span>
+                                        <span class="cadouka-analysis-metric-status">
+                                            {{ indicator.status }}
+                                        </span>
+                                    </div>
+
+                                    <div class="cadouka-analysis-metric-value">
+                                        {{ indicator.value }}
+                                    </div>
+
+                                    <p class="cadouka-analysis-metric-desc">
+                                        {{ indicator.description }}
+                                    </p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
 
                 <!-- 電腦版：表格 -->
                 <div class="pro-summary-table-wrap pro-desktop-summary">

@@ -534,8 +534,79 @@ def is_recent_24h_sale(date_text):
     return False
 
 
+def format_number_for_analysis(value):
+    try:
+        return f"{float(value):,.0f}"
+    except:
+        return "0"
+
+
+def format_percent_for_analysis(value, digits=1, show_sign=False):
+    try:
+        number = float(value)
+    except:
+        number = 0
+
+    sign = ""
+
+    if show_sign and number > 0:
+        sign = "+"
+
+    return f"{sign}{number:.{digits}f}%"
+
+
+def get_card_value(card, key, default=None):
+    if not card:
+        return default
+
+    try:
+        if isinstance(card, dict):
+            return card.get(key, default)
+
+        value = card[key]
+        return value if value is not None else default
+    except:
+        return default
+
+
+def get_analysis_grade(card, grade_order):
+    grade = str(get_card_value(card, "grade", "") or "").strip()
+
+    if grade in grade_order:
+        return grade
+
+    return "PSA10"
+
+
+def parse_holding_days_number(holding_days_text):
+    if holding_days_text is None:
+        return None
+
+    text = str(holding_days_text).strip()
+
+    if not text or text == "-":
+        return None
+
+    try:
+        return int(text.replace("天", "").strip())
+    except:
+        return None
+
+
+def make_advanced_indicator(key, title, value, status, description, level="neutral"):
+    return {
+        "key": key,
+        "title": title,
+        "value": value,
+        "status": status,
+        "description": description,
+        "level": level
+    }
+
+
 def summarize_price_list(prices, jpy_rate):
     valid_prices = []
+    latest_jpy = None
 
     for item in prices or []:
         jpy_price = parse_jpy_price(item.get("price"))
@@ -543,13 +614,19 @@ def summarize_price_list(prices, jpy_rate):
         if jpy_price is not None:
             valid_prices.append(jpy_price)
 
+            if latest_jpy is None:
+                latest_jpy = jpy_price
+
     if not valid_prices:
         return {
             "has_data": False,
             "count_24h": 0,
+            "sale_count": 0,
+            "latest_jpy": 0,
             "highest_jpy": 0,
             "average_jpy": 0,
             "lowest_jpy": 0,
+            "latest_twd": 0,
             "highest_twd": 0,
             "average_twd": 0,
             "lowest_twd": 0
@@ -568,23 +645,298 @@ def summarize_price_list(prices, jpy_rate):
     return {
         "has_data": True,
         "count_24h": count_24h,
+        "sale_count": len(valid_prices),
 
+        "latest_jpy": latest_jpy or 0,
         "highest_jpy": highest_jpy,
         "average_jpy": average_jpy,
         "lowest_jpy": lowest_jpy,
 
+        "latest_twd": round(latest_jpy * jpy_rate) if latest_jpy and jpy_rate else 0,
         "highest_twd": round(highest_jpy * jpy_rate) if jpy_rate else 0,
         "average_twd": round(average_jpy * jpy_rate) if jpy_rate else 0,
         "lowest_twd": round(lowest_jpy * jpy_rate) if jpy_rate else 0
     }
 
 
-def build_pro_market_summary(product_url):
+def build_market_advanced_indicators(card, analysis_grade, grade_summary):
+    indicators = []
+
+    if not grade_summary or not grade_summary.get("has_data"):
+        return [
+            make_advanced_indicator(
+                "price_position",
+                "價格位置",
+                "資料不足",
+                "無法判斷",
+                f"{analysis_grade} 目前沒有足夠成交資料。",
+                "muted"
+            ),
+            make_advanced_indicator(
+                "price_volatility",
+                "成交價波動",
+                "資料不足",
+                "無法判斷",
+                f"{analysis_grade} 目前沒有足夠成交資料。",
+                "muted"
+            ),
+            make_advanced_indicator(
+                "market_heat",
+                "成交熱度",
+                "低",
+                "24h 0 筆",
+                "近期成交量偏少，流動性需要多觀察。",
+                "muted"
+            ),
+            make_advanced_indicator(
+                "safety_margin",
+                "安全邊際",
+                "資料不足",
+                "無法判斷",
+                "請先填入購入價格，才能計算安全邊際。",
+                "muted"
+            ),
+            make_advanced_indicator(
+                "capital_efficiency",
+                "資金效率",
+                "資料不足",
+                "無法判斷",
+                "請先填入購入日期與購入價格，才能計算資金效率。",
+                "muted"
+            )
+        ]
+
+    latest_jpy = grade_summary.get("latest_jpy") or 0
+    highest_jpy = grade_summary.get("highest_jpy") or 0
+    average_jpy = grade_summary.get("average_jpy") or 0
+    lowest_jpy = grade_summary.get("lowest_jpy") or 0
+    average_twd = grade_summary.get("average_twd") or 0
+    count_24h = grade_summary.get("count_24h") or 0
+
+    # 1. 價格位置
+    if latest_jpy > 0 and highest_jpy > lowest_jpy:
+        price_position = ((latest_jpy - lowest_jpy) / (highest_jpy - lowest_jpy)) * 100
+        price_position = max(0, min(100, price_position))
+
+        if price_position <= 30:
+            position_status = "偏低區"
+            position_level = "good"
+        elif price_position <= 70:
+            position_status = "合理區"
+            position_level = "neutral"
+        else:
+            position_status = "偏高區"
+            position_level = "warning"
+
+        indicators.append(
+            make_advanced_indicator(
+                "price_position",
+                "價格位置",
+                format_percent_for_analysis(price_position),
+                position_status,
+                f"最新成交 ¥{format_number_for_analysis(latest_jpy)}，位於近期高低區間的 {format_percent_for_analysis(price_position)}。",
+                position_level
+            )
+        )
+    else:
+        indicators.append(
+            make_advanced_indicator(
+                "price_position",
+                "價格位置",
+                "區間不足",
+                "無法判斷",
+                "近期最高價與最低價太接近，暫時無法判斷價格位置。",
+                "muted"
+            )
+        )
+
+    # 2. 成交價波動
+    if average_jpy > 0 and highest_jpy >= lowest_jpy:
+        volatility = ((highest_jpy - lowest_jpy) / average_jpy) * 100
+
+        if volatility <= 10:
+            volatility_status = "穩定"
+            volatility_level = "good"
+        elif volatility <= 25:
+            volatility_status = "中等波動"
+            volatility_level = "neutral"
+        else:
+            volatility_status = "波動偏大"
+            volatility_level = "warning"
+
+        indicators.append(
+            make_advanced_indicator(
+                "price_volatility",
+                "成交價波動",
+                format_percent_for_analysis(volatility),
+                volatility_status,
+                f"近期最高 ¥{format_number_for_analysis(highest_jpy)}，最低 ¥{format_number_for_analysis(lowest_jpy)}。",
+                volatility_level
+            )
+        )
+    else:
+        indicators.append(
+            make_advanced_indicator(
+                "price_volatility",
+                "成交價波動",
+                "資料不足",
+                "無法判斷",
+                "目前成交資料不足，暫時無法計算成交價波動。",
+                "muted"
+            )
+        )
+
+    # 3. 成交熱度
+    if count_24h >= 10:
+        heat_value = "高"
+        heat_level = "good"
+        heat_desc = "24h 成交量活躍，流動性相對較好。"
+    elif count_24h >= 3:
+        heat_value = "中"
+        heat_level = "neutral"
+        heat_desc = "24h 有一定成交量，流動性普通。"
+    else:
+        heat_value = "低"
+        heat_level = "muted"
+        heat_desc = "24h 成交量偏少，買賣可能需要更多時間。"
+
+    indicators.append(
+        make_advanced_indicator(
+            "market_heat",
+            "成交熱度",
+            heat_value,
+            f"24h {count_24h} 筆",
+            heat_desc,
+            heat_level
+        )
+    )
+
+    # 4. 安全邊際
+    total_cost = get_card_value(card, "total_cost", 0) or 0
+    buy_price = get_card_value(card, "buy_price", 0) or 0
+
+    try:
+        cost_basis = float(total_cost or buy_price or 0)
+    except:
+        cost_basis = 0
+
+    if cost_basis > 0 and average_twd > 0:
+        safety_margin = ((average_twd - cost_basis) / average_twd) * 100
+
+        if safety_margin >= 15:
+            margin_status = "安全邊際佳"
+            margin_level = "good"
+        elif safety_margin >= 0:
+            margin_status = "接近均價"
+            margin_level = "neutral"
+        else:
+            margin_status = "成本偏高"
+            margin_level = "warning"
+
+        if safety_margin >= 0:
+            margin_desc = (
+                f"你的成本 NT${format_number_for_analysis(cost_basis)}，"
+                f"低於近期平均 NT${format_number_for_analysis(average_twd)}。"
+            )
+        else:
+            margin_desc = (
+                f"你的成本 NT${format_number_for_analysis(cost_basis)}，"
+                f"高於近期平均 NT${format_number_for_analysis(average_twd)}。"
+            )
+
+        indicators.append(
+            make_advanced_indicator(
+                "safety_margin",
+                "安全邊際",
+                format_percent_for_analysis(safety_margin, show_sign=True),
+                margin_status,
+                margin_desc,
+                margin_level
+            )
+        )
+    else:
+        indicators.append(
+            make_advanced_indicator(
+                "safety_margin",
+                "安全邊際",
+                "資料不足",
+                "無法判斷",
+                "請先填入購入價格，才能和近期市場平均比較。",
+                "muted"
+            )
+        )
+
+    # 5. 資金效率，不做年化，只看每日 ROI
+    status = str(get_card_value(card, "status", "holding") or "holding")
+
+    if status == "sold":
+        roi = get_card_value(card, "realized_roi", None)
+    else:
+        roi = get_card_value(card, "roi", None)
+
+    holding_days = parse_holding_days_number(get_card_value(card, "holding_days", None))
+    buy_date_text = get_card_value(card, "buy_date", "")
+
+    try:
+        roi_value = float(roi)
+    except:
+        roi_value = None
+
+    if roi_value is not None and buy_date_text and holding_days is not None and cost_basis > 0:
+        days_for_calc = holding_days if holding_days > 0 else 1
+        daily_roi = roi_value / days_for_calc
+
+        if daily_roi >= 0.2:
+            efficiency_status = "高"
+            efficiency_level = "good"
+        elif daily_roi >= 0.05:
+            efficiency_status = "中"
+            efficiency_level = "neutral"
+        elif daily_roi >= 0:
+            efficiency_status = "低"
+            efficiency_level = "muted"
+        else:
+            efficiency_status = "虧損中"
+            efficiency_level = "warning"
+
+        if holding_days == 0:
+            efficiency_desc = f"持有未滿 1 天，ROI {format_percent_for_analysis(roi_value, digits=2, show_sign=True)}。"
+        else:
+            efficiency_desc = f"持有 {holding_days} 天，ROI {format_percent_for_analysis(roi_value, digits=2, show_sign=True)}。"
+
+        indicators.append(
+            make_advanced_indicator(
+                "capital_efficiency",
+                "資金效率",
+                f"每日 {format_percent_for_analysis(daily_roi, digits=2, show_sign=True)}",
+                efficiency_status,
+                efficiency_desc,
+                efficiency_level
+            )
+        )
+    else:
+        indicators.append(
+            make_advanced_indicator(
+                "capital_efficiency",
+                "資金效率",
+                "資料不足",
+                "無法判斷",
+                "請先填入購入日期與購入價格，才能計算每日 ROI。",
+                "muted"
+            )
+        )
+
+    return indicators
+
+
+def build_pro_market_summary(product_url, card=None):
     if not product_url:
         return {
             "available": False,
             "message": "這張卡尚未設定商品網址，無法取得市場分析資料。",
             "jpy_rate": None,
+            "analysis_grade": None,
+            "advanced_indicators": [],
             "grades": []
         }
 
@@ -595,6 +947,8 @@ def build_pro_market_summary(product_url):
             "available": False,
             "message": "商品網址格式異常，無法取得市場分析資料。",
             "jpy_rate": None,
+            "analysis_grade": None,
+            "advanced_indicators": [],
             "grades": []
         }
 
@@ -609,31 +963,46 @@ def build_pro_market_summary(product_url):
         jpy_rate = get_jpy_spot_sell()
 
         grades = []
+        summaries_by_grade = {}
 
         for grade in grade_order:
             prices = prices_by_conditions.get(grade, [])
             summary = summarize_price_list(prices, jpy_rate)
+            summaries_by_grade[grade] = summary
 
             grades.append({
                 "grade": grade,
                 **summary
             })
 
+        analysis_grade = get_analysis_grade(card, grade_order)
+        analysis_summary = summaries_by_grade.get(analysis_grade)
+
+        advanced_indicators = build_market_advanced_indicators(
+            card,
+            analysis_grade,
+            analysis_summary
+        )
+
         return {
             "available": True,
             "message": "",
             "jpy_rate": jpy_rate,
+            "analysis_grade": analysis_grade,
+            "advanced_indicators": advanced_indicators,
             "grades": grades
         }
 
     except Exception as e:
-        print("Pro 市場分析錯誤：", e)
+        print("市場分析錯誤：", e)
         traceback.print_exc()
 
         return {
             "available": False,
             "message": "取得市場分析資料時發生錯誤，請稍後再試。",
             "jpy_rate": None,
+            "analysis_grade": None,
+            "advanced_indicators": [],
             "grades": []
         }
 
@@ -2186,7 +2555,8 @@ def card_detail_page(card_id):
     user = current_user()
 
     pro_market_summary = build_pro_market_summary(
-        card_dict.get("product_url") or ""
+        card_dict.get("product_url") or "",
+        card_dict
     )
 
     return render_template(
@@ -2245,7 +2615,7 @@ def card_pro_history_page(card_id):
         selected_grade=selected_grade,
         history_data=history_data,
         membership_level=get_membership_level(user),
-        is_pro=is_pro_user(user)
+        is_pro=True
     )
 
 
