@@ -8,8 +8,6 @@
     <div>
         <p class="eyebrow">Cadouka</p>
         <h1>{{ selected_grade }} 歷史成交</h1>
-            {{ card.card_display_name or card.card_name }}
-        </p>
     </div>
 </div>
 
@@ -30,36 +28,36 @@
 
     <div class="pro-history-tabs">
         <a
-            href="/cards/{{ card.id }}/pro-history?grade=PSA10"
-            class="pro-history-tab {% if selected_grade == 'PSA10' %}active{% endif %}"
+            href="/cards/{{ card.id }}/market-history?grade=PSA10"
+            class="market-history-tab {% if selected_grade == 'PSA10' %}active{% endif %}"
         >
             PSA10
         </a>
 
         <a
-            href="/cards/{{ card.id }}/pro-history?grade=PSA9"
-            class="pro-history-tab {% if selected_grade == 'PSA9' %}active{% endif %}"
+            href="/cards/{{ card.id }}/market-history?grade=PSA9"
+            class="market-history-tab {% if selected_grade == 'PSA9' %}active{% endif %}"
         >
             PSA9
         </a>
 
         <a
-            href="/cards/{{ card.id }}/pro-history?grade=PSA8以下"
-            class="pro-history-tab {% if selected_grade == 'PSA8以下' %}active{% endif %}"
+            href="/cards/{{ card.id }}/market-history?grade=PSA8以下"
+            class="market-history-tab {% if selected_grade == 'PSA8以下' %}active{% endif %}"
         >
             PSA8以下
         </a>
 
         <a
-            href="/cards/{{ card.id }}/pro-history?grade=A"
-            class="pro-history-tab {% if selected_grade == 'A' %}active{% endif %}"
+            href="/cards/{{ card.id }}/market-history?grade=A"
+            class="market-history-tab {% if selected_grade == 'A' %}active{% endif %}"
         >
             A
         </a>
 
         <a
-            href="/cards/{{ card.id }}/pro-history?grade=B"
-            class="pro-history-tab {% if selected_grade == 'B' %}active{% endif %}"
+            href="/cards/{{ card.id }}/market-history?grade=B"
+            class="market-history-tab {% if selected_grade == 'B' %}active{% endif %}"
         >
             B
         </a>

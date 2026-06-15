@@ -2208,7 +2208,7 @@ def pro_page():
         membership_level=get_membership_level(user)
     )
 
-@app.route("/cards/<int:card_id>/pro-history")
+@app.route("/cards/<int:card_id>/market-history")
 @login_required
 def card_pro_history_page(card_id):
     user_id = current_user_id()
