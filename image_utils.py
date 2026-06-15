@@ -774,14 +774,14 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         radius=badge_radius,
         fill=badge_shadow
     )
-
+    badge_box_offset_y = -2.5
     # 主 badge
     draw.rounded_rectangle(
         (
             badge_x,
             badge_y,
             badge_x + badge_w,
-            badge_y + badge_h
+            badge_y + badge_h + badge_box_offset_y 
         ),
         radius=badge_radius,
         fill=badge_fill,
