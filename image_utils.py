@@ -729,43 +729,72 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     card.paste(chart_image, (right_x + 6, 180))
 
     # =========================
-    # selected_grade 標籤（放在商品名稱下方，並蓋在折線圖上方）
+    # selected_grade 標籤（商品名稱下方的精緻 badge）
     # =========================
     badge_text = str(selected_grade)
 
-    badge_font = get_font(25, bold=True)
+    badge_font = get_font(27, bold=True)
 
-    badge_text_w = text_width(draw, badge_text, badge_font)
-    badge_padding_x = 22
-    badge_padding_y = 10
+    # 用 textbbox 抓文字實際尺寸，比較準
+    badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
+    badge_text_w = badge_bbox[2] - badge_bbox[0]
+    badge_text_h = badge_bbox[3] - badge_bbox[1]
 
+    # 位置
     badge_x = right_x + 30
-    badge_y = 160   # 商品名稱下方
+    badge_y = 166   # 商品名稱下方，可再微調
 
-    badge_w = badge_text_w + badge_padding_x * 2
-    badge_h = 30 + badge_padding_y * 2
+    # 內距
+    badge_padding_x = 20
+    badge_padding_y = 11
 
-    badge_fill = "#EBF2FF"      # 底色
-    badge_outline = "#2F6FD6"   # 框線
-    badge_text_color = "#2F6FD6"
+    badge_w = int(badge_text_w + badge_padding_x * 2)
+    badge_h = int(badge_text_h + badge_padding_y * 2)
 
-    badge_box_offset_y = 2.5
+    # 顏色
+    badge_fill = "#EEF4FF"         # 更柔和的淡藍底
+    badge_outline = "#B7C9EE"      # 淡藍灰邊框（不要太重）
+    badge_text_color = "#2F5FBF"   # 深藍字
+    badge_shadow = "#E6EDF8"       # 很淡的陰影
+
+    # 圓角：做成 pill 形狀
+    badge_radius = badge_h // 2
+
+    # 陰影
+    shadow_offset_x = 0
+    shadow_offset_y = 3
 
     draw.rounded_rectangle(
         (
-         badge_x, 
-         badge_y + badge_box_offset_y, 
-         badge_x + badge_w, 
-         badge_y + badge_h + badge_box_offset_y
+            badge_x + shadow_offset_x,
+            badge_y + shadow_offset_y,
+            badge_x + badge_w + shadow_offset_x,
+            badge_y + badge_h + shadow_offset_y
         ),
-        radius=24,
-        fill=badge_fill,
-        outline=badge_outline,
-        width=3
+        radius=badge_radius,
+        fill=badge_shadow
     )
 
+    # 主 badge
+    draw.rounded_rectangle(
+        (
+            badge_x,
+            badge_y,
+            badge_x + badge_w,
+            badge_y + badge_h
+        ),
+        radius=badge_radius,
+        fill=badge_fill,
+        outline=badge_outline,
+        width=2
+    )
+
+    # 文字真正置中
+    text_x = badge_x + (badge_w - badge_text_w) / 2
+    text_y = badge_y + (badge_h - badge_text_h) / 2 - badge_bbox[1] - 1
+
     draw.text(
-        (badge_x + badge_padding_x, badge_y + badge_padding_y - 2),
+        (text_x, text_y),
         badge_text,
         fill=badge_text_color,
         font=badge_font
@@ -837,12 +866,15 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
 
    # =========================
-    # 最新成交價格（主視覺資訊卡）
+    # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
+    latest_title_font = get_font(49, bold=True)
 
-    latest_title_font = get_font(40, bold=True)
-    newprice_jpy_font = get_font(54, bold=True)
-    newprice_twd_font = get_font(34, bold=False)
+    # 跟旁邊最高 / 平均 / 最低 用同一條基準線
+    latest_y = bottom_stat_y
+
+    newprice_jpy_font = get_font(46, bold=True)
+    newprice_twd_font = get_font(35, bold=False)
 
     latest_title = "最新成交價格"
     latest_value = stats["latest"]
@@ -853,75 +885,31 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 以左側圖片框置中
     latest_center_x = (left_box[0] + left_box[2]) / 2
 
-    # 跟旁邊最高 / 平均 / 最低 用同一條基準線
-    latest_y = bottom_stat_y
-
-    # =========================
-    # 最新成交價格卡片背景
-    # =========================
-
-    card_w = 360
-    card_h = 170
-
-    card_x1 = int(latest_center_x - card_w / 2)
-    card_y1 = int(latest_y - 8)
-    card_x2 = card_x1 + card_w
-    card_y2 = card_y1 + card_h
-
-    # 顏色設定
-    latest_card_bg = "#F8FBFF"       # 很淡的藍白底
-    latest_card_border = "#D8E2EF"   # 淡藍灰邊框
-    latest_card_shadow = "#DDE6F2"   # 柔和陰影
-
-    latest_title_color = "#2563EB"   # 主藍
-    latest_jpy_color = "#1F2937"     # 深黑灰
-    latest_twd_color = "#8C9198"     # 輔助灰
-
-    # 陰影
-    draw.rounded_rectangle(
-        (card_x1 + 4, card_y1 + 5, card_x2 + 4, card_y2 + 5),
-        radius=22,
-        fill=latest_card_shadow
-    )
-
-    # 主卡片
-    draw.rounded_rectangle(
-        (card_x1, card_y1, card_x2, card_y2),
-        radius=22,
-        fill=latest_card_bg,
-        outline=latest_card_border,
-        width=2
-    )
-
-    # =========================
-    # 文字置中
-    # =========================
-
     latest_title_w = text_width(draw, latest_title, latest_title_font)
     latest_jpy_w = text_width(draw, latest_jpy_text, newprice_jpy_font)
     latest_twd_w = text_width(draw, latest_twd_text, newprice_twd_font)
 
     # 標題
     draw.text(
-        (latest_center_x - latest_title_w / 2, card_y1 + 18),
+        (latest_center_x - latest_title_w / 2, latest_y - 10),
         latest_title,
-        fill=latest_title_color,
+        fill="#2563EB",
         font=latest_title_font
     )
 
-    # 日幣主價格
+    # 日幣
     draw.text(
-        (latest_center_x - latest_jpy_w / 2, card_y1 + 58),
+        (latest_center_x - latest_jpy_w / 2, latest_y + 48),
         latest_jpy_text,
-        fill=latest_jpy_color,
+        fill="#1F2937",
         font=newprice_jpy_font
     )
 
-    # 台幣換算
+    # 台幣
     draw.text(
-        (latest_center_x - latest_twd_w / 2, card_y1 + 116),
+        (latest_center_x - latest_twd_w / 2, latest_y + 110),
         latest_twd_text,
-        fill=latest_twd_color,
+        fill="#8C9198",
         font=newprice_twd_font
     )
 
