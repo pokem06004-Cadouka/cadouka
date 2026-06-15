@@ -572,26 +572,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     - PSA / 最高 / 平均 / 最低 移到下方資訊區
     - 右下角只保留匯率與資料來源
     """
-    card = Image.new("RGB", (canvas_width, canvas_height), "#EAF0F7")
-    draw = ImageDraw.Draw(card)
-
-    # =========================
-    # Cadouka logo（左上角）
-    # =========================
-    logo_path = os.path.join(
-        os.path.dirname(__file__),
-        "static",
-        "brand",
-        "cadouka_logo.jpg"
-    )
-
-    if os.path.exists(logo_path):
-        logo = load_logo_remove_white(logo_path, target_w=90, white_threshold=245)
-
-        logo_x = 18
-        logo_y = 12
-
-        card.paste(logo, (logo_x, logo_y), logo)
 
     ensure_generated_dir()
 
@@ -619,6 +599,23 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         radius=20,
         fill="#F8FAFC"
     )
+    # =========================
+    # Cadouka logo（左上角）
+    # =========================
+    logo_path = os.path.join(
+        os.path.dirname(__file__),
+        "static",
+        "brand",
+        "cadouka_logo.jpg"
+    )
+
+    if os.path.exists(logo_path):
+        logo = load_logo_remove_white(logo_path, target_w=90, white_threshold=245)
+
+        logo_x = 18
+        logo_y = 12
+
+        card.paste(logo, (logo_x, logo_y), logo)
 
     # =========================
     # 左側商品圖：維持目前圖片大小
