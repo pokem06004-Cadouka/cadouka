@@ -612,15 +612,15 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     if os.path.exists(logo_path):
         logo = load_logo_remove_white(logo_path, target_w=110, white_threshold=245)
 
-        logo_x = 26
-        logo_y = 40
+        logo_x = outer_box[0] + 18
+        logo_y = outer_box[3] - logo.height - 28
 
         card.paste(logo, (logo_x, logo_y), logo)
 
     # =========================
     # 左側商品圖：維持目前圖片大小
     # =========================
-    left_box = (80, 134, 478, 676)
+    left_box = (60, 134, 458, 676)
 
     draw.rounded_rectangle(
         left_box,
