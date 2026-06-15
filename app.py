@@ -2164,20 +2164,35 @@ def card_detail_page(card_id):
     card_dict = dict(card)
     card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
 
+    # 會員功能
+    # user = current_user()
+    # is_pro = is_pro_user(user)
+
+    # pro_market_summary = None
+
+    # if is_pro:
+    #     pro_market_summary = build_pro_market_summary(
+    #         card_dict.get("product_url") or ""
+    #     )
+
+    # return render_template(
+    #     "card_detail.html",
+    #     card=card_dict,
+    #     is_pro=is_pro,
+    #     membership_level=get_membership_level(user),
+    #     pro_market_summary=pro_market_summary
+    # )
+
     user = current_user()
-    is_pro = is_pro_user(user)
 
-    pro_market_summary = None
-
-    if is_pro:
-        pro_market_summary = build_pro_market_summary(
-            card_dict.get("product_url") or ""
-        )
+    pro_market_summary = build_pro_market_summary(
+        card_dict.get("product_url") or ""
+    )
 
     return render_template(
         "card_detail.html",
         card=card_dict,
-        is_pro=is_pro,
+        is_pro=True,
         membership_level=get_membership_level(user),
         pro_market_summary=pro_market_summary
     )
@@ -2203,10 +2218,11 @@ def card_pro_history_page(card_id):
 
     if not card:
         return "找不到這張卡牌", 404
-
-    if not is_pro_user(user):
-        flash("此功能為 Cadouka Pro 會員功能", "warning")
-        return redirect(f"/cards/{card_id}")
+    
+    # 會員功能
+    # if not is_pro_user(user):
+    #     flash("此功能為 Cadouka Pro 會員功能", "warning")
+    #     return redirect(f"/cards/{card_id}")
 
     selected_grade = request.args.get("grade", "PSA10").strip()
 

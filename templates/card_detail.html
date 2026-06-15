@@ -254,19 +254,17 @@
 <div class="cost-breakdown detail-section-card pro-analysis-card">
     <div class="pro-compact-title-row">
         <div>
-            <h2>Cadouka Pro 進階分析</h2>
-            <p>PSA 等級行情摘要與會員專屬歷史成交資料。</p>
+            <h2>Cadouka 進階分析</h2>
         </div>
 
-        {% if is_pro and pro_market_summary and pro_market_summary.jpy_rate %}
+        {% if pro_market_summary and pro_market_summary.jpy_rate %}
             <span class="pro-rate-pill">
                 日圓匯率：{{ "%.4f"|format(pro_market_summary.jpy_rate) }}
             </span>
         {% endif %}
     </div>
 
-    {% if is_pro %}
-        <div class="pro-unlocked-box pro-unlocked-box-compact">
+    <div class="pro-unlocked-box pro-unlocked-box-compact">
 
             {% if pro_market_summary and pro_market_summary.available %}
 
@@ -408,18 +406,6 @@
                 </div>
             {% endif %}
         </div>
-    {% else %}
-        <div class="pro-locked-box">
-            <h3>此功能為 Cadouka Pro 會員功能</h3>
-
-            <p>
-                升級後可查看不同 PSA 等級行情、24h 成交量與歷史成交資料，
-                協助你更完整判斷卡牌目前的市場狀態。
-            </p>
-
-            <a href="/pro" class="btn-add">了解 Cadouka Pro</a>
-        </div>
-    {% endif %}
 </div>
 
 {% if card.status == "sold" %}
