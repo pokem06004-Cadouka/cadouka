@@ -41,8 +41,9 @@
                 <input
                     type="checkbox"
                     name="agree_terms"
-                    value="1"
                     required
+                    oninvalid="this.setCustomValidity('請先勾選同意服務條款與隱私權政策')"
+                    oninput="this.setCustomValidity('')"
                 >
                 <span>
                     我已閱讀並同意
