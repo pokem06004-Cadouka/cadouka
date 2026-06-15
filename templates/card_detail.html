@@ -121,6 +121,85 @@
     color: #6b7280;
 }
 
+
+.cadouka-analysis-guide {
+    margin-top: 12px;
+}
+
+.cadouka-analysis-guide details {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.cadouka-analysis-guide summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.cadouka-analysis-guide summary::-webkit-details-marker {
+    display: none;
+}
+
+.cadouka-analysis-guide summary::after {
+    content: "展開";
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    color: #2563eb;
+    background: #eff6ff;
+    border-radius: 999px;
+    padding: 4px 8px;
+}
+
+.cadouka-analysis-guide details[open] summary {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.cadouka-analysis-guide details[open] summary::after {
+    content: "收合";
+}
+
+.cadouka-analysis-guide-body {
+    padding: 13px 14px 14px;
+}
+
+.cadouka-analysis-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.cadouka-analysis-guide-item {
+    border: 1px solid #eef2f7;
+    border-radius: 12px;
+    background: #f9fafb;
+    padding: 11px 12px;
+}
+
+.cadouka-analysis-guide-item strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #111827;
+}
+
+.cadouka-analysis-guide-item p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #6b7280;
+}
+
 @media (max-width: 1100px) {
     .cadouka-analysis-metrics-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -136,6 +215,12 @@
     .cadouka-analysis-metrics-grid {
         grid-template-columns: 1fr;
     }
+
+    .cadouka-analysis-guide-grid {
+        grid-template-columns: 1fr;
+    }
+
+
 
     .cadouka-analysis-metric-card {
         padding: 14px;
@@ -419,6 +504,56 @@
                                 <p>
                                     以下以 {{ pro_market_summary.analysis_grade or card.grade or "PSA10" }} 近期成交資料計算。
                                 </p>
+
+                                <div class="cadouka-analysis-guide">
+                                    <details>
+                                        <summary>指標說明</summary>
+
+                                        <div class="cadouka-analysis-guide-body">
+                                            <div class="cadouka-analysis-guide-grid">
+                                                <div class="cadouka-analysis-guide-item">
+                                                    <strong>市場位置</strong>
+                                                    <p>
+                                                        0%～30% 為偏低區，30%～70% 為合理區，70%～100% 為偏高區。
+                                                        數值越高代表越接近近期高點。
+                                                    </p>
+                                                </div>
+
+                                                <div class="cadouka-analysis-guide-item">
+                                                    <strong>成交價波動</strong>
+                                                    <p>
+                                                        10% 以下為穩定，10%～25% 為中等波動，25% 以上為波動偏大。
+                                                        數值越高代表近期成交價跳動越明顯。
+                                                    </p>
+                                                </div>
+
+                                                <div class="cadouka-analysis-guide-item">
+                                                    <strong>成交熱度</strong>
+                                                    <p>
+                                                        24h 0～2 筆為低，3～9 筆為中，10 筆以上為高。
+                                                        主要用來判斷近期流動性。
+                                                    </p>
+                                                </div>
+
+                                                <div class="cadouka-analysis-guide-item">
+                                                    <strong>安全邊際</strong>
+                                                    <p>
+                                                        15% 以上為安全邊際佳，0%～15% 為接近均價，低於 0% 代表成本偏高。
+                                                        會用你的總成本和近期平均價比較。
+                                                    </p>
+                                                </div>
+
+                                                <div class="cadouka-analysis-guide-item">
+                                                    <strong>資金效率</strong>
+                                                    <p>
+                                                        每日 ROI 0.20% 以上為高，0.05%～0.20% 為中，0%～0.05% 為低，低於 0% 為虧損中。
+                                                        此處不做年化計算。
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
                             </div>
                         </div>
 
