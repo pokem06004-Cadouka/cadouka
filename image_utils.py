@@ -155,6 +155,35 @@ def download_image_bytes(image_url):
 BASE_DIR = Path(__file__).resolve().parent
 FONT_DIR = BASE_DIR / "fonts"
 
+def load_logo_remove_white(path, target_w=95, white_threshold=245):
+    """
+    載入 logo，將接近白色的背景轉透明，再等比縮放
+    """
+    logo = Image.open(path).convert("RGBA")
+
+    new_data = []
+    for item in logo.getdata():
+        r, g, b, a = item
+
+        # 接近白色就變透明
+        if r >= white_threshold and g >= white_threshold and b >= white_threshold:
+            new_data.append((255, 255, 255, 0))
+        else:
+            new_data.append((r, g, b, a))
+
+    logo.putdata(new_data)
+
+    # 裁掉透明邊界，避免外圍白邊殘留太多
+    bbox = logo.getbbox()
+    if bbox:
+        logo = logo.crop(bbox)
+
+    # 等比縮放
+    scale = target_w / logo.width
+    target_h = int(logo.height * scale)
+    logo = logo.resize((target_w, target_h), Image.LANCZOS)
+
+    return logo
 
 def get_font(size=24, bold=False):
     if bold:
@@ -543,6 +572,27 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     - PSA / 最高 / 平均 / 最低 移到下方資訊區
     - 右下角只保留匯率與資料來源
     """
+    card = Image.new("RGB", (canvas_width, canvas_height), "#EAF0F7")
+    draw = ImageDraw.Draw(card)
+
+    # =========================
+    # Cadouka logo（左上角）
+    # =========================
+    logo_path = os.path.join(
+        os.path.dirname(__file__),
+        "static",
+        "brand",
+        "cadouka_logo.jpg"
+    )
+
+    if os.path.exists(logo_path):
+        logo = load_logo_remove_white(logo_path, target_w=90, white_threshold=245)
+
+        logo_x = 18
+        logo_y = 12
+
+        card.paste(logo, (logo_x, logo_y), logo)
+
     ensure_generated_dir()
 
     product_name = format_product_name_for_card(product.get("name"))
