@@ -696,7 +696,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 商品名稱：加大，若太長就自動微縮，避免超出右側
     title_x = right_x
-    title_y = 72
+    title_y = 65
     title_font_size = 52
     title_font_dynamic = title_font
 
