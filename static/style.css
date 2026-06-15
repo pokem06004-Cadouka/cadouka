@@ -4841,3 +4841,237 @@ a {
     transform: scale(0.7);
     transform-origin: center center;
 }
+/* =========================
+   Settings Menu / Profit Color Mode
+   右上角設定選單 + 漲跌顏色切換
+========================= */
+
+.nav-settings-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.nav-settings-button {
+    height: 34px;
+    border: 0;
+    background: rgba(59, 130, 246, 0.26);
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 0 13px;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.nav-settings-button:hover {
+    background: rgba(59, 130, 246, 0.42);
+    transform: translateY(-1px);
+}
+
+.nav-settings-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 246px;
+    padding: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.20);
+    z-index: 1200;
+    display: none;
+    box-sizing: border-box;
+}
+
+.nav-settings-menu.is-open {
+    display: block;
+}
+
+.nav-settings-menu::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    right: 22px;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border-left: 1px solid rgba(226, 232, 240, 0.95);
+    border-top: 1px solid rgba(226, 232, 240, 0.95);
+    transform: rotate(45deg);
+}
+
+.nav-settings-title {
+    margin: 0 0 10px 0;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.nav-settings-section {
+    padding: 10px;
+    border-radius: 14px;
+    background: #f8fafc;
+    margin-bottom: 10px;
+}
+
+.nav-settings-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.nav-settings-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.nav-settings-option input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: #3b82f6;
+}
+
+.nav-settings-logout {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    height: auto !important;
+    padding: 10px 12px !important;
+    border-radius: 12px;
+    color: #dc2626 !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    text-decoration: none;
+}
+
+.nav-settings-logout:hover {
+    background: #fef2f2;
+    color: #b91c1c !important;
+}
+
+.mobile-color-section {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.mobile-color-title {
+    margin-bottom: 8px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mobile-color-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: #111827;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.mobile-color-option input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #3b82f6;
+}
+
+/* 預設：漲綠跌紅 */
+body.color-rise-green {
+    --cadouka-profit-color: #059669;
+    --cadouka-profit-bg: #ecfdf5;
+    --cadouka-loss-color: #dc2626;
+    --cadouka-loss-bg: #fef2f2;
+}
+
+/* 切換後：漲紅跌綠 */
+body.color-rise-red {
+    --cadouka-profit-color: #dc2626;
+    --cadouka-profit-bg: #fef2f2;
+    --cadouka-loss-color: #059669;
+    --cadouka-loss-bg: #ecfdf5;
+}
+
+body.color-rise-green .profit,
+body.color-rise-green .summary-value.profit,
+body.color-rise-green .summary-card .profit,
+body.color-rise-green .list-summary-value.profit,
+body.color-rise-green .detail-summary-single-value.profit,
+body.color-rise-green .mobile-summary-row strong.profit,
+body.color-rise-green .holding-rank-profit.profit,
+body.color-rise-green .profit-positive {
+    color: var(--cadouka-profit-color) !important;
+}
+
+body.color-rise-green .loss,
+body.color-rise-green .summary-value.loss,
+body.color-rise-green .summary-card .loss,
+body.color-rise-green .list-summary-value.loss,
+body.color-rise-green .detail-summary-single-value.loss,
+body.color-rise-green .mobile-summary-row strong.loss,
+body.color-rise-green .holding-rank-profit.loss,
+body.color-rise-green .profit-negative {
+    color: var(--cadouka-loss-color) !important;
+}
+
+body.color-rise-red .profit,
+body.color-rise-red .summary-value.profit,
+body.color-rise-red .summary-card .profit,
+body.color-rise-red .list-summary-value.profit,
+body.color-rise-red .detail-summary-single-value.profit,
+body.color-rise-red .mobile-summary-row strong.profit,
+body.color-rise-red .holding-rank-profit.profit,
+body.color-rise-red .profit-positive {
+    color: var(--cadouka-profit-color) !important;
+}
+
+body.color-rise-red .loss,
+body.color-rise-red .summary-value.loss,
+body.color-rise-red .summary-card .loss,
+body.color-rise-red .list-summary-value.loss,
+body.color-rise-red .detail-summary-single-value.loss,
+body.color-rise-red .mobile-summary-row strong.loss,
+body.color-rise-red .holding-rank-profit.loss,
+body.color-rise-red .profit-negative {
+    color: var(--cadouka-loss-color) !important;
+}
+
+body.color-rise-green .pill-profit,
+body.color-rise-red .pill-profit {
+    background: var(--cadouka-profit-bg) !important;
+    color: var(--cadouka-profit-color) !important;
+}
+
+body.color-rise-green .pill-loss,
+body.color-rise-red .pill-loss {
+    background: var(--cadouka-loss-bg) !important;
+    color: var(--cadouka-loss-color) !important;
+}
+
+@media (max-width: 760px) {
+    .nav-settings-wrap {
+        display: none;
+    }
+}

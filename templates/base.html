@@ -5,6 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadouka</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .nav-settings-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-settings-button {
+            border: 0;
+            background: rgba(59, 130, 246, 0.16);
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1;
+        }
+
+        .nav-settings-button:hover {
+            background: rgba(59, 130, 246, 0.28);
+        }
+
+        .nav-settings-menu {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: 240px;
+            padding: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+            z-index: 1000;
+            display: none;
+        }
+
+        .nav-settings-menu.is-open {
+            display: block;
+        }
+
+        .nav-settings-menu::before {
+            content: "";
+            position: absolute;
+            top: -7px;
+            right: 22px;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-left: 1px solid rgba(226, 232, 240, 0.95);
+            border-top: 1px solid rgba(226, 232, 240, 0.95);
+            transform: rotate(45deg);
+        }
+
+        .nav-settings-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #111827;
+            margin-bottom: 10px;
+        }
+
+        .nav-settings-section {
+            padding: 10px;
+            border-radius: 14px;
+            background: #f8fafc;
+            margin-bottom: 10px;
+        }
+
+        .nav-settings-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .nav-settings-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #111827;
+            padding: 6px 0;
+            cursor: pointer;
+        }
+
+        .nav-settings-option input {
+            accent-color: #3b82f6;
+        }
+
+        .nav-settings-logout {
+            display: block;
+            padding: 10px 12px;
+            border-radius: 12px;
+            color: #dc2626 !important;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .nav-settings-logout:hover {
+            background: #fef2f2;
+        }
+
+        body.color-rise-green .profit {
+            color: #059669 !important;
+        }
+
+        body.color-rise-green .loss {
+            color: #dc2626 !important;
+        }
+
+        body.color-rise-red .profit {
+            color: #dc2626 !important;
+        }
+
+        body.color-rise-red .loss {
+            color: #059669 !important;
+        }
+
+        body.color-rise-red .stat-value.profit,
+        body.color-rise-red .detail-summary-single-value.profit {
+            color: #dc2626 !important;
+        }
+
+        body.color-rise-red .stat-value.loss,
+        body.color-rise-red .detail-summary-single-value.loss {
+            color: #059669 !important;
+        }
+
+        .mobile-color-section {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .mobile-color-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .mobile-color-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 0;
+            font-size: 14px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .mobile-color-option input {
+            accent-color: #3b82f6;
+        }
+    </style>
 </head>
 <body>
 
@@ -29,7 +189,46 @@
                     {{ current_user.display_name or current_user.username }}
                 </a>
 
-                <a href="/logout">登出</a>
+                <div class="nav-settings-wrap">
+                    <button
+                        type="button"
+                        class="nav-settings-button"
+                        onclick="toggleSettingsMenu(event)"
+                        aria-label="開啟設定選單"
+                    >
+                        ☰ 設定
+                    </button>
+
+                    <div class="nav-settings-menu" id="navSettingsMenu">
+                        <div class="nav-settings-title">設定</div>
+
+                        <div class="nav-settings-section">
+                            <span class="nav-settings-label">損益顏色</span>
+
+                            <label class="nav-settings-option">
+                                <input
+                                    type="radio"
+                                    name="profitColorMode"
+                                    value="rise-green"
+                                    onchange="setProfitColorMode('rise-green')"
+                                >
+                                漲綠跌紅
+                            </label>
+
+                            <label class="nav-settings-option">
+                                <input
+                                    type="radio"
+                                    name="profitColorMode"
+                                    value="rise-red"
+                                    onchange="setProfitColorMode('rise-red')"
+                                >
+                                漲紅跌綠
+                            </label>
+                        </div>
+
+                        <a href="/logout" class="nav-settings-logout">登出</a>
+                    </div>
+                </div>
             {% else %}
                 <a href="/login">登入</a>
                 <a href="/register">註冊</a>
@@ -96,6 +295,31 @@
                 {% endif %}
 
                 <a href="/profile">個人資料</a>
+
+                <div class="mobile-color-section">
+                    <div class="mobile-color-title">損益顏色</div>
+
+                    <label class="mobile-color-option">
+                        <input
+                            type="radio"
+                            name="mobileProfitColorMode"
+                            value="rise-green"
+                            onchange="setProfitColorMode('rise-green')"
+                        >
+                        漲綠跌紅
+                    </label>
+
+                    <label class="mobile-color-option">
+                        <input
+                            type="radio"
+                            name="mobileProfitColorMode"
+                            value="rise-red"
+                            onchange="setProfitColorMode('rise-red')"
+                        >
+                        漲紅跌綠
+                    </label>
+                </div>
+
                 <a href="/logout" class="mobile-drawer-danger">登出</a>
             {% else %}
                 <a href="/login">登入</a>
@@ -125,6 +349,77 @@
     </main>
 
     <script>
+
+        function toggleSettingsMenu(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            const menu = document.getElementById("navSettingsMenu");
+
+            if (menu) {
+                menu.classList.toggle("is-open");
+            }
+        }
+
+        function closeSettingsMenu() {
+            const menu = document.getElementById("navSettingsMenu");
+
+            if (menu) {
+                menu.classList.remove("is-open");
+            }
+        }
+
+        function syncProfitColorRadios(mode) {
+            const radios = document.querySelectorAll(
+                'input[name="profitColorMode"], input[name="mobileProfitColorMode"]'
+            );
+
+            radios.forEach(function (radio) {
+                radio.checked = radio.value === mode;
+            });
+        }
+
+        function applyProfitColorMode(mode) {
+            const selectedMode = mode === "rise-red" ? "rise-red" : "rise-green";
+
+            document.body.classList.remove("color-rise-green", "color-rise-red");
+            document.body.classList.add("color-" + selectedMode);
+
+            syncProfitColorRadios(selectedMode);
+        }
+
+        function setProfitColorMode(mode) {
+            const selectedMode = mode === "rise-red" ? "rise-red" : "rise-green";
+
+            localStorage.setItem("cadoukaProfitColorMode", selectedMode);
+            applyProfitColorMode(selectedMode);
+        }
+
+        document.addEventListener("click", function (event) {
+            const menu = document.getElementById("navSettingsMenu");
+            const settingsWrap = document.querySelector(".nav-settings-wrap");
+
+            if (!menu || !settingsWrap) {
+                return;
+            }
+
+            if (!settingsWrap.contains(event.target)) {
+                closeSettingsMenu();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeSettingsMenu();
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const savedMode = localStorage.getItem("cadoukaProfitColorMode") || "rise-green";
+            applyProfitColorMode(savedMode);
+        });
+
         function openMobileMenu() {
             const drawer = document.getElementById("mobileNavDrawer");
             const backdrop = document.getElementById("mobileNavBackdrop");
