@@ -861,7 +861,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
 
     card_w = 360
-    card_h = 150
+    card_h = 170
 
     card_x1 = int(latest_center_x - card_w / 2)
     card_y1 = int(latest_y - 8)
