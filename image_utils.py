@@ -745,9 +745,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     badge_w = badge_text_w + badge_padding_x * 2
     badge_h = 30 + badge_padding_y * 2
 
-    badge_fill = "#EAF2FF"      # 底色
-    badge_outline = "#2F5FE8"   # 框線
-    badge_text_color = "#2F5FE8"
+    badge_fill = "#EBF2FF"      # 底色
+    badge_outline = "#2F6FD6"   # 框線
+    badge_text_color = "#2F6FD6"
 
     badge_box_offset_y = 2.5
 
@@ -788,8 +788,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 方框樣式
     stat_box_radius = 18
-    stat_box_outline = "#D9DFEA"
-    stat_box_fill = "#FFFFFF"
+    stat_box_outline = "#D8E2EF"
+    stat_box_fill = "#F8FBFF"
     stat_box_width = 5
     stat_box_height = 178
 
@@ -811,7 +811,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         draw.text(
             (x1 + (stat_w - label_w) / 2 , y1 ),
             label,
-            fill="#777777",
+            fill="#69707A",
             font=stat_label_font
         )
 
@@ -821,7 +821,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         draw.text(
             (x1 + (stat_w - jpy_w) / 2, y1 + 48),
             jpy_text,
-            fill="#222222",
+            fill="#1F2937",
             font=stat_jpy_font
         )
 
@@ -831,7 +831,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         draw.text(
             (x1 + (stat_w - twd_w) / 2, y1 + 110),
             twd_text,
-            fill="#999999",
+            fill="#91969E",
             font=stat_twd_font
         )
 
@@ -864,7 +864,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw.text(
         (latest_center_x - latest_title_w / 2, latest_y - 10),
         latest_title,
-        fill="#2F5FE8",
+        fill="#2563EB",
         font=latest_title_font
     )
 
@@ -872,7 +872,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw.text(
         (latest_center_x - latest_jpy_w / 2, latest_y + 48),
         latest_jpy_text,
-        fill="#222222",
+        fill="#1F2937",
         font=newprice_jpy_font
     )
 
@@ -880,7 +880,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw.text(
         (latest_center_x - latest_twd_w / 2, latest_y + 110),
         latest_twd_text,
-        fill="#999999",
+        fill="#8C9198",
         font=newprice_twd_font
     )
 
