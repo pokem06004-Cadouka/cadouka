@@ -2811,7 +2811,7 @@ def sell_card_page(card_id):
         else:
             flash("已標記為已售出", "success")
 
-        return redirect(request.referrer or f"/cards/{card_id}")
+        return redirect(f"/cards/{card_id}")
 
     return render_template("sell_card.html", card=card)
 
