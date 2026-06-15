@@ -155,7 +155,7 @@ def download_image_bytes(image_url):
 BASE_DIR = Path(__file__).resolve().parent
 FONT_DIR = BASE_DIR / "fonts"
 
-def load_logo_remove_white(path, target_w=95, white_threshold=245):
+def load_logo_remove_white(path, target_w=87, white_threshold=245):
     """
     載入 logo，將接近白色的背景轉透明，再等比縮放
     """
