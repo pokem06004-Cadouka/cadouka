@@ -620,7 +620,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     # 左側商品圖：維持目前圖片大小
     # =========================
-    left_box = (60, 134, 458, 676)
+    left_box = (69, 103, 489, 675)
 
     draw.rounded_rectangle(
         left_box,
@@ -650,8 +650,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         product_image = None
 
     if product_image:
-        target_w = 378
-        target_h = 531
+        target_w = 399
+        target_h = 561
 
         try:
             resample_filter = Image.Resampling.LANCZOS
