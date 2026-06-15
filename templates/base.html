@@ -61,13 +61,6 @@
             transform: rotate(45deg);
         }
 
-        .nav-settings-title {
-            font-size: 13px;
-            font-weight: 900;
-            color: #111827;
-            margin-bottom: 10px;
-        }
-
 
 
         .nav-settings-menu a.nav-settings-profile,
@@ -192,6 +185,116 @@
         .mobile-color-option input {
             accent-color: #3b82f6;
         }
+
+
+        .cadouka-legal-footer {
+            max-width: 1280px;
+            margin: 10px auto 32px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            color: #9ca3af;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .cadouka-legal-footer a {
+            color: #6b7280;
+            text-decoration: none;
+        }
+
+        .cadouka-legal-footer a:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .legal-page {
+            max-width: 920px;
+            margin: 0 auto 42px;
+        }
+
+        .legal-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .legal-card h2 {
+            margin: 28px 0 10px;
+            font-size: 20px;
+            color: #111827;
+        }
+
+        .legal-card h2:first-child {
+            margin-top: 0;
+        }
+
+        .legal-card h3 {
+            margin: 18px 0 8px;
+            font-size: 16px;
+            color: #111827;
+        }
+
+        .legal-card p,
+        .legal-card li {
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .legal-card ul {
+            padding-left: 20px;
+        }
+
+        .legal-note-box {
+            margin: 18px 0;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .legal-agree-checkbox {
+            display: flex !important;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 18px !important;
+            padding: 14px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            line-height: 1.7;
+        }
+
+        .legal-agree-checkbox input {
+            width: 18px !important;
+            height: 18px;
+            margin-top: 3px;
+            flex: 0 0 18px;
+            accent-color: #3b82f6;
+        }
+
+        .legal-agree-checkbox a {
+            color: #2563eb;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
+        .legal-agree-checkbox a:hover {
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
@@ -371,6 +474,13 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="cadouka-legal-footer">
+        <span>© Cadouka</span>
+        <a href="/terms">服務條款</a>
+        <a href="/privacy">隱私權政策</a>
+        <a href="/disclaimer">免責聲明</a>
+    </footer>
 
     <script>
 

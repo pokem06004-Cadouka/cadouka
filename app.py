@@ -1141,6 +1141,7 @@ def register_page():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
+        agree_terms = request.form.get("agree_terms")
 
         if not username or not password:
             flash("請輸入帳號與密碼", "warning")
@@ -1154,6 +1155,10 @@ def register_page():
             flash("兩次輸入的密碼不一致", "warning")
             return redirect("/register")
 
+        if agree_terms != "1":
+            flash("請先閱讀並同意服務條款與隱私權政策", "warning")
+            return redirect("/register")
+
         existing_user = get_user_by_username(username)
 
         if existing_user:
@@ -1163,7 +1168,14 @@ def register_page():
         first_user_before_create = get_first_user()
 
         password_hash = generate_password_hash(password)
-        create_user(username, password_hash)
+        accepted_at = get_taiwan_now_text()
+
+        create_user(
+            username,
+            password_hash,
+            terms_accepted_at=accepted_at,
+            privacy_accepted_at=accepted_at
+        )
 
         user = get_user_by_username(username)
 
@@ -1335,6 +1347,21 @@ def delete_account_page():
 @app.route("/forgot-password")
 def forgot_password_page():
     return render_template("forgot_password.html")
+
+
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html")
+
+
+@app.route("/terms")
+def terms_page():
+    return render_template("terms.html")
+
+
+@app.route("/disclaimer")
+def disclaimer_page():
+    return render_template("disclaimer.html")
 
 @app.route("/line/liff-bind")
 def line_liff_bind_page():

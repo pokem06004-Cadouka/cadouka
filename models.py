@@ -62,6 +62,8 @@ def init_db():
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
+            terms_accepted_at TEXT,
+            privacy_accepted_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -153,6 +155,8 @@ def init_db():
             line_user_id TEXT,
             line_bind_code TEXT,
             line_bind_code_expires_at TEXT,
+            terms_accepted_at TEXT,
+            privacy_accepted_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -243,7 +247,7 @@ def init_db():
 def generate_user_code(user_id):
     return f"CDK{int(user_id):05d}"
 
-def create_user(username, password_hash):
+def create_user(username, password_hash, terms_accepted_at="", privacy_accepted_at=""):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -251,15 +255,19 @@ def create_user(username, password_hash):
         sql = """
             INSERT INTO users (
                 username,
-                password_hash
+                password_hash,
+                terms_accepted_at,
+                privacy_accepted_at
             )
-            VALUES (?, ?)
+            VALUES (?, ?, ?, ?)
             RETURNING id
         """
 
         execute_sql(cursor, sql, [
             username,
-            password_hash
+            password_hash,
+            terms_accepted_at or "",
+            privacy_accepted_at or ""
         ])
 
         new_user = cursor.fetchone()
@@ -269,14 +277,18 @@ def create_user(username, password_hash):
         sql = """
             INSERT INTO users (
                 username,
-                password_hash
+                password_hash,
+                terms_accepted_at,
+                privacy_accepted_at
             )
-            VALUES (?, ?)
+            VALUES (?, ?, ?, ?)
         """
 
         execute_sql(cursor, sql, [
             username,
-            password_hash
+            password_hash,
+            terms_accepted_at or "",
+            privacy_accepted_at or ""
         ])
 
         user_id = cursor.lastrowid
@@ -2470,6 +2482,8 @@ def migrate_db():
     add_user_column_if_not_exists("line_user_id", "TEXT")
     add_user_column_if_not_exists("line_bind_code", "TEXT")
     add_user_column_if_not_exists("line_bind_code_expires_at", "TEXT")
+    add_user_column_if_not_exists("terms_accepted_at", "TEXT")
+    add_user_column_if_not_exists("privacy_accepted_at", "TEXT")
 
     backfill_user_codes()
 
