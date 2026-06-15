@@ -29,9 +29,8 @@
 
 .cadouka-analysis-metrics-grid {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
-    align-items: stretch;
 }
 
 .cadouka-analysis-metric-card {
@@ -40,12 +39,6 @@
     border-radius: 16px;
     padding: 15px 14px;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-}
-
-.cadouka-analysis-meter-card {
-    grid-column: span 2;
-    min-height: 210px;
-    padding: 16px 16px 15px;
 }
 
 .cadouka-analysis-metric-top {
@@ -86,105 +79,6 @@
     font-size: 12px;
     line-height: 1.55;
     color: #6b7280;
-}
-
-.cadouka-analysis-meter {
-    position: relative;
-    margin: 10px auto 8px;
-    width: min(100%, 230px);
-    height: 128px;
-}
-
-.cadouka-analysis-meter-arc {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 230px;
-    height: 115px;
-    transform: translateX(-50%);
-    overflow: hidden;
-    border-radius: 230px 230px 0 0;
-    background: linear-gradient(90deg, #22c55e 0%, #60a5fa 50%, #f97316 100%);
-}
-
-.cadouka-analysis-meter-arc::after {
-    content: "";
-    position: absolute;
-    left: 24px;
-    right: 24px;
-    bottom: 0;
-    height: 91px;
-    border-radius: 190px 190px 0 0;
-    background: rgba(255, 255, 255, 0.88);
-}
-
-.cadouka-analysis-meter-needle-wrap {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 0;
-    height: 0;
-    transform: rotate(-90deg);
-    transform-origin: center bottom;
-    transition: transform 0.6s ease;
-    z-index: 3;
-}
-
-.cadouka-analysis-meter-needle {
-    display: block;
-    width: 4px;
-    height: 88px;
-    margin-left: -2px;
-    border-radius: 999px;
-    background: #111827;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
-}
-
-.cadouka-analysis-meter-center {
-    position: absolute;
-    left: 50%;
-    bottom: -6px;
-    width: 16px;
-    height: 16px;
-    transform: translateX(-50%);
-    border-radius: 999px;
-    background: #111827;
-    border: 3px solid #ffffff;
-    z-index: 4;
-}
-
-.cadouka-analysis-meter-value {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 8px;
-    text-align: center;
-    z-index: 5;
-}
-
-.cadouka-analysis-meter-value strong {
-    display: block;
-    font-size: 26px;
-    line-height: 1;
-    letter-spacing: -0.04em;
-    color: #111827;
-}
-
-.cadouka-analysis-meter-value span {
-    display: block;
-    margin-top: 3px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #6b7280;
-}
-
-.cadouka-analysis-meter-scale {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 2px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #9ca3af;
 }
 
 .cadouka-analysis-metric-card.level-good {
@@ -231,10 +125,6 @@
     .cadouka-analysis-metrics-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .cadouka-analysis-meter-card {
-        grid-column: span 2;
-    }
 }
 
 @media (max-width: 640px) {
@@ -247,19 +137,8 @@
         grid-template-columns: 1fr;
     }
 
-    .cadouka-analysis-meter-card,
     .cadouka-analysis-metric-card {
-        grid-column: span 1;
         padding: 14px;
-    }
-
-    .cadouka-analysis-meter {
-        width: min(100%, 220px);
-    }
-
-    .cadouka-analysis-meter-arc {
-        width: 220px;
-        height: 110px;
     }
 }
 </style>
@@ -545,62 +424,24 @@
 
                         <div class="cadouka-analysis-metrics-grid">
                             {% for indicator in advanced_indicators %}
-                                {% if indicator.key == "market_position" or indicator.key == "price_position" %}
-                                    <div
-                                        class="cadouka-analysis-metric-card cadouka-analysis-meter-card level-{{ indicator.level or 'neutral' }}"
-                                        data-meter-value="{{ indicator.meter_value if indicator.meter_value is defined and indicator.meter_value is not none else indicator.value }}"
-                                    >
-                                        <div class="cadouka-analysis-metric-top">
-                                            <span class="cadouka-analysis-metric-title">
-                                                市場位置
-                                            </span>
-                                            <span class="cadouka-analysis-metric-status">
-                                                {{ indicator.status }}
-                                            </span>
-                                        </div>
-
-                                        <div class="cadouka-analysis-meter">
-                                            <div class="cadouka-analysis-meter-arc"></div>
-                                            <div class="cadouka-analysis-meter-needle-wrap">
-                                                <span class="cadouka-analysis-meter-needle"></span>
-                                            </div>
-                                            <div class="cadouka-analysis-meter-center"></div>
-                                            <div class="cadouka-analysis-meter-value">
-                                                <strong>{{ indicator.value }}</strong>
-                                                <span>{{ indicator.status }}</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="cadouka-analysis-meter-scale">
-                                            <span>低點</span>
-                                            <span>合理</span>
-                                            <span>高點</span>
-                                        </div>
-
-                                        <p class="cadouka-analysis-metric-desc">
-                                            {{ indicator.description }}
-                                        </p>
+                                <div class="cadouka-analysis-metric-card level-{{ indicator.level or 'neutral' }}">
+                                    <div class="cadouka-analysis-metric-top">
+                                        <span class="cadouka-analysis-metric-title">
+                                            {{ indicator.title }}
+                                        </span>
+                                        <span class="cadouka-analysis-metric-status">
+                                            {{ indicator.status }}
+                                        </span>
                                     </div>
-                                {% else %}
-                                    <div class="cadouka-analysis-metric-card level-{{ indicator.level or 'neutral' }}">
-                                        <div class="cadouka-analysis-metric-top">
-                                            <span class="cadouka-analysis-metric-title">
-                                                {{ indicator.title }}
-                                            </span>
-                                            <span class="cadouka-analysis-metric-status">
-                                                {{ indicator.status }}
-                                            </span>
-                                        </div>
 
-                                        <div class="cadouka-analysis-metric-value">
-                                            {{ indicator.value }}
-                                        </div>
-
-                                        <p class="cadouka-analysis-metric-desc">
-                                            {{ indicator.description }}
-                                        </p>
+                                    <div class="cadouka-analysis-metric-value">
+                                        {{ indicator.value }}
                                     </div>
-                                {% endif %}
+
+                                    <p class="cadouka-analysis-metric-desc">
+                                        {{ indicator.description }}
+                                    </p>
+                                </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -785,26 +626,6 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const meters = document.querySelectorAll("[data-meter-value]");
-
-    meters.forEach(function (meter) {
-        const rawValue = meter.getAttribute("data-meter-value") || "0";
-        let meterValue = parseFloat(String(rawValue).replace("%", ""));
-
-        if (isNaN(meterValue)) {
-            meterValue = 0;
-        }
-
-        meterValue = Math.max(0, Math.min(100, meterValue));
-
-        const needle = meter.querySelector(".cadouka-analysis-meter-needle-wrap");
-
-        if (needle) {
-            const degree = (meterValue * 1.8) - 90;
-            needle.style.transform = "rotate(" + degree + "deg)";
-        }
-    });
-
     const tabs = document.querySelectorAll("[data-grade-tab]");
     const panels = document.querySelectorAll("[data-grade-panel]");
 
