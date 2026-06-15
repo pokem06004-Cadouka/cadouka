@@ -610,10 +610,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     )
 
     if os.path.exists(logo_path):
-        logo = load_logo_remove_white(logo_path, target_w=90, white_threshold=245)
+        logo = load_logo_remove_white(logo_path, target_w=110, white_threshold=245)
 
-        logo_x = 18
-        logo_y = 12
+        logo_x = 26
+        logo_y = 40
 
         card.paste(logo, (logo_x, logo_y), logo)
 
