@@ -13,8 +13,14 @@
 </div>
 
 <div class="list-tools">
-    <div class="page-subtitle">
-        共 {{ total_items }} 筆 LINE 使用紀錄，每頁 {{ per_page }} 筆。
+    <div class="list-bottom-tools">
+        <div class="page-subtitle">
+            共 {{ total_items }} 筆 LINE 使用紀錄，每頁 {{ per_page }} 筆。
+        </div>
+
+        <a href="/cdk-console/line-logs/export-excel" class="btn-secondary export-excel-btn">
+            匯出 Excel
+        </a>
     </div>
 </div>
 
@@ -26,6 +32,7 @@
                     <th>時間</th>
                     <th>用戶編號</th>
                     <th>用戶</th>
+                    <th>搜尋關鍵字</th>
                     <th>動作</th>
                     <th>結果</th>
                     <th>備註</th>
@@ -38,6 +45,7 @@
                         <td>{{ log.created_at }}</td>
                         <td>{{ log.user_code or "未綁定" }}</td>
                         <td>{{ log.display_name or log.username or "-" }}</td>
+                        <td>{{ log.search_keyword or "-" }}</td>
                         <td>{{ log.action }}</td>
 
                         <td>
@@ -58,7 +66,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="empty-cell">目前沒有 LINE 使用紀錄。</td>
+                        <td colspan="7" class="empty-cell">目前沒有 LINE 使用紀錄。</td>
                     </tr>
                 {% endfor %}
             </tbody>

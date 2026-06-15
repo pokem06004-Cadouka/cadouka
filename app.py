@@ -1550,6 +1550,64 @@ def admin_cards_page():
         per_page=per_page
     )
 
+
+
+def get_log_value(log, key, default=""):
+    try:
+        if isinstance(log, dict):
+            value = log.get(key, default)
+        else:
+            value = log[key]
+
+        return default if value is None else value
+    except:
+        return default
+
+
+def extract_line_log_search_keyword(log):
+    raw_keyword = str(get_log_value(log, "raw_keyword", "") or "").strip()
+    resolved_keyword = str(get_log_value(log, "resolved_keyword", "") or "").strip()
+    action = str(get_log_value(log, "action", "") or "").strip()
+    message = str(get_log_value(log, "message", "") or "").strip()
+
+    if raw_keyword:
+        return raw_keyword
+
+    if resolved_keyword:
+        return resolved_keyword
+
+    if action != "search":
+        return ""
+
+    # 舊資料如果沒有 raw_keyword，就從備註回推。
+    # 範例：查價成功：116 080 → 116 080，找到 6 筆商品
+    if "：" in message:
+        keyword_part = message.split("：", 1)[1].split("，", 1)[0].strip()
+
+        if "→" in keyword_part:
+            keyword_part = keyword_part.split("→", 1)[0].strip()
+
+        return keyword_part
+
+    return ""
+
+
+def prepare_line_log_rows(logs):
+    log_rows = []
+
+    for log in logs or []:
+        try:
+            log_dict = dict(log)
+        except:
+            log_dict = log
+
+        if isinstance(log_dict, dict):
+            log_dict["search_keyword"] = extract_line_log_search_keyword(log_dict)
+
+        log_rows.append(log_dict)
+
+    return log_rows
+
 @app.route("/cdk-console/line-logs")
 @login_required
 @admin_required
@@ -1580,6 +1638,8 @@ def admin_line_logs_page():
         offset=offset
     )
 
+    logs = prepare_line_log_rows(logs)
+
     return render_template(
         "admin_line_logs.html",
         logs=logs,
@@ -1587,6 +1647,101 @@ def admin_line_logs_page():
         total_pages=total_pages,
         total_items=total_items,
         per_page=per_page
+    )
+
+
+@app.route("/cdk-console/line-logs/export-excel")
+@login_required
+@admin_required
+def admin_line_logs_export_excel_page():
+    total_items = count_admin_line_logs()
+
+    logs = get_admin_line_logs(
+        limit=total_items if total_items > 0 else 1,
+        offset=0
+    )
+
+    logs = prepare_line_log_rows(logs)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "LINE 使用紀錄"
+
+    headers = [
+        "時間",
+        "用戶編號",
+        "用戶",
+        "搜尋關鍵字",
+        "動作",
+        "結果",
+        "備註",
+        "原始關鍵字",
+        "實際搜尋詞",
+        "商品數"
+    ]
+
+    ws.append(headers)
+
+    header_fill = PatternFill("solid", fgColor="DBEAFE")
+    header_font = Font(bold=True, color="111827")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    for log in logs:
+        raw_keyword = get_log_value(log, "raw_keyword", "")
+        resolved_keyword = get_log_value(log, "resolved_keyword", "")
+        search_keyword = get_log_value(log, "search_keyword", "")
+
+        ws.append([
+            get_log_value(log, "created_at", ""),
+            get_log_value(log, "user_code", "") or "未綁定",
+            get_log_value(log, "display_name", "") or get_log_value(log, "username", "") or "-",
+            search_keyword or "-",
+            get_log_value(log, "action", "") or "-",
+            get_log_value(log, "result", "") or "-",
+            get_log_value(log, "message", "") or "-",
+            raw_keyword or "-",
+            resolved_keyword or "-",
+            get_log_value(log, "product_count", "") if get_log_value(log, "product_count", "") != "" else "-"
+        ])
+
+    column_widths = {
+        "A": 24,
+        "B": 14,
+        "C": 18,
+        "D": 22,
+        "E": 20,
+        "F": 14,
+        "G": 48,
+        "H": 22,
+        "I": 22,
+        "J": 12
+    }
+
+    for column_letter, width in column_widths.items():
+        ws.column_dimensions[column_letter].width = width
+
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(vertical="center")
+
+    ws.freeze_panes = "A2"
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"cadouka_line_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 
