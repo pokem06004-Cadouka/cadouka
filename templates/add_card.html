@@ -12,13 +12,43 @@
     </div>
 </div>
 
-<form action="/cards/add" method="post" class="form-card form-card-polished">
+<form action="/cards/add" method="post" enctype="multipart/form-data" class="form-card form-card-polished">
 
     <input
         type="hidden"
         name="image_url"
         value="{{ prefill.image_url or '' }}"
     >
+
+    <div class="form-section image-upload-section">
+        <div class="form-section-title">
+            <h2>卡牌圖片</h2>
+            <p>可自行上傳圖片；若沒有上傳，系統會使用原本帶入的預設圖片。</p>
+        </div>
+
+        <div class="image-upload-panel">
+            <div class="image-preview-box">
+                {% if prefill.image_url %}
+                    <img src="{{ prefill.image_url }}" class="image-upload-preview-img" alt="目前預設圖片">
+                {% else %}
+                    <div class="image-upload-empty">尚無預設圖片</div>
+                {% endif %}
+            </div>
+
+            <div class="image-upload-fields">
+                <label>上傳自己的圖片</label>
+                <input
+                    type="file"
+                    name="card_image"
+                    accept="image/jpeg,image/png,image/webp"
+                    class="image-upload-input"
+                >
+                <p class="image-upload-help">
+                    支援 JPG、PNG、WEBP，建議 5MB 以下。若有上傳圖片，會優先使用你上傳的圖片；沒有上傳則使用預設圖片。
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="form-section">
         <div class="form-section-title">

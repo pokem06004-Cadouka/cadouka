@@ -12,7 +12,37 @@
     </div>
 </div>
 
-<form action="/cards/{{ card.id }}/edit" method="post" class="form-card form-card-polished">
+<form action="/cards/{{ card.id }}/edit" method="post" enctype="multipart/form-data" class="form-card form-card-polished">
+
+    <div class="form-section image-upload-section">
+        <div class="form-section-title">
+            <h2>卡牌圖片</h2>
+            <p>目前圖片會保留；若上傳新圖片，會優先替換成你上傳的圖片。</p>
+        </div>
+
+        <div class="image-upload-panel">
+            <div class="image-preview-box">
+                {% if card.image_url %}
+                    <img src="{{ card.image_url }}" class="image-upload-preview-img" alt="目前卡牌圖片">
+                {% else %}
+                    <div class="image-upload-empty">尚無圖片</div>
+                {% endif %}
+            </div>
+
+            <div class="image-upload-fields">
+                <label>更換圖片</label>
+                <input
+                    type="file"
+                    name="card_image"
+                    accept="image/jpeg,image/png,image/webp"
+                    class="image-upload-input"
+                >
+                <p class="image-upload-help">
+                    支援 JPG、PNG、WEBP，建議 5MB 以下。沒有選擇新圖片時，會保留目前圖片。
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="form-section">
         <div class="form-section-title">

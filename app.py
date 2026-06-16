@@ -41,6 +41,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET, headers, BASE_URL
 
@@ -146,6 +147,10 @@ from datetime import datetime, date, timedelta,timezone
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "cadouka-secret-key")
 
+# 圖片上傳限制：避免使用者上傳過大的圖片拖慢服務。
+CARD_IMAGE_MAX_MB = 5
+app.config["MAX_CONTENT_LENGTH"] = CARD_IMAGE_MAX_MB * 1024 * 1024
+
 LINE_LIFF_ID = os.getenv("LINE_LIFF_ID", "")
 
 init_db()
@@ -159,6 +164,80 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 # key = LINE user_id
 # value = 商品列表
 user_products = {}
+
+
+# =========================
+# Image Upload Helpers
+# =========================
+
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+
+
+def is_allowed_card_image(filename):
+    filename = filename or ""
+
+    if "." not in filename:
+        return False
+
+    extension = filename.rsplit(".", 1)[1].lower().strip()
+
+    return extension in ALLOWED_IMAGE_EXTENSIONS
+
+
+def upload_card_image_to_cloudinary(uploaded_file, user_id=None):
+    """
+    使用者上傳圖片優先於預設 image_url。
+    圖片實際存在 Cloudinary，資料庫只保存 secure_url。
+    """
+    if not uploaded_file or not uploaded_file.filename:
+        return ""
+
+    if not is_allowed_card_image(uploaded_file.filename):
+        raise ValueError("圖片格式不支援，請上傳 JPG、PNG 或 WEBP。")
+
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
+    api_key = os.getenv("CLOUDINARY_API_KEY", "").strip()
+    api_secret = os.getenv("CLOUDINARY_API_SECRET", "").strip()
+
+    if not cloud_name or not api_key or not api_secret:
+        raise ValueError("圖片上傳功能尚未設定完成，請先設定 Cloudinary 環境變數。")
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+    except ImportError:
+        raise ValueError("伺服器尚未安裝 cloudinary 套件，請在 requirements.txt 加上 cloudinary。")
+
+    cloudinary.config(
+        cloud_name=cloud_name,
+        api_key=api_key,
+        api_secret=api_secret,
+        secure=True
+    )
+
+    folder_user = f"user_{user_id}" if user_id else "unassigned"
+
+    try:
+        result = cloudinary.uploader.upload(
+            uploaded_file,
+            folder=f"cadouka/cards/{folder_user}",
+            resource_type="image",
+            use_filename=True,
+            unique_filename=True,
+            overwrite=False
+        )
+    except Exception as e:
+        print("Cloudinary 圖片上傳失敗：", e)
+        traceback.print_exc()
+        raise ValueError("圖片上傳失敗，請稍後再試或改用圖片網址。")
+
+    return result.get("secure_url") or result.get("url") or ""
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_uploaded_file_too_large(error):
+    flash(f"圖片檔案過大，請上傳 {CARD_IMAGE_MAX_MB}MB 以下圖片。", "warning")
+    return redirect(request.referrer or "/cards")
 
 
 # =========================
@@ -2954,8 +3033,23 @@ def add_card_page():
         platform_fee = 0
         other_fee = 0
 
-        # LINE/SNKRDUNK 新增時會帶入圖片網址；手動新增則可能為空
+        # LINE/SNKRDUNK 新增時會帶入預設圖片網址。
+        # 使用者若上傳圖片，優先使用使用者自己的圖片；沒有上傳才使用預設 image_url。
         image_url = request.form.get("image_url", "").strip()
+        uploaded_image_file = request.files.get("card_image")
+
+        if uploaded_image_file and uploaded_image_file.filename:
+            try:
+                uploaded_image_url = upload_card_image_to_cloudinary(
+                    uploaded_image_file,
+                    user_id=user_id
+                )
+
+                if uploaded_image_url:
+                    image_url = uploaded_image_url
+            except ValueError as e:
+                flash(str(e), "warning")
+                return redirect(request.referrer or "/cards/add")
 
         total_cost = calculate_total_cost(
             buy_price,
@@ -3150,8 +3244,22 @@ def edit_card_page(card_id):
         platform_fee = 0
         other_fee = 0
 
-        # 編輯時保留原本 image_url，不顯示給使用者修改
+        # 編輯時預設保留原本圖片；使用者若上傳新圖片，優先替換成使用者自己的圖片。
         image_url = card["image_url"] or ""
+        uploaded_image_file = request.files.get("card_image")
+
+        if uploaded_image_file and uploaded_image_file.filename:
+            try:
+                uploaded_image_url = upload_card_image_to_cloudinary(
+                    uploaded_image_file,
+                    user_id=user_id
+                )
+
+                if uploaded_image_url:
+                    image_url = uploaded_image_url
+            except ValueError as e:
+                flash(str(e), "warning")
+                return redirect(request.referrer or f"/cards/{card_id}/edit")
 
         total_cost = calculate_total_cost(
             buy_price,
