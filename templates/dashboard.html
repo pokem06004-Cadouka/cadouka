@@ -119,8 +119,13 @@
                                 <div class="holding-rank-image-box">
                                     {% if card.image_url %}
                                         <img
-                                            src="/crop-image?url={{ card.image_url | urlencode }}"
+                                            src="{{ get_optimized_image_url(card.image_url, 'thumb') }}"
                                             class="holding-rank-img holding-rank-cropped-img"
+                                            loading="lazy"
+                                            decoding="async"
+                                            width="72"
+                                            height="96"
+                                            alt="{{ card.card_display_name or card.card_name }}"
                                         >
                                     {% else %}
                                         <div class="holding-rank-no-img">No Image</div>
@@ -150,8 +155,13 @@
                                 <div class="holding-rank-image-box">
                                     {% if card.image_url %}
                                         <img
-                                            src="/crop-image?url={{ card.image_url | urlencode }}"
+                                            src="{{ get_optimized_image_url(card.image_url, 'thumb') }}"
                                             class="holding-rank-img holding-rank-cropped-img"
+                                            loading="lazy"
+                                            decoding="async"
+                                            width="72"
+                                            height="96"
+                                            alt="{{ card.card_display_name or card.card_name }}"
                                         >
                                     {% else %}
                                         <div class="holding-rank-no-img">No Image</div>
