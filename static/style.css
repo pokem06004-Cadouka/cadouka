@@ -2054,13 +2054,21 @@ a {
     }
 
     .form-submit-row {
-        flex-direction: column-reverse;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
     }
 
-    .form-submit-row .btn-secondary,
+    .form-submit-row .btn-secondary {
+        flex: 0 0 96px;
+        width: auto;
+        text-align: center;
+    }
+
     .form-submit-row .form-submit-btn {
-        width: 100%;
+        flex: 1 1 auto;
+        width: auto;
         text-align: center;
     }
 }
@@ -5259,113 +5267,5 @@ body.color-rise-red .pill-loss {
 
 .price-update-start-btn {
     white-space: nowrap;
-}
-
-
-/* =========================
-   Card Image Upload
-========================= */
-
-.image-upload-section {
-    border-color: #dbeafe;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-}
-
-.image-upload-panel {
-    display: grid;
-    grid-template-columns: 170px 1fr;
-    gap: 18px;
-    align-items: center;
-}
-
-.image-preview-box {
-    width: 170px;
-    min-height: 210px;
-    border-radius: 18px;
-    border: 1px solid #e5e7eb;
-    background: #f8fafc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.image-upload-preview-img {
-    width: 100%;
-    height: 210px;
-    object-fit: contain;
-    display: block;
-    background: #ffffff;
-}
-
-.image-upload-empty {
-    padding: 18px;
-    color: #9ca3af;
-    font-size: 13px;
-    font-weight: 800;
-    text-align: center;
-    line-height: 1.6;
-}
-
-.image-upload-fields {
-    min-width: 0;
-}
-
-.image-upload-input {
-    background: #ffffff !important;
-    cursor: pointer;
-}
-
-.image-upload-help {
-    margin: 9px 0 0 0;
-    color: #6b7280;
-    font-size: 13px;
-    line-height: 1.7;
-}
-
-
-.image-upload-status {
-    margin-top: 12px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    font-size: 13px;
-    font-weight: 800;
-    line-height: 1.6;
-    background: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #bfdbfe;
-}
-
-.image-upload-status.is-loading {
-    background: #fffbeb;
-    color: #92400e;
-    border-color: #fde68a;
-}
-
-.image-upload-status.is-error {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fecaca;
-}
-
-.form-submit-btn:disabled {
-    opacity: 0.72;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-@media (max-width: 760px) {
-    .image-upload-panel {
-        grid-template-columns: 1fr;
-    }
-
-    .image-preview-box {
-        width: 100%;
-        min-height: 190px;
-    }
-
-    .image-upload-preview-img {
-        height: 220px;
-    }
 }
 
