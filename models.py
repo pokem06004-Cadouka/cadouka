@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import datetime, timedelta
 
 import psycopg2
 import psycopg2.extras
@@ -1212,6 +1213,94 @@ def count_admin_line_logs():
 
     conn.close()
     return result["count"] or 0
+
+
+def cleanup_old_line_logs(retention_days=90, max_rows=50000):
+    """
+    清理 LINE 使用紀錄，避免 line_logs 無限膨脹。
+
+    規則：
+    1. 刪除超過 retention_days 天的資料
+    2. 若仍超過 max_rows 筆，只保留最新 max_rows 筆
+    """
+    try:
+        retention_days = int(retention_days or 90)
+    except:
+        retention_days = 90
+
+    try:
+        max_rows = int(max_rows or 50000)
+    except:
+        max_rows = 50000
+
+    if retention_days < 1:
+        retention_days = 90
+
+    if max_rows < 1000:
+        max_rows = 1000
+
+    cutoff_dt = datetime.now() - timedelta(days=retention_days)
+    cutoff_text = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM line_logs")
+    before_row = cursor.fetchone()
+    before_count = before_row["count"] or 0
+
+    # 先刪掉超過保留天數的紀錄。
+    execute_sql(cursor, "DELETE FROM line_logs WHERE created_at < ?", [cutoff_text])
+    deleted_by_age = cursor.rowcount if cursor.rowcount is not None and cursor.rowcount >= 0 else 0
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM line_logs")
+    middle_row = cursor.fetchone()
+    middle_count = middle_row["count"] or 0
+
+    deleted_by_limit = 0
+
+    # 再用總筆數上限保護資料庫。
+    if middle_count > max_rows:
+        if is_postgres():
+            sql = """
+                DELETE FROM line_logs
+                WHERE id NOT IN (
+                    SELECT id
+                    FROM line_logs
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ?
+                )
+            """
+        else:
+            sql = """
+                DELETE FROM line_logs
+                WHERE id NOT IN (
+                    SELECT id
+                    FROM line_logs
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ?
+                )
+            """
+
+        execute_sql(cursor, sql, [max_rows])
+        deleted_by_limit = cursor.rowcount if cursor.rowcount is not None and cursor.rowcount >= 0 else 0
+
+    execute_sql(cursor, "SELECT COUNT(*) AS count FROM line_logs")
+    after_row = cursor.fetchone()
+    after_count = after_row["count"] or 0
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "before_count": before_count,
+        "after_count": after_count,
+        "deleted_count": max(0, before_count - after_count),
+        "deleted_by_age": deleted_by_age,
+        "deleted_by_limit": deleted_by_limit,
+        "retention_days": retention_days,
+        "max_rows": max_rows
+    }
 
 
 def get_line_search_popular_keywords(limit=50):

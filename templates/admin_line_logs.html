@@ -18,9 +18,21 @@
             共 {{ total_items }} 筆 LINE 使用紀錄，每頁 {{ per_page }} 筆。
         </div>
 
-        <a href="/cdk-console/line-logs/export-excel" class="btn-secondary export-excel-btn">
-            匯出 Excel
-        </a>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <form
+                action="/cdk-console/line-logs/cleanup"
+                method="post"
+                onsubmit="return confirm('確定要清理 90 天前的 LINE 紀錄，並刪除過舊的暫存行情圖嗎？')"
+            >
+                <button type="submit" class="btn-secondary export-excel-btn">
+                    清理舊紀錄
+                </button>
+            </form>
+
+            <a href="/cdk-console/line-logs/export-excel" class="btn-secondary export-excel-btn">
+                匯出 Excel
+            </a>
+        </div>
     </div>
 </div>
 

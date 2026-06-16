@@ -65,7 +65,7 @@ from flex_messages import (
 )
 
 from exchange import get_jpy_spot_sell
-from image_utils import crop_white_border, generate_market_card_image
+from image_utils import crop_white_border, generate_market_card_image, cleanup_generated_images
 
 from models import (
     init_db,
@@ -103,6 +103,7 @@ from models import (
     add_line_log,
     get_admin_line_logs,
     count_admin_line_logs,
+    cleanup_old_line_logs,
     get_line_search_popular_keywords,
     get_line_search_no_result_keywords,
     get_recent_line_search_logs,
@@ -164,6 +165,40 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 # key = LINE user_id
 # value = 商品列表
 user_products = {}
+
+
+# =========================
+# Cleanup Settings
+# =========================
+
+LINE_LOG_RETENTION_DAYS = int(os.getenv("LINE_LOG_RETENTION_DAYS", "90"))
+LINE_LOG_MAX_ROWS = int(os.getenv("LINE_LOG_MAX_ROWS", "50000"))
+LINE_LOG_CLEANUP_INTERVAL_SECONDS = int(os.getenv("LINE_LOG_CLEANUP_INTERVAL_SECONDS", "21600"))
+
+GENERATED_IMAGE_MAX_AGE_HOURS = int(os.getenv("GENERATED_IMAGE_MAX_AGE_HOURS", "24"))
+GENERATED_IMAGE_MAX_FILES = int(os.getenv("GENERATED_IMAGE_MAX_FILES", "300"))
+
+_last_line_log_cleanup_at = 0
+
+
+def cleanup_line_logs_if_needed(force=False):
+    """
+    不需要 worker：LINE 寫入 log 時順手清理舊資料。
+    預設 6 小時最多自動清一次，避免每則訊息都掃資料庫。
+    """
+    global _last_line_log_cleanup_at
+
+    now_ts = datetime.now().timestamp()
+
+    if not force and now_ts - _last_line_log_cleanup_at < LINE_LOG_CLEANUP_INTERVAL_SECONDS:
+        return None
+
+    _last_line_log_cleanup_at = now_ts
+
+    return cleanup_old_line_logs(
+        retention_days=LINE_LOG_RETENTION_DAYS,
+        max_rows=LINE_LOG_MAX_ROWS
+    )
 
 
 # =========================
@@ -528,6 +563,15 @@ def safe_add_line_log(
             resolved_keyword=resolved_keyword,
             product_count=product_count
         )
+
+        try:
+            cleanup_result = cleanup_line_logs_if_needed(force=False)
+
+            if cleanup_result and cleanup_result.get("deleted_count", 0) > 0:
+                print("LINE logs 自動清理：", cleanup_result, flush=True)
+        except Exception as cleanup_error:
+            print("LINE logs 自動清理失敗：", cleanup_error, flush=True)
+
     except Exception as e:
         print("LINE log 寫入失敗：", e)
         traceback.print_exc()
@@ -2109,6 +2153,33 @@ def admin_line_logs_page():
         total_items=total_items,
         per_page=per_page
     )
+
+
+@app.route("/cdk-console/line-logs/cleanup", methods=["POST"])
+@login_required
+@admin_required
+def admin_line_logs_cleanup_page():
+    try:
+        log_result = cleanup_line_logs_if_needed(force=True)
+        image_result = cleanup_generated_images(
+            max_age_hours=GENERATED_IMAGE_MAX_AGE_HOURS,
+            max_files=GENERATED_IMAGE_MAX_FILES
+        )
+
+        deleted_logs = (log_result or {}).get("deleted_count", 0)
+        deleted_images = (image_result or {}).get("deleted_count", 0)
+
+        flash(
+            f"清理完成：刪除 LINE 紀錄 {deleted_logs} 筆、暫存圖片 {deleted_images} 張。",
+            "success"
+        )
+
+    except Exception as e:
+        print("LINE logs 手動清理失敗：", e)
+        traceback.print_exc()
+        flash("清理失敗，請查看 Render Logs。", "error")
+
+    return redirect("/cdk-console/line-logs")
 
 
 @app.route("/cdk-console/line-logs/export-excel")

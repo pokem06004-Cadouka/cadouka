@@ -1,6 +1,7 @@
 import io
 import os
 import uuid
+import time
 import urllib.request as req
 from pathlib import Path
 
@@ -105,6 +106,96 @@ GENERATED_DIR = os.path.join("static", "generated")
 
 def ensure_generated_dir():
     os.makedirs(GENERATED_DIR, exist_ok=True)
+
+
+def cleanup_generated_images(max_age_hours=24, max_files=300):
+    """
+    清理 LINE 行情圖卡 / debug 圖等暫存圖片。
+
+    - 預設刪除 static/generated 內超過 24 小時的圖片
+    - 另外最多只保留最新 max_files 張，避免 Render 磁碟被暫存圖塞滿
+    - 只處理常見圖片副檔名，不會刪其他檔案
+    """
+    ensure_generated_dir()
+
+    allowed_suffixes = {".png", ".jpg", ".jpeg", ".webp"}
+    now = time.time()
+    max_age_seconds = max(1, int(max_age_hours or 24)) * 60 * 60
+
+    scanned_count = 0
+    deleted_count = 0
+    remaining_files = []
+
+    generated_path = Path(GENERATED_DIR)
+
+    for file_path in generated_path.iterdir():
+        try:
+            if not file_path.is_file():
+                continue
+
+            if file_path.suffix.lower() not in allowed_suffixes:
+                continue
+
+            scanned_count += 1
+            mtime = file_path.stat().st_mtime
+
+            if now - mtime > max_age_seconds:
+                file_path.unlink()
+                deleted_count += 1
+            else:
+                remaining_files.append((mtime, file_path))
+
+        except Exception as e:
+            print("清理 generated 圖片失敗：", file_path, e, flush=True)
+
+    # 安全上限：就算都沒超過 24 小時，也避免瞬間大量 LINE 查價把資料夾塞滿。
+    try:
+        max_files = int(max_files or 0)
+    except:
+        max_files = 0
+
+    if max_files > 0 and len(remaining_files) > max_files:
+        remaining_files.sort(key=lambda item: item[0], reverse=True)
+        old_files = remaining_files[max_files:]
+
+        for _, file_path in old_files:
+            try:
+                file_path.unlink()
+                deleted_count += 1
+            except Exception as e:
+                print("清理 generated 超量圖片失敗：", file_path, e, flush=True)
+
+    return {
+        "scanned_count": scanned_count,
+        "deleted_count": deleted_count
+    }
+
+
+def maybe_cleanup_generated_images(max_age_hours=24, max_files=300, min_interval_seconds=3600):
+    """
+    避免每次產圖都掃資料夾；預設一小時最多自動清一次。
+    """
+    global _last_generated_cleanup_at
+
+    try:
+        last_cleanup_at = _last_generated_cleanup_at
+    except NameError:
+        last_cleanup_at = 0
+
+    now = time.time()
+
+    if now - last_cleanup_at < int(min_interval_seconds or 3600):
+        return {
+            "skipped": True,
+            "deleted_count": 0
+        }
+
+    _last_generated_cleanup_at = now
+
+    return cleanup_generated_images(
+        max_age_hours=max_age_hours,
+        max_files=max_files
+    )
 
 def save_debug_image(image_data, filename):
     """
@@ -574,6 +665,11 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     """
 
     ensure_generated_dir()
+    maybe_cleanup_generated_images(
+        max_age_hours=int(os.getenv("GENERATED_IMAGE_MAX_AGE_HOURS", "24")),
+        max_files=int(os.getenv("GENERATED_IMAGE_MAX_FILES", "300")),
+        min_interval_seconds=int(os.getenv("GENERATED_IMAGE_CLEANUP_INTERVAL_SECONDS", "3600"))
+    )
 
     product_name = format_product_name_for_card(product.get("name"))
     image_url = product.get("image") or ""
