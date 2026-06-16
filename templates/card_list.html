@@ -14,6 +14,15 @@
         {% if cards %}
             <button
                 type="button"
+                class="btn-secondary price-update-start-btn"
+                id="startAllPriceUpdateBtn"
+                onclick="startPriceUpdate('all')"
+            >
+                更新市價
+            </button>
+
+            <button
+                type="button"
                 class="btn-secondary"
                 id="bulkDeleteModeBtn"
                 onclick="enableBulkDeleteMode()"
@@ -140,22 +149,48 @@
 
 </div>
 
-{% if latest_price_update_job %}
-<div class="price-update-status-card price-update-status-{{ latest_price_update_job.status or 'pending' }}">
+<div class="price-update-status-card price-update-status-idle" id="priceUpdatePanel" style="display: none;">
     <div class="price-update-status-main">
         <div>
-            <div class="price-update-status-label">市價更新任務</div>
+            <div class="price-update-status-label">市價更新進度</div>
+            <div class="price-update-status-title" id="priceUpdateTitle">準備更新</div>
+        </div>
+
+        <div class="price-update-status-meta" id="priceUpdateMeta">
+            Web 分批更新
+        </div>
+    </div>
+
+    <div class="price-update-progress-track">
+        <div class="price-update-progress-bar" id="priceUpdateProgressBar" style="width: 0%;"></div>
+    </div>
+
+    <div class="price-update-status-counts">
+        <span id="priceUpdateTotalText">總數 0</span>
+        <span id="priceUpdateUpdatedText">成功 0</span>
+        <span id="priceUpdateSkippedText">略過 0</span>
+        <span id="priceUpdateFailedText">失敗 0</span>
+    </div>
+
+    <div class="price-update-status-message" id="priceUpdateMessage">
+        按下更新後，系統會每次處理少量卡牌，避免 Render 免費方案 request timeout。
+    </div>
+
+    <div class="price-update-status-hint" id="priceUpdateHint">
+        更新過程請先停留在此頁；關掉頁面會中斷本次分批更新，但不會影響已更新完成的卡牌。
+    </div>
+</div>
+
+{% if latest_price_update_job and latest_price_update_job.status in ["done", "failed"] %}
+<div class="price-update-status-card price-update-status-{{ latest_price_update_job.status }}">
+    <div class="price-update-status-main">
+        <div>
+            <div class="price-update-status-label">上次市價更新</div>
             <div class="price-update-status-title">
-                {% if latest_price_update_job.status == "pending" %}
-                    等待背景更新
-                {% elif latest_price_update_job.status == "running" %}
-                    更新中
-                {% elif latest_price_update_job.status == "done" %}
+                {% if latest_price_update_job.status == "done" %}
                     更新完成
-                {% elif latest_price_update_job.status == "failed" %}
-                    更新失敗
                 {% else %}
-                    {{ latest_price_update_job.status or "等待中" }}
+                    更新失敗
                 {% endif %}
             </div>
         </div>
@@ -180,12 +215,6 @@
     {% if latest_price_update_job.message %}
         <div class="price-update-status-message">
             {{ latest_price_update_job.message }}
-        </div>
-    {% endif %}
-
-    {% if latest_price_update_job.status in ["pending", "running"] %}
-        <div class="price-update-status-hint">
-            背景 worker 會自動處理，不需要停留在此頁。稍後重新整理即可看到最新市價。
         </div>
     {% endif %}
 </div>
@@ -406,11 +435,10 @@
                     <td class="refresh-cell">
                         {% if card.status == "holding" %}
                             <button
-                                type="submit"
-                                formaction="/cards/{{ card.id }}/refresh-price"
-                                formmethod="post"
-                                class="list-refresh-btn"
-                                title="加入背景更新任務"
+                                type="button"
+                                class="list-refresh-btn price-update-single-btn"
+                                title="更新此卡市價"
+                                onclick="startPriceUpdate('single', {{ card.id }})"
                             >
                                 ⟳
                             </button>
@@ -547,13 +575,12 @@
 
                 {% if card.status == "holding" %}
                     <button
-                        type="submit"
-                        formaction="/cards/{{ card.id }}/refresh-price"
-                        formmethod="post"
-                        class="btn-secondary mobile-refresh-btn list-refresh-btn"
-                        title="加入背景更新任務"
+                        type="button"
+                        class="btn-secondary mobile-refresh-btn list-refresh-btn price-update-single-btn"
+                        title="更新此卡市價"
+                        onclick="startPriceUpdate('single', {{ card.id }})"
                     >
-                        ⟳ 加入更新
+                        ⟳ 更新市價
                     </button>
                 {% endif %}
             </div>
@@ -639,6 +666,9 @@
 {% endif %}
 
 <script>
+    const AUTO_PRICE_UPDATE_MODE = "{{ auto_price_update_mode or '' }}";
+    const AUTO_PRICE_UPDATE_CARD_ID = "{{ auto_price_update_card_id or '' }}";
+
     function getVisibleCardCheckboxes() {
         const checkboxes = document.querySelectorAll(".card-select-checkbox");
 
@@ -646,6 +676,7 @@
             return checkbox.offsetParent !== null;
         });
     }
+
     function enableBulkDeleteMode() {
         document.body.classList.add("bulk-delete-mode");
 
@@ -734,22 +765,236 @@
         document.getElementById("bulkDeleteForm").submit();
     }
 
-    document.addEventListener("click", function (event) {
-    const refreshButton = event.target.closest(".list-refresh-btn");
+    let isPriceUpdateRunning = false;
 
-    if (refreshButton) {
+    function setPriceUpdateButtonsDisabled(disabled) {
+        const buttons = document.querySelectorAll(".price-update-start-btn, .price-update-single-btn");
+
+        buttons.forEach(function (button) {
+            button.disabled = disabled;
+            button.classList.toggle("is-disabled", disabled);
+        });
+    }
+
+    function showPriceUpdatePanel(status) {
+        const panel = document.getElementById("priceUpdatePanel");
+
+        if (!panel) {
+            return;
+        }
+
+        panel.style.display = "block";
+        panel.classList.remove(
+            "price-update-status-idle",
+            "price-update-status-pending",
+            "price-update-status-running",
+            "price-update-status-done",
+            "price-update-status-failed"
+        );
+        panel.classList.add("price-update-status-" + status);
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function updatePriceUpdatePanel(options) {
+        const total = options.total || 0;
+        const updated = options.updated || 0;
+        const skipped = options.skipped || 0;
+        const failed = options.failed || 0;
+        const done = updated + skipped + failed;
+        const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+
+        const title = document.getElementById("priceUpdateTitle");
+        const meta = document.getElementById("priceUpdateMeta");
+        const message = document.getElementById("priceUpdateMessage");
+        const hint = document.getElementById("priceUpdateHint");
+        const bar = document.getElementById("priceUpdateProgressBar");
+        const totalText = document.getElementById("priceUpdateTotalText");
+        const updatedText = document.getElementById("priceUpdateUpdatedText");
+        const skippedText = document.getElementById("priceUpdateSkippedText");
+        const failedText = document.getElementById("priceUpdateFailedText");
+
+        if (title) title.textContent = options.title || "更新中";
+        if (meta) meta.textContent = options.meta || (percent + "%");
+        if (message) message.textContent = options.message || "正在分批更新市價...";
+        if (hint) hint.textContent = options.hint || "更新過程請先停留在此頁，完成後會自動重新整理。";
+        if (bar) bar.style.width = percent + "%";
+        if (totalText) totalText.textContent = "總數 " + total;
+        if (updatedText) updatedText.textContent = "成功 " + updated;
+        if (skippedText) skippedText.textContent = "略過 " + skipped;
+        if (failedText) failedText.textContent = "失敗 " + failed;
+    }
+
+    function sleep(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
+
+    async function startPriceUpdate(mode, cardId) {
+        if (isPriceUpdateRunning) {
+            return;
+        }
+
+        isPriceUpdateRunning = true;
+        setPriceUpdateButtonsDisabled(true);
         sessionStorage.setItem("cadoukaCardsScrollY", window.scrollY);
-    }
-});
 
-window.addEventListener("load", function () {
-    const savedScrollY = sessionStorage.getItem("cadoukaCardsScrollY");
+        showPriceUpdatePanel("running");
+        updatePriceUpdatePanel({
+            title: "準備更新",
+            meta: mode === "single" ? "單張更新" : "全部更新",
+            message: "正在建立分批更新流程...",
+            hint: "這版不需要 worker.py，但更新過程請先停留在此頁。"
+        });
 
-    if (savedScrollY !== null) {
-        window.scrollTo(0, parseInt(savedScrollY, 10));
-        sessionStorage.removeItem("cadoukaCardsScrollY");
+        try {
+            const startResponse = await fetch("/cards/refresh-prices/start", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    mode: mode || "all",
+                    card_id: cardId || null
+                })
+            });
+
+            const startData = await startResponse.json();
+
+            if (!startData.success) {
+                showPriceUpdatePanel("failed");
+                updatePriceUpdatePanel({
+                    title: "無法開始更新",
+                    meta: "請稍後再試",
+                    message: startData.message || "建立更新流程失敗",
+                    hint: "如果 10 分鐘內更新過全部市價，需要稍後才能再次更新。"
+                });
+                return;
+            }
+
+            const jobId = startData.job_id;
+            const cardIds = startData.card_ids || [];
+            const total = startData.total_count || cardIds.length || 0;
+            const batchSize = startData.batch_size || 2;
+
+            if (cardIds.length === 0) {
+                showPriceUpdatePanel("done");
+                updatePriceUpdatePanel({
+                    title: "沒有需要更新的卡牌",
+                    meta: "已完成",
+                    total: 0,
+                    updated: 0,
+                    skipped: 0,
+                    failed: 0,
+                    message: "目前沒有符合更新條件的卡牌。",
+                    hint: "可能是 6 小時內已更新過，或卡牌沒有商品網址。"
+                });
+                return;
+            }
+
+            let updated = 0;
+            let skipped = 0;
+            let failed = 0;
+
+            for (let index = 0; index < cardIds.length; index += batchSize) {
+                const batch = cardIds.slice(index, index + batchSize);
+                const isLast = index + batchSize >= cardIds.length;
+
+                showPriceUpdatePanel("running");
+                updatePriceUpdatePanel({
+                    title: "更新中",
+                    meta: "處理 " + Math.min(index + batch.length, total) + " / " + total,
+                    total: total,
+                    updated: updated,
+                    skipped: skipped,
+                    failed: failed,
+                    message: "正在更新第 " + (index + 1) + "～" + Math.min(index + batch.length, total) + " 張卡牌...",
+                    hint: "系統會一批一批更新，避免 Render 免費方案 request timeout。"
+                });
+
+                const batchResponse = await fetch("/cards/refresh-prices/batch", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        job_id: jobId,
+                        card_ids: batch,
+                        is_last: isLast
+                    })
+                });
+
+                const batchData = await batchResponse.json();
+
+                if (!batchData.success) {
+                    throw new Error(batchData.message || "分批更新失敗");
+                }
+
+                updated = batchData.updated_count || 0;
+                skipped = batchData.skipped_count || 0;
+                failed = batchData.failed_count || 0;
+
+                updatePriceUpdatePanel({
+                    title: batchData.status === "done" ? "更新完成" : "更新中",
+                    meta: Math.min(updated + skipped + failed, total) + " / " + total,
+                    total: total,
+                    updated: updated,
+                    skipped: skipped,
+                    failed: failed,
+                    message: batchData.message || "分批更新中",
+                    hint: "更新完成後會自動重新整理頁面。"
+                });
+
+                await sleep(450);
+            }
+
+            showPriceUpdatePanel("done");
+            updatePriceUpdatePanel({
+                title: "更新完成",
+                meta: "100%",
+                total: total,
+                updated: updated,
+                skipped: skipped,
+                failed: failed,
+                message: "更新完成：成功 " + updated + " 張、略過 " + skipped + " 張、失敗 " + failed + " 張。",
+                hint: "頁面即將重新整理，讓你看到最新市價。"
+            });
+
+            setTimeout(function () {
+                window.location.href = "/cards";
+            }, 900);
+
+        } catch (error) {
+            console.error(error);
+            showPriceUpdatePanel("failed");
+            updatePriceUpdatePanel({
+                title: "更新中斷",
+                meta: "發生錯誤",
+                message: error.message || "更新過程發生錯誤，請稍後再試。",
+                hint: "已完成更新的卡牌會保留結果；可以稍後再重新按一次更新市價。"
+            });
+        } finally {
+            isPriceUpdateRunning = false;
+            setPriceUpdateButtonsDisabled(false);
+        }
     }
-});
+
+    window.addEventListener("load", function () {
+        const savedScrollY = sessionStorage.getItem("cadoukaCardsScrollY");
+
+        if (savedScrollY !== null) {
+            window.scrollTo(0, parseInt(savedScrollY, 10));
+            sessionStorage.removeItem("cadoukaCardsScrollY");
+        }
+
+        if (AUTO_PRICE_UPDATE_MODE === "all") {
+            startPriceUpdate("all");
+        }
+
+        if (AUTO_PRICE_UPDATE_MODE === "single" && AUTO_PRICE_UPDATE_CARD_ID) {
+            startPriceUpdate("single", parseInt(AUTO_PRICE_UPDATE_CARD_ID, 10));
+        }
+    });
 </script>
 
 {% endblock %}

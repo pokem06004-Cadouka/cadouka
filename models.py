@@ -2851,6 +2851,47 @@ def finish_price_update_job(job_id, status, message, finished_at, updated_count=
     conn.commit()
     conn.close()
 
+
+
+def fail_stale_price_update_jobs(user_id=None, stale_minutes=30):
+    """
+    Web-only 分批更新用：
+    如果使用者關掉頁面或網路中斷，running/pending 任務可能不會被正常完成。
+    這個 helper 會把太久沒有結束的任務標成 failed，避免永遠卡住更新鎖。
+    """
+    import datetime
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(minutes=stale_minutes)
+    cutoff_text = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+    finished_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE price_update_jobs
+        SET
+            status = 'failed',
+            message = '更新逾時或頁面中斷，已自動結束。請重新按更新市價。',
+            finished_at = ?
+        WHERE status IN ('pending', 'running')
+        AND created_at < ?
+    """
+
+    params = [finished_at, cutoff_text]
+
+    if user_id is not None:
+        sql += " AND user_id = ?"
+        params.append(user_id)
+
+    execute_sql(cursor, sql, params)
+    changed = cursor.rowcount
+
+    conn.commit()
+    conn.close()
+
+    return changed
+
 # =========================
 # Migration Helpers
 # =========================

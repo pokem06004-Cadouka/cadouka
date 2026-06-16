@@ -124,9 +124,18 @@ from models import (
     bulk_import_search_aliases,
 
     create_price_update_job,
+    get_price_update_job,
     get_latest_price_update_job_for_user,
     has_recent_price_update_job,
-    has_active_price_update_job
+    has_active_price_update_job,
+    mark_price_update_job_running,
+    update_price_update_job_progress,
+    finish_price_update_job,
+    fail_stale_price_update_jobs,
+    get_jpy_rate_cache,
+    upsert_jpy_rate_cache,
+    get_market_price_cache,
+    upsert_market_price_cache
 )
 
 from calculations import calculate_total_cost
@@ -1124,6 +1133,306 @@ def should_skip_price_update(price_updated_at, cooldown_hours=6):
         return diff < timedelta(hours=cooldown_hours)
     except:
         return False
+
+
+# =========================
+# Web-only Batch Price Update Helpers
+# =========================
+
+PRICE_UPDATE_COOLDOWN_HOURS = 6
+MARKET_PRICE_CACHE_HOURS = 6
+JPY_RATE_CACHE_HOURS = 6
+PRICE_UPDATE_BATCH_SIZE = int(os.getenv("PRICE_UPDATE_BATCH_SIZE", "2"))
+PRICE_UPDATE_STALE_MINUTES = 10
+PRICE_UPDATE_LOCK_MINUTES = 10
+
+
+def parse_update_datetime(value):
+    if not value:
+        return None
+
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+
+    text = str(value).strip()
+
+    if not text:
+        return None
+
+    text = text.replace("T", " ").split(".")[0]
+
+    for fmt in ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"]:
+        try:
+            return datetime.strptime(text[:19], fmt)
+        except:
+            continue
+
+    return None
+
+
+def is_cache_valid(updated_at, cache_hours=6):
+    updated_dt = parse_update_datetime(updated_at)
+
+    if not updated_dt:
+        return False
+
+    now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+    return (now - updated_dt) < timedelta(hours=cache_hours)
+
+
+def get_cached_jpy_spot_sell():
+    """
+    日圓匯率 6 小時快取。
+    抓不到新匯率時，如果資料庫裡有舊匯率，先用舊值避免更新整批失敗。
+    """
+    cache = get_jpy_rate_cache()
+
+    if cache:
+        try:
+            cached_rate = float(get_card_value(cache, "rate", 0) or 0)
+        except:
+            cached_rate = 0
+
+        if cached_rate > 0 and is_cache_valid(
+            get_card_value(cache, "updated_at", ""),
+            cache_hours=JPY_RATE_CACHE_HOURS
+        ):
+            return cached_rate
+    else:
+        cached_rate = 0
+
+    try:
+        fresh_rate = float(get_jpy_spot_sell() or 0)
+    except Exception as e:
+        print("日圓匯率取得失敗：", e)
+        fresh_rate = 0
+
+    if fresh_rate > 0:
+        upsert_jpy_rate_cache(
+            rate=fresh_rate,
+            updated_at=get_taiwan_now_text()
+        )
+        return fresh_rate
+
+    if cached_rate > 0:
+        return cached_rate
+
+    return 0
+
+
+def normalize_market_grade_for_card(card):
+    grade = str(get_card_value(card, "grade", "") or "").strip()
+    allowed_grades = get_pro_conditions()
+
+    if grade in allowed_grades:
+        return grade
+
+    return "PSA10"
+
+
+def calculate_average_jpy_from_prices(prices):
+    valid_prices = []
+
+    for item in prices or []:
+        jpy_price = parse_jpy_price(item.get("price"))
+
+        if jpy_price is not None:
+            valid_prices.append(jpy_price)
+
+    if not valid_prices:
+        return 0
+
+    return round(sum(valid_prices) / len(valid_prices))
+
+
+def get_market_price_by_product_url_cached(product_url, grade="PSA10"):
+    """
+    商品市價快取：同 product_id + grade 在 6 小時內只抓一次 SNKRDUNK。
+    回傳 (market_price_twd, source_text)。
+    """
+    if not product_url:
+        return 0, "no_product_url"
+
+    product_id = get_product_id(product_url)
+
+    if not product_id:
+        return 0, "invalid_product_url"
+
+    grade = grade or "PSA10"
+    cache = get_market_price_cache(product_id, grade)
+
+    if cache and is_cache_valid(
+        get_card_value(cache, "updated_at", ""),
+        cache_hours=MARKET_PRICE_CACHE_HOURS
+    ):
+        try:
+            cached_price = round(float(get_card_value(cache, "market_price_twd", 0) or 0))
+        except:
+            cached_price = 0
+
+        return cached_price, "cache"
+
+    jpy_rate = get_cached_jpy_spot_sell()
+
+    if not jpy_rate:
+        return 0, "no_jpy_rate"
+
+    price_url = build_sales_history_url(
+        product_id,
+        condition=grade,
+        page=1,
+        per_page=20
+    )
+
+    prices = getprice(price_url)
+    market_price_twd = calculate_market_price_from_prices(prices, jpy_rate)
+    average_jpy = calculate_average_jpy_from_prices(prices)
+
+    upsert_market_price_cache(
+        product_id=product_id,
+        grade=grade,
+        market_price_twd=market_price_twd,
+        average_jpy=average_jpy,
+        jpy_rate=jpy_rate,
+        updated_at=get_taiwan_now_text(),
+        source="SNKRDUNK"
+    )
+
+    return market_price_twd, "external"
+
+
+def collect_price_update_card_ids(user_id, mode="all", card_id=None):
+    """
+    找出本次需要更新的卡牌。
+    全部更新只挑：持有中、有商品網址、6 小時內未更新過。
+    """
+    if mode == "single":
+        card = get_card_by_id(card_id, user_id=user_id)
+
+        if not card:
+            return []
+
+        card_dict = dict(card)
+
+        if card_dict.get("status") != "holding":
+            return []
+
+        return [int(card_id)]
+
+    cards = get_all_cards(
+        status="holding",
+        keyword=None,
+        sort=None,
+        user_id=user_id
+    )
+
+    card_ids = []
+
+    for card in cards or []:
+        card_dict = dict(card)
+
+        if not card_dict.get("product_url"):
+            continue
+
+        if should_skip_price_update(
+            card_dict.get("price_updated_at"),
+            cooldown_hours=PRICE_UPDATE_COOLDOWN_HOURS
+        ):
+            continue
+
+        card_ids.append(int(card_dict.get("id")))
+
+    return card_ids
+
+
+def process_one_card_market_price_update(card_id, user_id):
+    """
+    實際更新單張卡。
+    這個 function 會被 AJAX 分批呼叫使用，不需要背景 worker。
+    """
+    try:
+        card = get_card_by_id(card_id, user_id=user_id)
+
+        if not card:
+            return {
+                "status": "failed",
+                "card_id": card_id,
+                "message": "找不到卡牌"
+            }
+
+        card_dict = dict(card)
+
+        if card_dict.get("status") != "holding":
+            return {
+                "status": "skipped",
+                "card_id": card_id,
+                "message": "已售出卡牌略過"
+            }
+
+        product_url = card_dict.get("product_url") or ""
+
+        if not product_url:
+            return {
+                "status": "skipped",
+                "card_id": card_id,
+                "message": "沒有商品網址"
+            }
+
+        if should_skip_price_update(
+            card_dict.get("price_updated_at"),
+            cooldown_hours=PRICE_UPDATE_COOLDOWN_HOURS
+        ):
+            return {
+                "status": "skipped",
+                "card_id": card_id,
+                "message": "6 小時內已更新過"
+            }
+
+        grade = normalize_market_grade_for_card(card_dict)
+        current_market_price, source = get_market_price_by_product_url_cached(
+            product_url,
+            grade=grade
+        )
+
+        if not current_market_price:
+            return {
+                "status": "failed",
+                "card_id": card_id,
+                "message": "查無成交價或匯率失敗"
+            }
+
+        buy_price = float(card_dict.get("buy_price") or 0)
+        unrealized_profit, roi = calculate_unrealized_by_buy_price(
+            current_market_price,
+            buy_price
+        )
+
+        update_card_market_price(
+            card_id,
+            current_market_price,
+            unrealized_profit,
+            roi,
+            get_taiwan_now_text(),
+            user_id=user_id
+        )
+
+        return {
+            "status": "updated",
+            "card_id": card_id,
+            "message": "已更新" if source == "external" else "已用快取更新",
+            "market_price": current_market_price,
+            "source": source
+        }
+
+    except Exception as e:
+        print("單張分批市價更新失敗：", e)
+        traceback.print_exc()
+
+        return {
+            "status": "failed",
+            "card_id": card_id,
+            "message": "更新失敗"
+        }
 
 # =========================
 # Auth Routes
@@ -2445,6 +2754,8 @@ def card_list_page():
         sort=sort,
         list_summary=list_summary,
         latest_price_update_job=latest_price_update_job,
+        auto_price_update_mode=request.args.get("auto_price_update", ""),
+        auto_price_update_card_id=request.args.get("card_id", ""),
 
         current_page=page,
         total_pages=total_pages,
@@ -3025,93 +3336,238 @@ def unsell_card_page(card_id):
 @login_required
 def refresh_single_card_price_page(card_id):
     """
-    單張更新改成建立背景任務，不在網頁請求內直接爬價。
-    worker.py 會負責實際更新。
+    Render Free / Web-only 版本：
+    單張更新不建立 worker 任務，而是導回卡牌倉庫後由前端 AJAX 分批處理。
     """
-    user_id = current_user_id()
+    return redirect(f"/cards?auto_price_update=single&card_id={int(card_id)}")
 
-    card = get_card_by_id(card_id, user_id=user_id)
-
-    if not card:
-        flash("找不到這張卡牌", "warning")
-        return redirect("/cards")
-
-    card_dict = dict(card)
-
-    if card_dict.get("status") != "holding":
-        flash("已售出的卡牌不需要更新市價", "warning")
-        return redirect(request.referrer or f"/cards/{card_id}")
-
-    product_url = card_dict.get("product_url") or ""
-
-    if not product_url:
-        flash("這張卡尚未設定商品網址，無法更新市價", "warning")
-        return redirect(request.referrer or f"/cards/{card_id}")
-
-    COOLDOWN_HOURS = 6
-
-    if should_skip_price_update(
-        card_dict.get("price_updated_at"),
-        cooldown_hours=COOLDOWN_HOURS
-    ):
-        flash("這張卡 6 小時內已更新過，暫時不用重複更新", "success")
-        return redirect(request.referrer or f"/cards/{card_id}")
-
-    if has_active_price_update_job(user_id, card_id=card_id, job_type="single"):
-        flash("這張卡已在更新佇列中，請稍後再查看", "success")
-        return redirect(request.referrer or f"/cards/{card_id}")
-
-    create_price_update_job(
-        user_id=user_id,
-        job_type="single",
-        card_id=card_id,
-        message="單張市價更新等待中"
-    )
-
-    flash("已加入背景更新佇列，稍後會自動更新此卡市價", "success")
-    return redirect(request.referrer or f"/cards/{card_id}")
 
 @app.route("/cards/refresh-all-prices", methods=["POST"])
 @login_required
 def refresh_all_card_prices_page():
     """
-    全部更新改成建立背景任務，不在 Flask request 裡直接跑大量爬蟲。
-    同一使用者 10 分鐘內只能建立一次全部更新任務。
+    Render Free / Web-only 版本：
+    全部更新由前端分批呼叫 API，不需要 background worker。
     """
+    return redirect("/cards?auto_price_update=all")
+
+
+@app.route("/cards/refresh-prices/start", methods=["POST"])
+@login_required
+def start_web_batch_price_update_page():
     user_id = current_user_id()
+    data = request.get_json(silent=True) or {}
 
-    cards = get_all_cards(
-        status="holding",
-        keyword=None,
-        sort=None,
-        user_id=user_id
-    )
+    mode = str(data.get("mode") or "all").strip()
 
-    if not cards:
-        flash("目前沒有持有中的卡牌可以更新", "warning")
-        return redirect(request.referrer or "/cards")
+    if mode not in ["all", "single"]:
+        mode = "all"
 
-    if has_active_price_update_job(user_id, job_type="all"):
-        flash("你已經有一個市價更新任務正在排隊或執行中，請稍後再試", "success")
-        return redirect(request.referrer or "/cards")
+    try:
+        card_id = int(data.get("card_id") or 0)
+    except:
+        card_id = 0
 
-    if has_recent_price_update_job(
-        user_id,
-        job_type="all",
-        within_minutes=10
-    ):
-        flash("10 分鐘內已建立過全部更新任務，請稍後再試", "warning")
-        return redirect(request.referrer or "/cards")
+    # 清掉太久沒有完成的任務，避免使用者關掉頁面後永遠被鎖住。
+    try:
+        fail_stale_price_update_jobs(
+            user_id=user_id,
+            stale_minutes=PRICE_UPDATE_STALE_MINUTES
+        )
+    except Exception as e:
+        print("清理過期市價任務失敗：", e)
 
-    create_price_update_job(
+    if mode == "all":
+        if has_active_price_update_job(user_id, job_type="all"):
+            return jsonify({
+                "success": False,
+                "message": "你已經有一個市價更新正在進行中，請稍後再試。"
+            }), 409
+
+        if has_recent_price_update_job(
+            user_id,
+            job_type="all",
+            within_minutes=PRICE_UPDATE_LOCK_MINUTES
+        ):
+            return jsonify({
+                "success": False,
+                "message": "10 分鐘內已更新過全部市價，請稍後再試。"
+            }), 429
+
+    if mode == "single":
+        if card_id <= 0:
+            return jsonify({
+                "success": False,
+                "message": "找不到要更新的卡牌。"
+            }), 400
+
+        if has_active_price_update_job(user_id, card_id=card_id, job_type="single"):
+            return jsonify({
+                "success": False,
+                "message": "這張卡已經在更新中，請稍後再試。"
+            }), 409
+
+    card_ids = collect_price_update_card_ids(
         user_id=user_id,
-        job_type="all",
-        card_id=None,
-        message="全部市價更新等待中"
+        mode=mode,
+        card_id=card_id if mode == "single" else None
     )
 
-    flash("已建立市價更新任務，系統會在背景慢慢更新，不需要停留在此頁", "success")
-    return redirect(request.referrer or "/cards")
+    if not card_ids:
+        if mode == "all":
+            message = "目前沒有需要更新的卡牌。可能是 6 小時內已更新過，或卡牌尚未設定商品網址。"
+        else:
+            message = "這張卡目前無法更新，可能是已售出、找不到卡牌，或缺少商品網址。"
+
+        return jsonify({
+            "success": False,
+            "message": message
+        }), 200
+
+    job_id = create_price_update_job(
+        user_id=user_id,
+        job_type=mode,
+        card_id=card_id if mode == "single" else None,
+        message="Web 分批更新準備中"
+    )
+
+    now_text = get_taiwan_now_text()
+    mark_price_update_job_running(job_id, now_text)
+    update_price_update_job_progress(
+        job_id,
+        total_count=len(card_ids),
+        updated_count=0,
+        skipped_count=0,
+        failed_count=0,
+        message="前端分批更新中"
+    )
+
+    return jsonify({
+        "success": True,
+        "job_id": job_id,
+        "mode": mode,
+        "card_ids": card_ids,
+        "total_count": len(card_ids),
+        "batch_size": PRICE_UPDATE_BATCH_SIZE,
+        "message": "開始分批更新市價"
+    })
+
+
+@app.route("/cards/refresh-prices/batch", methods=["POST"])
+@login_required
+def run_web_batch_price_update_page():
+    user_id = current_user_id()
+    data = request.get_json(silent=True) or {}
+
+    try:
+        job_id = int(data.get("job_id") or 0)
+    except:
+        job_id = 0
+
+    raw_card_ids = data.get("card_ids") or []
+    is_last = bool(data.get("is_last"))
+
+    if job_id <= 0:
+        return jsonify({
+            "success": False,
+            "message": "找不到更新任務。"
+        }), 400
+
+    job = get_price_update_job(job_id)
+
+    if not job or int(get_card_value(job, "user_id", 0) or 0) != int(user_id):
+        return jsonify({
+            "success": False,
+            "message": "找不到更新任務。"
+        }), 404
+
+    if get_card_value(job, "status", "") != "running":
+        return jsonify({
+            "success": False,
+            "message": "這個更新任務不是執行中狀態。"
+        }), 409
+
+    card_ids = []
+
+    for raw_card_id in raw_card_ids:
+        try:
+            card_id_int = int(raw_card_id)
+        except:
+            continue
+
+        if card_id_int > 0 and card_id_int not in card_ids:
+            card_ids.append(card_id_int)
+
+    card_ids = card_ids[:max(1, PRICE_UPDATE_BATCH_SIZE)]
+
+    batch_results = []
+    batch_updated = 0
+    batch_skipped = 0
+    batch_failed = 0
+
+    for card_id in card_ids:
+        result = process_one_card_market_price_update(card_id, user_id)
+        batch_results.append(result)
+
+        if result.get("status") == "updated":
+            batch_updated += 1
+        elif result.get("status") == "skipped":
+            batch_skipped += 1
+        else:
+            batch_failed += 1
+
+    current_updated = int(get_card_value(job, "updated_count", 0) or 0) + batch_updated
+    current_skipped = int(get_card_value(job, "skipped_count", 0) or 0) + batch_skipped
+    current_failed = int(get_card_value(job, "failed_count", 0) or 0) + batch_failed
+    total_count = int(get_card_value(job, "total_count", 0) or 0)
+    done_count = current_updated + current_skipped + current_failed
+
+    message = f"已處理 {done_count}/{total_count} 張"
+
+    update_price_update_job_progress(
+        job_id,
+        updated_count=current_updated,
+        skipped_count=current_skipped,
+        failed_count=current_failed,
+        message=message
+    )
+
+    final_status = "running"
+
+    if is_last or done_count >= total_count:
+        if current_updated == 0 and current_failed > 0 and current_skipped == 0:
+            final_status = "failed"
+            final_message = "市價更新失敗，請稍後再試。"
+        else:
+            final_status = "done"
+            final_message = f"更新完成：成功 {current_updated} 張、略過 {current_skipped} 張、失敗 {current_failed} 張。"
+
+        finish_price_update_job(
+            job_id,
+            status=final_status,
+            message=final_message,
+            finished_at=get_taiwan_now_text(),
+            updated_count=current_updated,
+            skipped_count=current_skipped,
+            failed_count=current_failed,
+            total_count=total_count
+        )
+
+        message = final_message
+
+    return jsonify({
+        "success": True,
+        "job_id": job_id,
+        "status": final_status,
+        "total_count": total_count,
+        "updated_count": current_updated,
+        "skipped_count": current_skipped,
+        "failed_count": current_failed,
+        "done_count": done_count,
+        "message": message,
+        "batch_results": batch_results
+    })
+
 
 # =========================
 # LINE Callback / Image Tools
