@@ -268,8 +268,11 @@
     <div class="detail-image-box detail-image-box-polished">
         {% if card.image_url %}
         <img
-            src="/crop-image?url={{ card.image_url | urlencode }}"
+            src="{{ get_optimized_image_url(card.image_url, 'detail') }}"
             class="detail-img detail-img-polished detail-cropped-img"
+            alt="{{ card.card_display_name or card.card_name }}"
+            loading="eager"
+            decoding="async"
         >
     {% else %}
         <div class="detail-no-img">No Image</div>

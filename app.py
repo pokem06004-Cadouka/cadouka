@@ -240,6 +240,42 @@ def handle_uploaded_file_too_large(error):
     return redirect(request.referrer or "/cards")
 
 
+def get_optimized_image_url(image_url, preset="detail"):
+    """
+    顯示圖片時使用 Cloudinary transformation，避免列表 / 明細頁直接載入原圖。
+    非 Cloudinary 圖片會直接回傳原網址。
+    """
+    if not image_url:
+        return ""
+
+    image_url = str(image_url).strip()
+
+    if not image_url:
+        return ""
+
+    if "res.cloudinary.com" not in image_url or "/image/upload/" not in image_url:
+        return image_url
+
+    presets = {
+        "thumb": "f_auto,q_auto,w_180,h_240,c_fit",
+        "list": "f_auto,q_auto,w_220,h_300,c_fit",
+        "detail": "f_auto,q_auto,w_800,c_fit",
+        "large": "f_auto,q_auto,w_1200,c_fit"
+    }
+
+    transformation = presets.get(preset, presets["detail"])
+
+    # 避免已經處理過的網址被重複插入 transformation。
+    upload_marker = "/image/upload/"
+    before, after = image_url.split(upload_marker, 1)
+    first_segment = after.split("/", 1)[0]
+
+    if first_segment.startswith("f_auto") or first_segment.startswith("q_auto") or "w_" in first_segment:
+        return image_url
+
+    return f"{before}{upload_marker}{transformation}/{after}"
+
+
 # =========================
 # Condition Order Settings
 # =========================
@@ -356,7 +392,8 @@ def inject_current_user():
         "current_user": user,
         "line_liff_id": LINE_LIFF_ID,
         "membership_level": get_membership_level(user),
-        "is_pro": is_pro_user(user)
+        "is_pro": is_pro_user(user),
+        "get_optimized_image_url": get_optimized_image_url
     }
 
 # =========================
