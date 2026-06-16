@@ -26,7 +26,7 @@ from linebot.models import (
     ConfirmTemplate
 )
 
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, quote
 import urllib.request as req
 import traceback
 import os
@@ -242,8 +242,9 @@ def handle_uploaded_file_too_large(error):
 
 def get_optimized_image_url(image_url, preset="detail"):
     """
-    顯示圖片時使用 Cloudinary transformation，避免列表 / 明細頁直接載入原圖。
-    非 Cloudinary 圖片會直接回傳原網址。
+    圖片顯示規則：
+    1. 使用者自己上傳到 Cloudinary 的圖片：使用 Cloudinary transformation 加速。
+    2. SNKRDUNK / 外部圖片：維持原本 /crop-image 後端裁白邊設定。
     """
     if not image_url:
         return ""
@@ -253,8 +254,11 @@ def get_optimized_image_url(image_url, preset="detail"):
     if not image_url:
         return ""
 
-    if "res.cloudinary.com" not in image_url or "/image/upload/" not in image_url:
-        return image_url
+    is_cloudinary = "res.cloudinary.com" in image_url and "/image/upload/" in image_url
+
+    # 非 Cloudinary 圖片，多半是 SNKRDUNK 圖片，維持原本裁白邊邏輯。
+    if not is_cloudinary:
+        return f"/crop-image?url={quote(image_url, safe='')}"
 
     presets = {
         "thumb": "f_auto,q_auto,w_180,h_240,c_fit",
