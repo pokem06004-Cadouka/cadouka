@@ -140,6 +140,57 @@
 
 </div>
 
+{% if latest_price_update_job %}
+<div class="price-update-status-card price-update-status-{{ latest_price_update_job.status or 'pending' }}">
+    <div class="price-update-status-main">
+        <div>
+            <div class="price-update-status-label">市價更新任務</div>
+            <div class="price-update-status-title">
+                {% if latest_price_update_job.status == "pending" %}
+                    等待背景更新
+                {% elif latest_price_update_job.status == "running" %}
+                    更新中
+                {% elif latest_price_update_job.status == "done" %}
+                    更新完成
+                {% elif latest_price_update_job.status == "failed" %}
+                    更新失敗
+                {% else %}
+                    {{ latest_price_update_job.status or "等待中" }}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="price-update-status-meta">
+            {% if latest_price_update_job.job_type == "single" %}
+                單張更新
+            {% else %}
+                全部更新
+            {% endif %}
+            · 任務 #{{ latest_price_update_job.id }}
+        </div>
+    </div>
+
+    <div class="price-update-status-counts">
+        <span>總數 {{ latest_price_update_job.total_count or 0 }}</span>
+        <span>成功 {{ latest_price_update_job.updated_count or 0 }}</span>
+        <span>略過 {{ latest_price_update_job.skipped_count or 0 }}</span>
+        <span>失敗 {{ latest_price_update_job.failed_count or 0 }}</span>
+    </div>
+
+    {% if latest_price_update_job.message %}
+        <div class="price-update-status-message">
+            {{ latest_price_update_job.message }}
+        </div>
+    {% endif %}
+
+    {% if latest_price_update_job.status in ["pending", "running"] %}
+        <div class="price-update-status-hint">
+            背景 worker 會自動處理，不需要停留在此頁。稍後重新整理即可看到最新市價。
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="list-tools">
 
     <form action="/cards" method="get" class="search-form">
@@ -359,7 +410,7 @@
                                 formaction="/cards/{{ card.id }}/refresh-price"
                                 formmethod="post"
                                 class="list-refresh-btn"
-                                title="更新此卡市價"
+                                title="加入背景更新任務"
                             >
                                 ⟳
                             </button>
@@ -500,9 +551,9 @@
                         formaction="/cards/{{ card.id }}/refresh-price"
                         formmethod="post"
                         class="btn-secondary mobile-refresh-btn list-refresh-btn"
-                        title="更新此卡市價"
+                        title="加入背景更新任務"
                     >
-                        ⟳ 更新市價
+                        ⟳ 加入更新
                     </button>
                 {% endif %}
             </div>

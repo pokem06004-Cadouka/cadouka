@@ -2329,6 +2329,528 @@ def bulk_import_search_aliases(rows, max_tags=8):
 
     return result
 
+
+# =========================
+# Price Update Job / Cache Functions
+# =========================
+
+def create_price_update_tables_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS market_price_cache (
+            id SERIAL PRIMARY KEY,
+            product_id TEXT NOT NULL,
+            grade TEXT NOT NULL,
+            market_price_twd REAL DEFAULT 0,
+            average_jpy REAL DEFAULT 0,
+            jpy_rate REAL DEFAULT 0,
+            source TEXT DEFAULT 'SNKRDUNK',
+            updated_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id, grade)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS jpy_rate_cache (
+            id SERIAL PRIMARY KEY,
+            cache_key TEXT UNIQUE NOT NULL,
+            rate REAL DEFAULT 0,
+            updated_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS price_update_jobs (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            job_type TEXT DEFAULT 'all',
+            card_id INTEGER,
+            status TEXT DEFAULT 'pending',
+            total_count INTEGER DEFAULT 0,
+            updated_count INTEGER DEFAULT 0,
+            skipped_count INTEGER DEFAULT 0,
+            failed_count INTEGER DEFAULT 0,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            started_at TEXT,
+            finished_at TEXT
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS market_price_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id TEXT NOT NULL,
+            grade TEXT NOT NULL,
+            market_price_twd REAL DEFAULT 0,
+            average_jpy REAL DEFAULT 0,
+            jpy_rate REAL DEFAULT 0,
+            source TEXT DEFAULT 'SNKRDUNK',
+            updated_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id, grade)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS jpy_rate_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cache_key TEXT UNIQUE NOT NULL,
+            rate REAL DEFAULT 0,
+            updated_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS price_update_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            job_type TEXT DEFAULT 'all',
+            card_id INTEGER,
+            status TEXT DEFAULT 'pending',
+            total_count INTEGER DEFAULT 0,
+            updated_count INTEGER DEFAULT 0,
+            skipped_count INTEGER DEFAULT 0,
+            failed_count INTEGER DEFAULT 0,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            started_at TEXT,
+            finished_at TEXT
+        )
+        """)
+
+    conn.commit()
+    conn.close()
+
+
+def get_jpy_rate_cache(cache_key="jpy_spot_sell"):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM jpy_rate_cache
+        WHERE cache_key = ?
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [cache_key])
+    row = cursor.fetchone()
+
+    conn.close()
+    return row
+
+
+def upsert_jpy_rate_cache(rate, updated_at, cache_key="jpy_spot_sell"):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        sql = """
+            INSERT INTO jpy_rate_cache (
+                cache_key,
+                rate,
+                updated_at
+            )
+            VALUES (?, ?, ?)
+            ON CONFLICT (cache_key)
+            DO UPDATE SET
+                rate = EXCLUDED.rate,
+                updated_at = EXCLUDED.updated_at
+        """
+    else:
+        sql = """
+            INSERT INTO jpy_rate_cache (
+                cache_key,
+                rate,
+                updated_at
+            )
+            VALUES (?, ?, ?)
+            ON CONFLICT(cache_key)
+            DO UPDATE SET
+                rate = excluded.rate,
+                updated_at = excluded.updated_at
+        """
+
+    execute_sql(cursor, sql, [
+        cache_key,
+        rate,
+        updated_at
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def get_market_price_cache(product_id, grade):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM market_price_cache
+        WHERE product_id = ?
+        AND grade = ?
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [
+        str(product_id or ""),
+        str(grade or "")
+    ])
+
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def upsert_market_price_cache(product_id, grade, market_price_twd, average_jpy, jpy_rate, updated_at, source="SNKRDUNK"):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        sql = """
+            INSERT INTO market_price_cache (
+                product_id,
+                grade,
+                market_price_twd,
+                average_jpy,
+                jpy_rate,
+                source,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (product_id, grade)
+            DO UPDATE SET
+                market_price_twd = EXCLUDED.market_price_twd,
+                average_jpy = EXCLUDED.average_jpy,
+                jpy_rate = EXCLUDED.jpy_rate,
+                source = EXCLUDED.source,
+                updated_at = EXCLUDED.updated_at
+        """
+    else:
+        sql = """
+            INSERT INTO market_price_cache (
+                product_id,
+                grade,
+                market_price_twd,
+                average_jpy,
+                jpy_rate,
+                source,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(product_id, grade)
+            DO UPDATE SET
+                market_price_twd = excluded.market_price_twd,
+                average_jpy = excluded.average_jpy,
+                jpy_rate = excluded.jpy_rate,
+                source = excluded.source,
+                updated_at = excluded.updated_at
+        """
+
+    execute_sql(cursor, sql, [
+        str(product_id or ""),
+        str(grade or ""),
+        market_price_twd or 0,
+        average_jpy or 0,
+        jpy_rate or 0,
+        source or "SNKRDUNK",
+        updated_at or ""
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def create_price_update_job(user_id, job_type="all", card_id=None, message=""):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        sql = """
+            INSERT INTO price_update_jobs (
+                user_id,
+                job_type,
+                card_id,
+                status,
+                message
+            )
+            VALUES (?, ?, ?, 'pending', ?)
+            RETURNING id
+        """
+
+        execute_sql(cursor, sql, [
+            user_id,
+            job_type or "all",
+            card_id,
+            message or ""
+        ])
+
+        row = cursor.fetchone()
+        job_id = row["id"]
+    else:
+        sql = """
+            INSERT INTO price_update_jobs (
+                user_id,
+                job_type,
+                card_id,
+                status,
+                message
+            )
+            VALUES (?, ?, ?, 'pending', ?)
+        """
+
+        execute_sql(cursor, sql, [
+            user_id,
+            job_type or "all",
+            card_id,
+            message or ""
+        ])
+
+        job_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+    return job_id
+
+
+def get_price_update_job(job_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM price_update_jobs
+        WHERE id = ?
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [job_id])
+    job = cursor.fetchone()
+
+    conn.close()
+    return job
+
+
+def get_latest_price_update_job_for_user(user_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM price_update_jobs
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [user_id])
+    job = cursor.fetchone()
+
+    conn.close()
+    return job
+
+
+def has_recent_price_update_job(user_id, job_type="all", within_minutes=10):
+    """
+    檢查使用者是否在指定分鐘內建立過同類型更新任務。
+    用字串時間做資料庫比較，避免 SQLite/PostgreSQL 日期函式差異。
+    """
+    import datetime
+
+    cutoff = datetime.datetime.now() - datetime.timedelta(minutes=within_minutes)
+    cutoff_text = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) AS count
+        FROM price_update_jobs
+        WHERE user_id = ?
+        AND job_type = ?
+        AND created_at >= ?
+        AND status IN ('pending', 'running', 'done')
+    """
+
+    execute_sql(cursor, sql, [
+        user_id,
+        job_type or "all",
+        cutoff_text
+    ])
+
+    result = cursor.fetchone()
+    conn.close()
+
+    return (result["count"] or 0) > 0
+
+
+def has_active_price_update_job(user_id, card_id=None, job_type=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) AS count
+        FROM price_update_jobs
+        WHERE user_id = ?
+        AND status IN ('pending', 'running')
+    """
+
+    params = [user_id]
+
+    if card_id is not None:
+        sql += " AND card_id = ?"
+        params.append(card_id)
+
+    if job_type is not None:
+        sql += " AND job_type = ?"
+        params.append(job_type)
+
+    execute_sql(cursor, sql, params)
+    result = cursor.fetchone()
+
+    conn.close()
+    return (result["count"] or 0) > 0
+
+
+def get_pending_price_update_job():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT *
+        FROM price_update_jobs
+        WHERE status = 'pending'
+        ORDER BY id ASC
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql)
+    job = cursor.fetchone()
+
+    conn.close()
+    return job
+
+
+def mark_price_update_job_running(job_id, started_at):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE price_update_jobs
+        SET
+            status = 'running',
+            started_at = ?,
+            message = ?
+        WHERE id = ?
+        AND status = 'pending'
+    """
+
+    execute_sql(cursor, sql, [
+        started_at,
+        "更新中",
+        job_id
+    ])
+
+    changed = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    return changed > 0
+
+
+def update_price_update_job_progress(job_id, total_count=None, updated_count=None, skipped_count=None, failed_count=None, message=None):
+    fields = []
+    params = []
+
+    if total_count is not None:
+        fields.append("total_count = ?")
+        params.append(total_count)
+
+    if updated_count is not None:
+        fields.append("updated_count = ?")
+        params.append(updated_count)
+
+    if skipped_count is not None:
+        fields.append("skipped_count = ?")
+        params.append(skipped_count)
+
+    if failed_count is not None:
+        fields.append("failed_count = ?")
+        params.append(failed_count)
+
+    if message is not None:
+        fields.append("message = ?")
+        params.append(message)
+
+    if not fields:
+        return
+
+    params.append(job_id)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE price_update_jobs
+        SET
+    """ + ",\n            ".join(fields) + "\n        WHERE id = ?"
+
+    execute_sql(cursor, sql, params)
+    conn.commit()
+    conn.close()
+
+
+def finish_price_update_job(job_id, status, message, finished_at, updated_count=None, skipped_count=None, failed_count=None, total_count=None):
+    fields = [
+        "status = ?",
+        "message = ?",
+        "finished_at = ?"
+    ]
+
+    params = [
+        status,
+        message or "",
+        finished_at
+    ]
+
+    if updated_count is not None:
+        fields.append("updated_count = ?")
+        params.append(updated_count)
+
+    if skipped_count is not None:
+        fields.append("skipped_count = ?")
+        params.append(skipped_count)
+
+    if failed_count is not None:
+        fields.append("failed_count = ?")
+        params.append(failed_count)
+
+    if total_count is not None:
+        fields.append("total_count = ?")
+        params.append(total_count)
+
+    params.append(job_id)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE price_update_jobs
+        SET
+    """ + ",\n            ".join(fields) + "\n        WHERE id = ?"
+
+    execute_sql(cursor, sql, params)
+    conn.commit()
+    conn.close()
+
 # =========================
 # Migration Helpers
 # =========================
@@ -2499,6 +3021,8 @@ def migrate_db():
     add_column_if_not_exists("sell_other_fee", "REAL DEFAULT 0")
     add_column_if_not_exists("net_revenue", "REAL DEFAULT 0")
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
+
+    create_price_update_tables_if_not_exists()
 
     create_line_logs_table_if_not_exists()
     add_line_log_column_if_not_exists("raw_keyword", "TEXT")

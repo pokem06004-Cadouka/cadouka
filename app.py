@@ -121,7 +121,12 @@ from models import (
     get_search_tag_by_id,
     update_search_tag,
     delete_search_tag,
-    bulk_import_search_aliases
+    bulk_import_search_aliases,
+
+    create_price_update_job,
+    get_latest_price_update_job_for_user,
+    has_recent_price_update_job,
+    has_active_price_update_job
 )
 
 from calculations import calculate_total_cost
@@ -2430,6 +2435,8 @@ def card_list_page():
         card_dict["holding_days"] = calculate_holding_days_for_card(card_dict)
         card_list.append(card_dict)
 
+    latest_price_update_job = get_latest_price_update_job_for_user(user_id)
+
     return render_template(
         "card_list.html",
         cards=card_list,
@@ -2437,6 +2444,7 @@ def card_list_page():
         keyword=keyword,
         sort=sort,
         list_summary=list_summary,
+        latest_price_update_job=latest_price_update_job,
 
         current_page=page,
         total_pages=total_pages,
@@ -3016,6 +3024,10 @@ def unsell_card_page(card_id):
 @app.route("/cards/<int:card_id>/refresh-price", methods=["POST"])
 @login_required
 def refresh_single_card_price_page(card_id):
+    """
+    單張更新改成建立背景任務，不在網頁請求內直接爬價。
+    worker.py 會負責實際更新。
+    """
     user_id = current_user_id()
 
     card = get_card_by_id(card_id, user_id=user_id)
@@ -3042,47 +3054,30 @@ def refresh_single_card_price_page(card_id):
         card_dict.get("price_updated_at"),
         cooldown_hours=COOLDOWN_HOURS
     ):
-        flash("這張卡近期已更新過", "success")
+        flash("這張卡 6 小時內已更新過，暫時不用重複更新", "success")
         return redirect(request.referrer or f"/cards/{card_id}")
 
-    try:
-        current_market_price = get_market_price_by_product_url(product_url)
-
-        if current_market_price <= 0:
-            flash("更新失敗，請確認商品網址是否正確", "warning")
-            return redirect(request.referrer or f"/cards/{card_id}")
-
-        buy_price = card_dict.get("buy_price") or 0
-
-        unrealized_profit, roi = calculate_unrealized_by_buy_price(
-            current_market_price,
-            buy_price
-        )
-
-        price_updated_at = get_taiwan_now_text()
-
-        update_card_market_price(
-            card_id,
-            current_market_price,
-            unrealized_profit,
-            roi,
-            price_updated_at,
-            user_id=user_id
-        )
-
-        flash("已更新此卡市價", "success")
+    if has_active_price_update_job(user_id, card_id=card_id, job_type="single"):
+        flash("這張卡已在更新佇列中，請稍後再查看", "success")
         return redirect(request.referrer or f"/cards/{card_id}")
 
-    except Exception as e:
-        print("更新單張市價錯誤：", e)
-        traceback.print_exc()
+    create_price_update_job(
+        user_id=user_id,
+        job_type="single",
+        card_id=card_id,
+        message="單張市價更新等待中"
+    )
 
-        flash("更新市價時發生錯誤，請稍後再試", "warning")
-        return redirect(request.referrer or f"/cards/{card_id}")
+    flash("已加入背景更新佇列，稍後會自動更新此卡市價", "success")
+    return redirect(request.referrer or f"/cards/{card_id}")
 
 @app.route("/cards/refresh-all-prices", methods=["POST"])
 @login_required
 def refresh_all_card_prices_page():
+    """
+    全部更新改成建立背景任務，不在 Flask request 裡直接跑大量爬蟲。
+    同一使用者 10 分鐘內只能建立一次全部更新任務。
+    """
     user_id = current_user_id()
 
     cards = get_all_cards(
@@ -3096,89 +3091,26 @@ def refresh_all_card_prices_page():
         flash("目前沒有持有中的卡牌可以更新", "warning")
         return redirect(request.referrer or "/cards")
 
-    MAX_REFRESH_COUNT = 10
-    COOLDOWN_HOURS = 6
+    if has_active_price_update_job(user_id, job_type="all"):
+        flash("你已經有一個市價更新任務正在排隊或執行中，請稍後再試", "success")
+        return redirect(request.referrer or "/cards")
 
-    success_count = 0
-    fail_count = 0
-    skipped_count = 0
+    if has_recent_price_update_job(
+        user_id,
+        job_type="all",
+        within_minutes=10
+    ):
+        flash("10 分鐘內已建立過全部更新任務，請稍後再試", "warning")
+        return redirect(request.referrer or "/cards")
 
-    candidate_cards = []
-
-    for card in cards:
-        card_dict = dict(card)
-
-        product_url = card_dict.get("product_url") or ""
-
-        # 沒有商品網址，算失敗
-        if not product_url:
-            fail_count += 1
-            continue
-
-        # 6 小時內更新過，略過
-        if should_skip_price_update(
-            card_dict.get("price_updated_at"),
-            cooldown_hours=COOLDOWN_HOURS
-        ):
-            skipped_count += 1
-            continue
-
-        candidate_cards.append(card_dict)
-
-    # 優先更新最久沒更新的卡牌
-    # price_updated_at 空白的會排最前面
-    candidate_cards = sorted(
-        candidate_cards,
-        key=lambda card: card.get("price_updated_at") or ""
+    create_price_update_job(
+        user_id=user_id,
+        job_type="all",
+        card_id=None,
+        message="全部市價更新等待中"
     )
 
-    # 一次最多更新 10 張，其餘略過
-    cards_to_update = candidate_cards[:MAX_REFRESH_COUNT]
-    skipped_count += max(0, len(candidate_cards) - MAX_REFRESH_COUNT)
-
-    for card in cards_to_update:
-        try:
-            product_url = card.get("product_url") or ""
-
-            current_market_price = get_market_price_by_product_url(product_url)
-
-            if current_market_price <= 0:
-                fail_count += 1
-                continue
-
-            buy_price = card.get("buy_price") or 0
-
-            unrealized_profit, roi = calculate_unrealized_by_buy_price(
-                current_market_price,
-                buy_price
-            )
-
-            price_updated_at = get_taiwan_now_text()
-
-            update_card_market_price(
-                card["id"],
-                current_market_price,
-                unrealized_profit,
-                roi,
-                price_updated_at,
-                user_id=user_id
-            )
-
-            success_count += 1
-
-        except Exception as e:
-            print("更新單張市價錯誤：", e)
-            traceback.print_exc()
-            fail_count += 1
-            continue
-
-    if success_count == 0 and skipped_count > 0 and fail_count == 0:
-        flash(f"近期已更新過，已略過 {skipped_count} 張卡牌", "success")
-    elif fail_count == 0:
-        flash(f"已更新 {success_count} 張，略過 {skipped_count} 張", "success")
-    else:
-        flash(f"已更新 {success_count} 張，略過 {skipped_count} 張，失敗 {fail_count} 張", "warning")
-
+    flash("已建立市價更新任務，系統會在背景慢慢更新，不需要停留在此頁", "success")
     return redirect(request.referrer or "/cards")
 
 # =========================

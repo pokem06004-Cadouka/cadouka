@@ -5075,3 +5075,138 @@ body.color-rise-red .pill-loss {
         display: none;
     }
 }
+
+/* =========================
+   Price Update Job Status
+========================= */
+
+.price-update-status-card {
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.price-update-status-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.price-update-status-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 5px;
+}
+
+.price-update-status-title {
+    color: #111827;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.price-update-status-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.price-update-status-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.price-update-status-counts span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.price-update-status-message,
+.price-update-status-hint {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+.price-update-status-hint {
+    margin-top: 6px;
+}
+
+.price-update-status-pending {
+    border-color: #bfdbfe;
+    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.price-update-status-running {
+    border-color: #fde68a;
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.price-update-status-running .price-update-status-meta {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.price-update-status-done {
+    border-color: #bbf7d0;
+    background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+}
+
+.price-update-status-done .price-update-status-meta {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #bbf7d0;
+}
+
+.price-update-status-failed {
+    border-color: #fecaca;
+    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+}
+
+.price-update-status-failed .price-update-status-meta {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+@media (max-width: 760px) {
+    .price-update-status-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .price-update-status-card {
+        border-radius: 18px;
+        padding: 16px;
+    }
+
+    .price-update-status-counts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
