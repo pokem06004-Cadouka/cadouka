@@ -147,8 +147,8 @@ from datetime import datetime, date, timedelta,timezone
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "cadouka-secret-key")
 
-# 圖片上傳限制：避免使用者上傳過大的圖片拖慢服務。
-CARD_IMAGE_MAX_MB = 5
+# 圖片上傳限制：前端會先壓縮，後端再保護性限制大小。
+CARD_IMAGE_MAX_MB = 3
 app.config["MAX_CONTENT_LENGTH"] = CARD_IMAGE_MAX_MB * 1024 * 1024
 
 LINE_LIFF_ID = os.getenv("LINE_LIFF_ID", "")

@@ -12,7 +12,7 @@
     </div>
 </div>
 
-<form action="/cards/add" method="post" enctype="multipart/form-data" class="form-card form-card-polished">
+<form action="/cards/add" method="post" enctype="multipart/form-data" class="form-card form-card-polished" id="cardImageForm">
 
     <input
         type="hidden"
@@ -28,11 +28,21 @@
 
         <div class="image-upload-panel">
             <div class="image-preview-box">
-                {% if prefill.image_url %}
-                    <img src="{{ prefill.image_url }}" class="image-upload-preview-img" alt="目前預設圖片">
-                {% else %}
-                    <div class="image-upload-empty">尚無預設圖片</div>
-                {% endif %}
+                <img
+                    src="{{ prefill.image_url or '' }}"
+                    class="image-upload-preview-img"
+                    id="cardImagePreview"
+                    alt="目前預設圖片"
+                    {% if not prefill.image_url %}style="display: none;"{% endif %}
+                >
+
+                <div
+                    class="image-upload-empty"
+                    id="cardImageEmpty"
+                    {% if prefill.image_url %}style="display: none;"{% endif %}
+                >
+                    尚無預設圖片
+                </div>
             </div>
 
             <div class="image-upload-fields">
@@ -42,10 +52,13 @@
                     name="card_image"
                     accept="image/jpeg,image/png,image/webp"
                     class="image-upload-input"
+                    id="cardImageInput"
                 >
                 <p class="image-upload-help">
-                    支援 JPG、PNG、WEBP，建議 5MB 以下。若有上傳圖片，會優先使用你上傳的圖片；沒有上傳則使用預設圖片。
+                    支援 JPG、PNG、WEBP。送出前會自動壓縮到適合網站顯示的大小，後端上限 3MB；有上傳圖片時會優先使用自己的圖片。
                 </p>
+
+                <div class="image-upload-status" id="imageUploadStatus" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -196,9 +209,215 @@
 
     <div class="form-submit-row">
         <a href="/cards" class="btn-secondary">取消</a>
-        <button type="submit" class="btn-add form-submit-btn">新增卡牌</button>
+        <button type="submit" class="btn-add form-submit-btn" id="cardSubmitBtn" data-default-text="新增卡牌">新增卡牌</button>
     </div>
 
 </form>
+
+
+<script>
+(function () {
+    const form = document.getElementById("cardImageForm");
+    const input = document.getElementById("cardImageInput");
+    const preview = document.getElementById("cardImagePreview");
+    const empty = document.getElementById("cardImageEmpty");
+    const statusBox = document.getElementById("imageUploadStatus");
+    const submitBtn = document.getElementById("cardSubmitBtn");
+
+    if (!form || !input) {
+        return;
+    }
+
+    const MAX_FILE_BYTES = 3 * 1024 * 1024;
+    const MAX_IMAGE_WIDTH = 1200;
+    const JPEG_QUALITY = 0.82;
+
+    function formatMB(bytes) {
+        return (bytes / 1024 / 1024).toFixed(2) + " MB";
+    }
+
+    function setStatus(message, type) {
+        if (!statusBox) {
+            return;
+        }
+
+        statusBox.textContent = message || "";
+        statusBox.className = "image-upload-status";
+
+        if (type) {
+            statusBox.classList.add("is-" + type);
+        }
+
+        if (message) {
+            statusBox.style.display = "block";
+        } else {
+            statusBox.style.display = "none";
+        }
+    }
+
+    function loadImageFromFile(file) {
+        return new Promise(function (resolve, reject) {
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const image = new Image();
+
+                image.onload = function () {
+                    resolve(image);
+                };
+
+                image.onerror = function () {
+                    reject(new Error("圖片讀取失敗，請換一張圖片試試看。"));
+                };
+
+                image.src = event.target.result;
+            };
+
+            reader.onerror = function () {
+                reject(new Error("圖片讀取失敗，請換一張圖片試試看。"));
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise(function (resolve) {
+            canvas.toBlob(resolve, type, quality);
+        });
+    }
+
+    async function compressImageFile(file) {
+        if (!file || !file.type || !file.type.startsWith("image/")) {
+            return file;
+        }
+
+        const image = await loadImageFromFile(file);
+        const originalWidth = image.naturalWidth || image.width;
+        const originalHeight = image.naturalHeight || image.height;
+
+        if (!originalWidth || !originalHeight) {
+            return file;
+        }
+
+        const scale = Math.min(1, MAX_IMAGE_WIDTH / originalWidth);
+        const targetWidth = Math.round(originalWidth * scale);
+        const targetHeight = Math.round(originalHeight * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        const blob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+
+        if (!blob) {
+            return file;
+        }
+
+        if (blob.size >= file.size && file.size <= MAX_FILE_BYTES) {
+            return file;
+        }
+
+        const originalName = file.name || "card_image";
+        const compressedName = originalName.replace(/\.[^.]+$/, "") + "_compressed.jpg";
+
+        return new File([blob], compressedName, {
+            type: "image/jpeg",
+            lastModified: Date.now()
+        });
+    }
+
+    input.addEventListener("change", function () {
+        const file = input.files && input.files[0];
+
+        setStatus("", "info");
+
+        if (!file) {
+            return;
+        }
+
+        if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+            setStatus("圖片格式不支援，請選擇 JPG、PNG 或 WEBP。", "error");
+            input.value = "";
+            return;
+        }
+
+        if (preview) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
+        }
+
+        if (empty) {
+            empty.style.display = "none";
+        }
+
+        if (file.size > MAX_FILE_BYTES) {
+            setStatus("原圖大小為 " + formatMB(file.size) + "，送出時會先自動壓縮。", "info");
+        } else {
+            setStatus("已選擇圖片：" + formatMB(file.size) + "。", "info");
+        }
+    });
+
+    form.addEventListener("submit", async function (event) {
+        const file = input.files && input.files[0];
+
+        if (!file) {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "儲存中...";
+            }
+            return;
+        }
+
+        event.preventDefault();
+
+        if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+            setStatus("圖片格式不支援，請選擇 JPG、PNG 或 WEBP。", "error");
+            return;
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "圖片處理中...";
+        }
+
+        try {
+            setStatus("正在壓縮圖片，請稍候...", "loading");
+
+            const compressedFile = await compressImageFile(file);
+
+            if (compressedFile.size > MAX_FILE_BYTES) {
+                throw new Error("圖片壓縮後仍有 " + formatMB(compressedFile.size) + "，請換一張較小的圖片。建議 3MB 以下。");
+            }
+
+            if (typeof DataTransfer !== "undefined") {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(compressedFile);
+                input.files = dataTransfer.files;
+            } else if (file.size > MAX_FILE_BYTES) {
+                throw new Error("此瀏覽器不支援自動壓縮送出，請先將圖片縮小到 3MB 以下。");
+            }
+
+            setStatus("圖片已處理完成（" + formatMB(compressedFile.size) + "），正在上傳...", "loading");
+
+            if (submitBtn) {
+                submitBtn.textContent = "上傳中...";
+            }
+
+            HTMLFormElement.prototype.submit.call(form);
+        } catch (error) {
+            setStatus(error.message || "圖片處理失敗，請換一張圖片試試看。", "error");
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.defaultText || "儲存";
+            }
+        }
+    });
+})();
+</script>
 
 {% endblock %}

@@ -5323,6 +5323,37 @@ body.color-rise-red .pill-loss {
     line-height: 1.7;
 }
 
+
+.image-upload-status {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.6;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.image-upload-status.is-loading {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.image-upload-status.is-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.form-submit-btn:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
 @media (max-width: 760px) {
     .image-upload-panel {
         grid-template-columns: 1fr;
