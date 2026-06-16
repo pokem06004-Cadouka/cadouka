@@ -2322,6 +2322,33 @@ def admin_line_search_stats_page():
         per_page=per_page
     )
 
+
+@app.route("/cdk-console/line-search-stats/cleanup", methods=["POST"])
+@login_required
+@admin_required
+def admin_line_search_stats_cleanup_page():
+    try:
+        log_result = cleanup_line_logs_if_needed(force=True)
+        image_result = cleanup_generated_images(
+            max_age_hours=GENERATED_IMAGE_MAX_AGE_HOURS,
+            max_files=GENERATED_IMAGE_MAX_FILES
+        )
+
+        deleted_logs = (log_result or {}).get("deleted_count", 0)
+        deleted_images = (image_result or {}).get("deleted_count", 0)
+
+        flash(
+            f"清理完成：刪除 LINE 搜尋紀錄 {deleted_logs} 筆、暫存圖片 {deleted_images} 張。",
+            "success"
+        )
+
+    except Exception as e:
+        print("LINE 搜尋統計手動清理失敗：", e)
+        traceback.print_exc()
+        flash("清理失敗，請查看 Render Logs。", "error")
+
+    return redirect("/cdk-console/line-search-stats")
+
 @app.route("/cdk-console/search-aliases", methods=["GET", "POST"])
 @login_required
 @admin_required

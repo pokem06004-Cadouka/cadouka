@@ -31,6 +31,25 @@
     </div>
 </div>
 
+<div class="list-tools">
+    <div class="list-bottom-tools">
+        <div class="page-subtitle">
+            搜尋統計資料來自 LINE 使用紀錄；清理後，熱門搜尋與查無商品統計會重新依保留資料計算。
+        </div>
+
+        <form
+            action="/cdk-console/line-search-stats/cleanup"
+            method="post"
+            onsubmit="return confirm('確定要清理 90 天前的 LINE 搜尋紀錄，並刪除過舊的暫存行情圖嗎？')"
+            style="margin: 0;"
+        >
+            <button type="submit" class="btn-secondary export-excel-btn">
+                清理舊紀錄
+            </button>
+        </form>
+    </div>
+</div>
+
 <div class="admin-stats-stack">
 
     <div class="admin-table-card">
