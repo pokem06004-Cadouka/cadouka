@@ -5397,3 +5397,18 @@ body.color-rise-red .pill-loss {
         margin: 0;
     }
 }
+/* =========================
+   Email / Password Reset Helpers
+========================= */
+
+.form-help-text {
+    margin: 8px 0 0 0;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.auth-form .form-help-text,
+.profile-password-form .form-help-text {
+    margin-top: 8px;
+}

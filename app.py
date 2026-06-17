@@ -33,6 +33,11 @@ import os
 import csv
 import random
 import string
+import secrets
+import hashlib
+import re
+import smtplib
+from email.message import EmailMessage
 from functools import wraps
 
 from io import BytesIO, StringIO
@@ -81,11 +86,13 @@ from models import (
     mark_card_as_holding,
     create_user,
     get_user_by_username,
+    get_user_by_email,
     get_user_by_id,
     get_first_user,
     assign_unowned_cards_to_user,
     update_user_password,
     update_user_display_name,
+    update_user_email,
     update_user_line_bind_code,
     get_user_by_line_bind_code,
     get_user_by_line_user_id,
@@ -137,7 +144,12 @@ from models import (
     get_jpy_rate_cache,
     upsert_jpy_rate_cache,
     get_market_price_cache,
-    upsert_market_price_cache
+    upsert_market_price_cache,
+
+    create_password_reset_token,
+    get_password_reset_token_by_hash,
+    mark_password_reset_token_used,
+    cleanup_expired_password_reset_tokens
 )
 
 from calculations import calculate_total_cost
@@ -179,6 +191,22 @@ GENERATED_IMAGE_MAX_AGE_HOURS = int(os.getenv("GENERATED_IMAGE_MAX_AGE_HOURS", "
 GENERATED_IMAGE_MAX_FILES = int(os.getenv("GENERATED_IMAGE_MAX_FILES", "300"))
 
 _last_line_log_cleanup_at = 0
+
+# =========================
+# Password Reset Settings
+# =========================
+
+PASSWORD_RESET_TOKEN_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_MINUTES", "30"))
+
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USERNAME).strip()
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Cadouka").strip()
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "1").strip() != "0"
+
+
 
 
 def cleanup_line_logs_if_needed(force=False):
@@ -363,6 +391,104 @@ def generate_line_bind_code():
             return bind_code
 
     return "".join(random.choice(characters) for _ in range(10))
+
+
+
+def normalize_email(email):
+    return str(email or "").strip().lower()
+
+
+def is_valid_email(email):
+    email = normalize_email(email)
+
+    if len(email) > 254:
+        return False
+
+    return re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email) is not None
+
+
+def hash_password_reset_token(token):
+    return hashlib.sha256(str(token).encode("utf-8")).hexdigest()
+
+
+def send_password_reset_email(to_email, reset_url):
+    """
+    使用 SMTP 寄出重設密碼連結。
+    若 SMTP 尚未設定，會把連結印到 Render Logs，避免本機測試卡住。
+    """
+    to_email = normalize_email(to_email)
+
+    if not to_email:
+        return False
+
+    if not SMTP_HOST or not SMTP_PORT or not SMTP_FROM_EMAIL:
+        print("密碼重設連結（SMTP 尚未設定）：", reset_url, flush=True)
+        return False
+
+    subject = "Cadouka 密碼重設連結"
+    body = f"""你好，
+
+我們收到 Cadouka 帳號的密碼重設請求。
+請在 {PASSWORD_RESET_TOKEN_MINUTES} 分鐘內點擊以下連結重新設定密碼：
+
+{reset_url}
+
+如果你沒有提出這個請求，可以忽略這封信。
+
+Cadouka"""
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+    message["To"] = to_email
+    message.set_content(body)
+
+    try:
+        if SMTP_USE_TLS:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+                server.starttls()
+                if SMTP_USERNAME and SMTP_PASSWORD:
+                    server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+                if SMTP_USERNAME and SMTP_PASSWORD:
+                    server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.send_message(message)
+
+        return True
+
+    except Exception as e:
+        print("密碼重設 Email 寄送失敗：", e, flush=True)
+        traceback.print_exc()
+        print("密碼重設連結（Email 寄送失敗備援）：", reset_url, flush=True)
+        return False
+
+
+def get_password_reset_token_status(token):
+    token_hash = hash_password_reset_token(token)
+    token_row = get_password_reset_token_by_hash(token_hash)
+
+    if not token_row:
+        return None, "invalid"
+
+    used_at = get_card_value(token_row, "used_at", "")
+
+    if used_at:
+        return None, "used"
+
+    expires_at_text = get_card_value(token_row, "expires_at", "")
+
+    try:
+        expires_at = datetime.strptime(str(expires_at_text).split(".")[0], "%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
+
+        if now > expires_at:
+            return None, "expired"
+    except:
+        return None, "invalid"
+
+    return token_row, "valid"
 
 
 def login_required(view_func):
@@ -1618,12 +1744,17 @@ def register_page():
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
+        email = normalize_email(request.form.get("email", ""))
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
         agree_terms = request.form.get("agree_terms")
 
-        if not username or not password:
-            flash("請輸入帳號與密碼", "warning")
+        if not username or not email or not password:
+            flash("請輸入帳號、Email 與密碼", "warning")
+            return redirect("/register")
+
+        if not is_valid_email(email):
+            flash("Email 格式不正確", "warning")
             return redirect("/register")
 
         if len(password) < 6:
@@ -1644,6 +1775,12 @@ def register_page():
             flash("這個帳號已經被使用", "warning")
             return redirect("/register")
 
+        existing_email_user = get_user_by_email(email)
+
+        if existing_email_user:
+            flash("這個 Email 已經被使用", "warning")
+            return redirect("/register")
+
         first_user_before_create = get_first_user()
 
         password_hash = generate_password_hash(password)
@@ -1652,6 +1789,7 @@ def register_page():
         create_user(
             username,
             password_hash,
+            email=email,
             terms_accepted_at=accepted_at,
             privacy_accepted_at=accepted_at
         )
@@ -1749,6 +1887,38 @@ def update_display_name_page():
     return redirect("/profile")
 
 
+
+@app.route("/profile/update-email", methods=["POST"])
+@login_required
+def update_email_page():
+    user = current_user()
+
+    if not user:
+        flash("請先登入", "warning")
+        return redirect("/login")
+
+    email = normalize_email(request.form.get("email", ""))
+
+    if not email:
+        update_user_email(user["id"], "")
+        flash("已清除 Email。提醒你：未設定 Email 時無法使用忘記密碼重設。", "success")
+        return redirect("/profile")
+
+    if not is_valid_email(email):
+        flash("Email 格式不正確", "warning")
+        return redirect("/profile")
+
+    existing_user = get_user_by_email(email)
+
+    if existing_user and int(existing_user["id"]) != int(user["id"]):
+        flash("這個 Email 已經被其他帳號使用", "warning")
+        return redirect("/profile")
+
+    update_user_email(user["id"], email)
+    flash("Email 已更新，之後可用於忘記密碼重設。", "success")
+    return redirect("/profile")
+
+
 @app.route("/profile/generate-line-bind-code", methods=["POST"])
 @login_required
 def generate_line_bind_code_page():
@@ -1823,9 +1993,106 @@ def delete_account_page():
     flash("帳號已刪除", "success")
     return redirect("/login")
 
-@app.route("/forgot-password")
+
+@app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password_page():
+    if current_user_id():
+        return redirect("/dashboard")
+
+    if request.method == "POST":
+        email = normalize_email(request.form.get("email", ""))
+
+        if not email:
+            flash("請輸入 Email", "warning")
+            return redirect("/forgot-password")
+
+        if not is_valid_email(email):
+            flash("Email 格式不正確", "warning")
+            return redirect("/forgot-password")
+
+        # 安全設計：不透露這個 Email 是否存在。
+        generic_message = "如果此 Email 有綁定 Cadouka 帳號，我們已寄出密碼重設連結。"
+
+        try:
+            user = get_user_by_email(email)
+
+            if user:
+                token = secrets.token_urlsafe(32)
+                token_hash = hash_password_reset_token(token)
+                expires_at = (
+                    datetime.now(timezone(timedelta(hours=8))) +
+                    timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
+                ).strftime("%Y-%m-%d %H:%M:%S")
+
+                create_password_reset_token(
+                    user_id=user["id"],
+                    token_hash=token_hash,
+                    expires_at=expires_at
+                )
+
+                reset_url = f"{get_base_url()}/reset-password/{token}"
+                send_password_reset_email(email, reset_url)
+
+                cleanup_expired_password_reset_tokens(retention_days=7)
+
+        except Exception as e:
+            print("忘記密碼處理失敗：", e)
+            traceback.print_exc()
+
+        flash(generic_message, "success")
+        return redirect("/forgot-password")
+
     return render_template("forgot_password.html")
+
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password_page(token):
+    if current_user_id():
+        return redirect("/dashboard")
+
+    token_row, token_status = get_password_reset_token_status(token)
+
+    if token_status != "valid":
+        return render_template(
+            "reset_password.html",
+            token=token,
+            token_valid=False,
+            token_status=token_status
+        )
+
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not new_password or not confirm_password:
+            flash("請完整填寫新密碼欄位", "warning")
+            return redirect(f"/reset-password/{token}")
+
+        if len(new_password) < 6:
+            flash("新密碼至少需要 6 碼", "warning")
+            return redirect(f"/reset-password/{token}")
+
+        if new_password != confirm_password:
+            flash("兩次輸入的新密碼不一致", "warning")
+            return redirect(f"/reset-password/{token}")
+
+        password_hash = generate_password_hash(new_password)
+        update_user_password(token_row["user_id"], password_hash)
+        mark_password_reset_token_used(
+            token_row["id"],
+            get_taiwan_now_text()
+        )
+
+        flash("密碼已重設成功，請使用新密碼登入。", "success")
+        return redirect("/login")
+
+    return render_template(
+        "reset_password.html",
+        token=token,
+        token_valid=True,
+        token_status="valid"
+    )
+
 
 
 @app.route("/privacy")

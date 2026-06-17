@@ -56,6 +56,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             user_code TEXT UNIQUE,
             username TEXT UNIQUE NOT NULL,
+            email TEXT,
             password_hash TEXT NOT NULL,
             display_name TEXT,
             is_admin INTEGER DEFAULT 0,
@@ -67,6 +68,12 @@ def init_db():
             privacy_accepted_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+        """)
+
+        cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+        ON users (email)
+        WHERE email IS NOT NULL AND email <> ''
         """)
 
         cursor.execute("""
@@ -149,6 +156,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_code TEXT UNIQUE,
             username TEXT UNIQUE NOT NULL,
+            email TEXT,
             password_hash TEXT NOT NULL,
             display_name TEXT,
             is_admin INTEGER DEFAULT 0,
@@ -160,6 +168,12 @@ def init_db():
             privacy_accepted_at TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+        """)
+
+        cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+        ON users (email)
+        WHERE email IS NOT NULL AND email <> ''
         """)
 
         cursor.execute("""
@@ -248,24 +262,29 @@ def init_db():
 def generate_user_code(user_id):
     return f"CDK{int(user_id):05d}"
 
-def create_user(username, password_hash, terms_accepted_at="", privacy_accepted_at=""):
+
+def create_user(username, password_hash, email="", terms_accepted_at="", privacy_accepted_at=""):
     conn = get_connection()
     cursor = conn.cursor()
+
+    email = (email or "").strip().lower()
 
     if is_postgres():
         sql = """
             INSERT INTO users (
                 username,
+                email,
                 password_hash,
                 terms_accepted_at,
                 privacy_accepted_at
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             RETURNING id
         """
 
         execute_sql(cursor, sql, [
             username,
+            email,
             password_hash,
             terms_accepted_at or "",
             privacy_accepted_at or ""
@@ -278,15 +297,17 @@ def create_user(username, password_hash, terms_accepted_at="", privacy_accepted_
         sql = """
             INSERT INTO users (
                 username,
+                email,
                 password_hash,
                 terms_accepted_at,
                 privacy_accepted_at
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
         """
 
         execute_sql(cursor, sql, [
             username,
+            email,
             password_hash,
             terms_accepted_at or "",
             privacy_accepted_at or ""
@@ -325,6 +346,46 @@ def get_user_by_username(username):
 
     conn.close()
     return user
+
+
+
+def get_user_by_email(email):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    normalized_email = (email or "").strip().lower()
+
+    sql = """
+        SELECT * FROM users
+        WHERE LOWER(email) = LOWER(?)
+    """
+
+    execute_sql(cursor, sql, [normalized_email])
+    user = cursor.fetchone()
+
+    conn.close()
+    return user
+
+
+def update_user_email(user_id, email):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    normalized_email = (email or "").strip().lower()
+
+    sql = """
+        UPDATE users
+        SET email = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        normalized_email,
+        user_id
+    ])
+
+    conn.commit()
+    conn.close()
 
 
 def get_user_by_id(user_id):
@@ -3122,12 +3183,164 @@ def backfill_user_codes():
     conn.commit()
     conn.close()
 
+
+def create_users_email_unique_index_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+        ON users (email)
+        WHERE email IS NOT NULL AND email <> ''
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def create_password_reset_tokens_table_if_not_exists():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_postgres():
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            token_hash TEXT UNIQUE NOT NULL,
+            expires_at TEXT NOT NULL,
+            used_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token_hash TEXT UNIQUE NOT NULL,
+            expires_at TEXT NOT NULL,
+            used_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+    conn.commit()
+    conn.close()
+
+
+def create_password_reset_token(user_id, token_hash, expires_at):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 同一個使用者重新申請時，先把舊 token 標記失效。
+    execute_sql(cursor, """
+        UPDATE password_reset_tokens
+        SET used_at = ?
+        WHERE user_id = ? AND (used_at IS NULL OR used_at = '')
+    """, [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        user_id
+    ])
+
+    sql = """
+        INSERT INTO password_reset_tokens (
+            user_id,
+            token_hash,
+            expires_at,
+            used_at
+        )
+        VALUES (?, ?, ?, '')
+    """
+
+    execute_sql(cursor, sql, [
+        user_id,
+        token_hash,
+        expires_at
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def get_password_reset_token_by_hash(token_hash):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT
+            t.*,
+            u.username,
+            u.email
+        FROM password_reset_tokens t
+        JOIN users u
+            ON t.user_id = u.id
+        WHERE t.token_hash = ?
+        LIMIT 1
+    """
+
+    execute_sql(cursor, sql, [token_hash])
+    token_row = cursor.fetchone()
+
+    conn.close()
+    return token_row
+
+
+def mark_password_reset_token_used(token_id, used_at):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    sql = """
+        UPDATE password_reset_tokens
+        SET used_at = ?
+        WHERE id = ?
+    """
+
+    execute_sql(cursor, sql, [
+        used_at,
+        token_id
+    ])
+
+    conn.commit()
+    conn.close()
+
+
+def cleanup_expired_password_reset_tokens(retention_days=7):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cutoff = (datetime.now() - timedelta(days=retention_days)).strftime("%Y-%m-%d %H:%M:%S")
+
+    if is_postgres():
+        sql = """
+            DELETE FROM password_reset_tokens
+            WHERE created_at < %s
+            RETURNING id
+        """
+        cursor.execute(sql, [cutoff])
+        deleted_rows = cursor.fetchall()
+        deleted_count = len(deleted_rows)
+    else:
+        execute_sql(cursor, """
+            DELETE FROM password_reset_tokens
+            WHERE created_at < ?
+        """, [cutoff])
+        deleted_count = cursor.rowcount
+
+    conn.commit()
+    conn.close()
+
+    return deleted_count or 0
+
+
 def migrate_db():
     """
     舊資料庫升級用。
     PostgreSQL 和 SQLite 都會檢查欄位是否存在。
     """
     add_user_column_if_not_exists("user_code", "TEXT")
+    add_user_column_if_not_exists("email", "TEXT")
+    create_users_email_unique_index_if_not_exists()
     add_user_column_if_not_exists("display_name", "TEXT")
     add_user_column_if_not_exists("is_admin", "INTEGER DEFAULT 0")
     add_user_column_if_not_exists("membership_level", "TEXT DEFAULT 'free'")
@@ -3151,6 +3364,9 @@ def migrate_db():
     add_column_if_not_exists("sell_other_fee", "REAL DEFAULT 0")
     add_column_if_not_exists("net_revenue", "REAL DEFAULT 0")
     add_column_if_not_exists("realized_roi", "REAL DEFAULT 0")
+
+    create_password_reset_tokens_table_if_not_exists()
+    cleanup_expired_password_reset_tokens(retention_days=7)
 
     create_price_update_tables_if_not_exists()
 
