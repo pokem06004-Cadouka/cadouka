@@ -5412,3 +5412,9 @@ body.color-rise-red .pill-loss {
 .profile-password-form .form-help-text {
     margin-top: 8px;
 }
+
+/* Email label */
+.auth-form label.email-label-normal {
+    font-weight: 600;
+    letter-spacing: 0;
+}
