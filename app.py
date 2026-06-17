@@ -661,26 +661,22 @@ def format_jpy_price_for_card(price):
 
 def calculate_market_price_from_prices(prices, jpy_rate):
     """
-    用 PSA10 成交紀錄平均價 * 日圓匯率，算出目前市價。
+    用最新一筆有效成交價 * 日圓匯率，算出目前市價。
+
+    SNKRDUNK 回傳的成交紀錄通常是新到舊排列，
+    所以這裡會從前面開始找第一筆可以解析的成交價。
     沒有資料或匯率失敗時回傳 0。
     """
     if not prices or not jpy_rate:
         return 0
 
-    valid_prices = []
-
     for p in prices:
         jpy_price = format_jpy_price_for_card(p.get("price"))
 
         if jpy_price is not None:
-            valid_prices.append(jpy_price)
+            return round(jpy_price * jpy_rate)
 
-    if not valid_prices:
-        return 0
-
-    average_jpy = round(sum(valid_prices) / len(valid_prices))
-
-    return round(average_jpy * jpy_rate)
+    return 0
 
 def parse_jpy_price(price):
     try:
@@ -1253,7 +1249,7 @@ def build_pro_history_data(card, selected_grade):
 
 def get_market_price_by_product_url(product_url):
     """
-    用 SNKRDUNK 商品網址抓最新 PSA10 平均成交價，並換算成台幣。
+    用 SNKRDUNK 商品網址抓最新一筆 PSA10 成交價，並換算成台幣。
     """
     if not product_url:
         return 0
@@ -1305,6 +1301,7 @@ def should_skip_price_update(price_updated_at, cooldown_hours=6):
 
 PRICE_UPDATE_COOLDOWN_HOURS = 6
 MARKET_PRICE_CACHE_HOURS = 6
+MARKET_PRICE_CACHE_SOURCE = "SNKRDUNK_LATEST"
 JPY_RATE_CACHE_HOURS = 6
 PRICE_UPDATE_BATCH_SIZE = int(os.getenv("PRICE_UPDATE_BATCH_SIZE", "2"))
 PRICE_UPDATE_STALE_MINUTES = 10
@@ -1425,7 +1422,11 @@ def get_market_price_by_product_url_cached(product_url, grade="PSA10"):
     grade = grade or "PSA10"
     cache = get_market_price_cache(product_id, grade)
 
-    if cache and is_cache_valid(
+    cache_source = str(get_card_value(cache, "source", "") or "") if cache else ""
+
+    # 只使用新版「最新成交價」快取。
+    # 舊版平均價快取 source 不是 SNKRDUNK_LATEST，會自動略過並重新抓。
+    if cache and cache_source == MARKET_PRICE_CACHE_SOURCE and is_cache_valid(
         get_card_value(cache, "updated_at", ""),
         cache_hours=MARKET_PRICE_CACHE_HOURS
     ):
@@ -1459,7 +1460,7 @@ def get_market_price_by_product_url_cached(product_url, grade="PSA10"):
         average_jpy=average_jpy,
         jpy_rate=jpy_rate,
         updated_at=get_taiwan_now_text(),
-        source="SNKRDUNK"
+        source=MARKET_PRICE_CACHE_SOURCE
     )
 
     return market_price_twd, "external"
