@@ -18,6 +18,8 @@
                 type="text"
                 name="username"
                 placeholder="請輸入帳號"
+                value="{{ form_data.username if form_data else '' }}"
+                autocomplete="username"
                 required
             >
 
@@ -26,6 +28,8 @@
                 type="email"
                 name="email"
                 placeholder="可用於忘記密碼時更改密碼"
+                value="{{ form_data.email if form_data else '' }}"
+                autocomplete="email"
                 required
             >
 
@@ -49,6 +53,8 @@
                 <input
                     type="checkbox"
                     name="agree_terms"
+                    value="1"
+                    {% if form_data and form_data.agree_terms %}checked{% endif %}
                     required
                     oninvalid="this.setCustomValidity('請先勾選同意服務條款與隱私權政策')"
                     oninput="this.setCustomValidity('')"

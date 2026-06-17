@@ -1742,44 +1742,56 @@ def register_page():
     if current_user_id():
         return redirect("/dashboard")
 
+    form_data = {
+        "username": "",
+        "email": "",
+        "agree_terms": False
+    }
+
+    def render_register_with_warning(message):
+        flash(message, "warning")
+        return render_template(
+            "register.html",
+            form_data=form_data
+        )
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         email = normalize_email(request.form.get("email", ""))
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
-        agree_terms = request.form.get("agree_terms")
+        agree_terms = request.form.get("agree_terms", "")
+
+        form_data = {
+            "username": username,
+            "email": email,
+            "agree_terms": agree_terms in ["1", "on", "true", "yes"]
+        }
 
         if not username or not email or not password:
-            flash("請輸入帳號、Email 與密碼", "warning")
-            return redirect("/register")
+            return render_register_with_warning("請輸入帳號、Email 與密碼")
 
         if not is_valid_email(email):
-            flash("Email 格式不正確", "warning")
-            return redirect("/register")
+            return render_register_with_warning("Email 格式不正確")
 
         if len(password) < 6:
-            flash("密碼至少需要 6 碼", "warning")
-            return redirect("/register")
+            return render_register_with_warning("密碼至少需要 6 碼")
 
         if password != confirm_password:
-            flash("兩次輸入的密碼不一致", "warning")
-            return redirect("/register")
+            return render_register_with_warning("兩次輸入的密碼不一致")
 
-        if agree_terms != "1":
-            flash("請先閱讀並同意服務條款與隱私權政策", "warning")
-            return redirect("/register")
+        if agree_terms not in ["1", "on", "true", "yes"]:
+            return render_register_with_warning("請先閱讀並同意服務條款與隱私權政策")
 
         existing_user = get_user_by_username(username)
 
         if existing_user:
-            flash("這個帳號已經被使用", "warning")
-            return redirect("/register")
+            return render_register_with_warning("這個帳號已經被使用")
 
         existing_email_user = get_user_by_email(email)
 
         if existing_email_user:
-            flash("這個 Email 已經被使用", "warning")
-            return redirect("/register")
+            return render_register_with_warning("這個 Email 已經被使用")
 
         first_user_before_create = get_first_user()
 
@@ -1806,7 +1818,10 @@ def register_page():
         flash("註冊成功，已自動登入", "success")
         return redirect("/dashboard")
 
-    return render_template("register.html")
+    return render_template(
+        "register.html",
+        form_data=form_data
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
