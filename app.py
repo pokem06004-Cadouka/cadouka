@@ -4433,9 +4433,10 @@ def handle_message(event):
                 text=(
                     "【LINE 查價】\n"
                     "在 LINE 直接輸入關鍵字，例如：\n"
-                    "Pikachu\n"
-                    "系列名稱：M2 SV2a...\n"
                     "MUR\n"
+                    "Pikachu...\n"
+                    "梵谷皮、皮卡丘、噴火龍..\n"
+                    "系列名稱：M2 SV2a...\n"
                     "卡牌左下角編號：XXX XXX"
                 ),
                 quick_reply=create_tutorial_quick_reply()
