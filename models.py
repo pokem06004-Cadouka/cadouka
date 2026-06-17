@@ -69,13 +69,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
-
-        cursor.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
-        ON users (email)
-        WHERE email IS NOT NULL AND email <> ''
-        """)
-
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
             id SERIAL PRIMARY KEY,
@@ -169,13 +162,6 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
-
-        cursor.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
-        ON users (email)
-        WHERE email IS NOT NULL AND email <> ''
-        """)
-
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
