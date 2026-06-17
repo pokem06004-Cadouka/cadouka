@@ -4267,7 +4267,7 @@ def handle_message(event):
                     text=(
                         "你目前尚未綁定 Cadouka 帳號，無法用 LINE 重設密碼。\n\n"
                         "請先登入 Cadouka 網站，到「個人資料」產生 LINE 綁定連結；"
-                        "如果已經忘記密碼又尚未綁定，請聯絡管理員協助。"
+                        "如果已經忘記密碼又尚未綁定，請聯絡Cadouka客服:@081uwyrt協助。"
                     )
                 )
             )
