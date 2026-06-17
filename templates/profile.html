@@ -69,12 +69,11 @@
         </form>
 
         <form action="/profile/update-email" method="post" class="profile-password-form profile-display-form">
-            <label class="email-label-normal">Gmail</label>
+            <label>Gmail</label>
             <input
                 type="email"
                 name="email"
                 value="{{ user.email or '' }}"
-                placeholder="用於忘記密碼時接收重設連結"
             >
 
             <button type="submit" class="btn-add profile-submit-btn">
