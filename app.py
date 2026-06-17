@@ -574,6 +574,29 @@ def get_base_url():
     return base_url
 
 
+def create_password_reset_url_for_user(user):
+    """
+    產生 LINE 用的密碼重設連結。
+    token 只會顯示一次，資料庫只保存 hash。
+    """
+    token = secrets.token_urlsafe(32)
+    token_hash = hash_password_reset_token(token)
+    expires_at = (
+        datetime.now(timezone(timedelta(hours=8))) +
+        timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+    create_password_reset_token(
+        user_id=user["id"],
+        token_hash=token_hash,
+        expires_at=expires_at
+    )
+
+    cleanup_expired_password_reset_tokens(retention_days=7)
+
+    return f"{get_base_url()}/reset-password/{token}"
+
+
 def create_main_quick_reply():
     base_url = get_base_url()
 
@@ -595,6 +618,12 @@ def create_main_quick_reply():
                 action=MessageAction(
                     label="使用教學",
                     text="使用教學"
+                )
+            ),
+            QuickReplyButton(
+                action=MessageAction(
+                    label="忘記密碼",
+                    text="忘記密碼"
                 )
             ),
             QuickReplyButton(
@@ -2014,47 +2043,9 @@ def forgot_password_page():
     if current_user_id():
         return redirect("/dashboard")
 
+    # 免費版改為 LINE 綁定帳號重設密碼，不再使用 Email / SMTP 寄信。
     if request.method == "POST":
-        email = normalize_email(request.form.get("email", ""))
-
-        if not email:
-            flash("請輸入 Email", "warning")
-            return redirect("/forgot-password")
-
-        if not is_valid_email(email):
-            flash("Email 格式不正確", "warning")
-            return redirect("/forgot-password")
-
-        # 安全設計：不透露這個 Email 是否存在。
-        generic_message = "如果此 Email 有綁定 Cadouka 帳號，我們已寄出密碼重設連結。"
-
-        try:
-            user = get_user_by_email(email)
-
-            if user:
-                token = secrets.token_urlsafe(32)
-                token_hash = hash_password_reset_token(token)
-                expires_at = (
-                    datetime.now(timezone(timedelta(hours=8))) +
-                    timedelta(minutes=PASSWORD_RESET_TOKEN_MINUTES)
-                ).strftime("%Y-%m-%d %H:%M:%S")
-
-                create_password_reset_token(
-                    user_id=user["id"],
-                    token_hash=token_hash,
-                    expires_at=expires_at
-                )
-
-                reset_url = f"{get_base_url()}/reset-password/{token}"
-                send_password_reset_email(email, reset_url)
-
-                cleanup_expired_password_reset_tokens(retention_days=7)
-
-        except Exception as e:
-            print("忘記密碼處理失敗：", e)
-            traceback.print_exc()
-
-        flash(generic_message, "success")
+        flash("請到 LINE 輸入：忘記密碼，系統會傳送重設密碼連結。", "info")
         return redirect("/forgot-password")
 
     return render_template("forgot_password.html")
@@ -4255,6 +4246,74 @@ def handle_message(event):
         )
         return
 
+    # =========================
+    # LINE Password Reset Command
+    # =========================
+
+    if card_id in ["忘記密碼", "重設密碼", "密碼重設"]:
+        user = get_user_by_line_user_id(line_user_id)
+
+        if not user:
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="password_reset_line",
+                result="unbound",
+                message="LINE 密碼重設失敗：尚未綁定 Cadouka 帳號"
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=(
+                        "你目前尚未綁定 Cadouka 帳號，無法用 LINE 重設密碼。\n\n"
+                        "請先登入 Cadouka 網站，到「個人資料」產生 LINE 綁定連結；"
+                        "如果已經忘記密碼又尚未綁定，請聯絡管理員協助。"
+                    )
+                )
+            )
+            return
+
+        try:
+            reset_url = create_password_reset_url_for_user(user)
+            display_name = user["display_name"] or user["username"]
+
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="password_reset_line",
+                result="success",
+                message="LINE 密碼重設連結已產生"
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=(
+                        f"已為 Cadouka 帳號「{display_name}」產生密碼重設連結。\n\n"
+                        f"請在 {PASSWORD_RESET_TOKEN_MINUTES} 分鐘內打開：\n"
+                        f"{reset_url}\n\n"
+                        "如果不是你本人操作，請忽略這則訊息。"
+                    )
+                )
+            )
+            return
+
+        except Exception as e:
+            print("LINE 密碼重設失敗：", e)
+            traceback.print_exc()
+
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="password_reset_line",
+                result="failed",
+                message="LINE 密碼重設發生錯誤"
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="產生密碼重設連結時發生錯誤，請稍後再試。")
+            )
+            return
+
     # 第一次輸入解除綁定，只做確認，不直接解除
     if card_id == "解除綁定":
         user = get_user_by_line_user_id(line_user_id)
@@ -4413,6 +4472,7 @@ def handle_message(event):
                     "【常用指令】\n"
                     "綁定狀態：查看目前 LINE 是否已綁定 Cadouka 帳號\n"
                     "解除綁定：解除目前 LINE 綁定\n"
+                    "忘記密碼：取得密碼重設連結\n"
                     "使用教學：查看 Cadouka 使用方式\n"
                     "功能：查看功能"
                 ),
