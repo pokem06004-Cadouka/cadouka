@@ -4475,7 +4475,7 @@ def handle_message(event):
                     "解除綁定：解除目前 LINE 綁定\n"
                     "忘記密碼：取得密碼重設連結\n"
                     "使用教學：查看 Cadouka 使用方式\n"
-                    "功能：查看功能"
+                    "功能：查看功能" 
                 ),
                 quick_reply=create_tutorial_quick_reply()
             )
