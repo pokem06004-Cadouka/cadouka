@@ -1295,6 +1295,18 @@ def create_product_image_grid_messages(products):
 
     return messages
 
+
+def get_market_image_filename_from_url(card_image_url):
+    """
+    從 /static/generated/market_card_xxx.png 取出檔名，給 LINE postback 用。
+    """
+    filename = str(card_image_url or "").split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
+
+    if filename.startswith("market_card_") and filename.endswith(".png"):
+        return filename
+
+    return ""
+
 def create_market_image_card_flex(
     product,
     card_image_url,
@@ -1303,6 +1315,7 @@ def create_market_image_card_flex(
     is_pro=False
 ):
     product_url = product["url"]
+    market_image_filename = get_market_image_filename_from_url(card_image_url)
 
     grade_buttons = [
         ButtonComponent(
@@ -1392,6 +1405,21 @@ def create_market_image_card_flex(
                                 uri=product_url
                             ),
                             flex=1
+                        )
+                    ]
+                ),
+                BoxComponent(
+                    layout="vertical",
+                    spacing="sm",
+                    contents=[
+                        ButtonComponent(
+                            style="secondary",
+                            height="sm",
+                            action=PostbackAction(
+                                label="下載圖片",
+                                data=f"action=send_market_image&file={quote(market_image_filename)}",
+                                display_text="下載圖片"
+                            )
                         )
                     ]
                 )

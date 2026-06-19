@@ -23,7 +23,8 @@ from linebot.models import (
     MessageAction,
     URIAction,
     TemplateSendMessage,
-    ConfirmTemplate
+    ConfirmTemplate,
+    ImageSendMessage
 )
 
 from urllib.parse import parse_qs, unquote, quote, urlparse
@@ -791,6 +792,32 @@ def get_base_url():
 
     return base_url
 
+
+
+def is_valid_market_image_filename(filename):
+    """
+    只允許 LINE 行情圖卡產生的檔名，避免 postback 被拿來讀取任意檔案。
+    """
+    filename = str(filename or "").strip()
+
+    return re.match(r"^market_card_[0-9a-f]{32}\.png$", filename) is not None
+
+
+def build_market_image_url_from_filename(filename):
+    """
+    將 static/generated 內的行情圖檔名轉成 LINE 可讀取的 HTTPS 圖片網址。
+    """
+    filename = str(filename or "").strip()
+
+    if not is_valid_market_image_filename(filename):
+        return None
+
+    image_path = os.path.join(app.root_path, "static", "generated", filename)
+
+    if not os.path.isfile(image_path):
+        return None
+
+    return f"{get_base_url()}/static/generated/{quote(filename)}"
 
 def create_password_reset_url_for_user(user):
     """
@@ -5019,6 +5046,40 @@ def handle_postback(event):
         action = params.get("action", [""])[0]
 
         print("Postback action：", action, flush=True)
+
+        if action == "send_market_image":
+            filename = params.get("file", [""])[0]
+            image_url = build_market_image_url_from_filename(filename)
+
+            if not image_url:
+                safe_add_line_log(
+                    line_user_id=line_user_id,
+                    action="send_market_image",
+                    result="failed",
+                    message="行情圖不存在或已過期"
+                )
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="這張行情圖已過期，請重新查價後再下載圖片。")
+                )
+                return
+
+            safe_add_line_log(
+                line_user_id=line_user_id,
+                action="send_market_image",
+                result="success",
+                message="傳送行情圖 ImageMessage"
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                ImageSendMessage(
+                    original_content_url=image_url,
+                    preview_image_url=image_url
+                )
+            )
+            return
 
         products = user_products.get(line_user_id)
 
