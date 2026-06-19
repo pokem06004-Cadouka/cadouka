@@ -320,6 +320,61 @@ def get_font(size=24, bold=False):
     return ImageFont.load_default()
 
 
+def get_jp_font(size=24, bold=False):
+    """
+    商品名稱專用字型：
+    優先使用日文字型，避免「団 / 済」等日文字變成方塊。
+    請將 NotoSansJP-Regular.ttf / NotoSansJP-Bold.ttf 放在 fonts/ 資料夾。
+    如果沒有，會退回 NotoSansCJKjp 或系統字型。
+    """
+    if bold:
+        font_names = [
+            "NotoSansJP-Bold.ttf",
+            "NotoSansCJKjp-Bold.otf",
+            "NotoSansCJK-Bold.ttc",
+            "NotoSansTC-Bold.ttf",
+            "NotoSansCJKtc-Bold.otf"
+        ]
+        system_fonts = [
+            "C:/Windows/Fonts/meiryob.ttc",
+            "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/msjhbd.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        ]
+    else:
+        font_names = [
+            "NotoSansJP-Regular.ttf",
+            "NotoSansCJKjp-Regular.otf",
+            "NotoSansCJK-Regular.ttc",
+            "NotoSansTC-Regular.ttf",
+            "NotoSansCJKtc-Regular.otf"
+        ]
+        system_fonts = [
+            "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/msjh.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        ]
+
+    for font_name in font_names:
+        font_path = FONT_DIR / font_name
+
+        try:
+            if font_path.exists():
+                return ImageFont.truetype(str(font_path), size=size)
+        except Exception as e:
+            print("Pillow 日文字型載入失敗：", font_path, e, flush=True)
+
+    for font_path in system_fonts:
+        try:
+            return ImageFont.truetype(font_path, size=size)
+        except:
+            continue
+
+    return ImageFont.load_default()
+
+
 def setup_matplotlib_font():
     font_names = [
         "NotoSansTC-Regular.ttf",
@@ -400,6 +455,33 @@ def format_product_name_for_card(product_name):
     # 顯示到 ]，包含 ]
     if "]" in text:
         text = text.split("]", 1)[0].strip() + "]"
+
+    return text or "未命名商品"
+
+
+def format_title_with_bracket_linebreak(product_name):
+    """
+    行情圖商品名稱專用：
+    1. 保留到 ] 為止。
+    2. 遇到 [ 或 ［ 自動換行，避免商品名稱太長爆版。
+    """
+    text = str(product_name or "未命名商品").strip()
+
+    if "]" in text:
+        text = text.split("]", 1)[0].strip() + "]"
+
+    if "［" in text:
+        idx = text.find("［")
+        if idx > 0:
+            text = text[:idx].rstrip() + "\n" + text[idx:]
+
+    elif " [" in text:
+        text = text.replace(" [", "\n[", 1)
+
+    elif "[" in text:
+        idx = text.find("[")
+        if idx > 0:
+            text = text[:idx].rstrip() + "\n" + text[idx:]
 
     return text or "未命名商品"
 
@@ -671,7 +753,8 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         min_interval_seconds=int(os.getenv("GENERATED_IMAGE_CLEANUP_INTERVAL_SECONDS", "3600"))
     )
 
-    product_name = format_product_name_for_card(product.get("name"))
+    product_name_raw = format_product_name_for_card(product.get("name"))
+    product_name = format_title_with_bracket_linebreak(product_name_raw)
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
@@ -682,7 +765,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw = ImageDraw.Draw(card)
 
     # 字型
-    title_font = get_font(52, bold=True)
+    title_font = get_jp_font(52, bold=True)
 
     stat_label_font = get_font(42, bold=True)
     stat_jpy_font = get_font(46, bold=True)
@@ -792,22 +875,45 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     right_x = 520
     right_w = 930
 
-    # 商品名稱：加大，若太長就自動微縮，避免超出右側
+    # 商品名稱：日文字型 + 遇到 [ / ［ 自動換行，避免爆版
     title_x = right_x
     title_y = 65
     title_font_size = 52
+    title_min_size = 34
+    title_line_spacing = 8
     title_font_dynamic = title_font
 
-    while text_width(draw, product_name, title_font_dynamic) > right_w and title_font_size > 40:
-        title_font_size -= 2
-        title_font_dynamic = get_font(title_font_size, bold=True)
+    while title_font_size >= title_min_size:
+        title_font_dynamic = get_jp_font(title_font_size, bold=True)
 
-    draw.text(
+        title_bbox = draw.multiline_textbbox(
+            (0, 0),
+            product_name,
+            font=title_font_dynamic,
+            spacing=title_line_spacing
+        )
+        title_w = title_bbox[2] - title_bbox[0]
+
+        if title_w <= right_w:
+            break
+
+        title_font_size -= 2
+
+    draw.multiline_text(
         (title_x, title_y),
         product_name,
         fill="#222222",
-        font=title_font_dynamic
+        font=title_font_dynamic,
+        spacing=title_line_spacing
     )
+
+    title_bbox = draw.multiline_textbbox(
+        (title_x, title_y),
+        product_name,
+        font=title_font_dynamic,
+        spacing=title_line_spacing
+    )
+    title_h = title_bbox[3] - title_bbox[1]
 
     # =========================
     # 放大後的折線圖：往上移，吃掉原本統計區空間
@@ -840,7 +946,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # 位置
     badge_x = right_x + 30
-    badge_y = 166   # 商品名稱下方，可再微調
+    badge_y = title_y + title_h + 16   # 商品名稱換行後，PSA 標籤自動排在標題下方
 
     # 內距
     badge_padding_x = 20
@@ -1018,7 +1124,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 匯率不強制補小數位，保留抓到的原始值
     # =========================
    # 右下角資訊：同一排，整組靠右下
-    footer_font = get_font(21, bold=False)
+    footer_font = get_font(20, bold=False)
     footer_color = "#666666"
 
     if jpy_rate:
