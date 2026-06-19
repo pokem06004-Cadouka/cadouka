@@ -698,7 +698,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         width=8                # 邊框粗細
     )
     # =========================
-    # Cadouka logo（左上角）
+    # Cadouka logo
     # =========================
     logo_path = os.path.join(
         os.path.dirname(__file__),
@@ -1029,10 +1029,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 875
+    footer_y = 855
 
     # 整組最右邊的位置
-    footer_right_x = canvas_width - 55
+    footer_right_x = canvas_width - 75
 
     # 兩段文字中間距離
     footer_gap = 36
