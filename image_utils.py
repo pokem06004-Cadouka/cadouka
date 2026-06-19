@@ -689,7 +689,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (40, 40, canvas_width - 40, canvas_height - 40)
+    outer_box = (30, 35, canvas_width - 30, canvas_height - 35)
     draw.rounded_rectangle(
         outer_box,
         radius=20,
