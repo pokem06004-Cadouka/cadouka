@@ -1295,7 +1295,7 @@ def create_product_image_grid_messages(products):
     return messages
 
 
-def create_compact_outline_button(label, action, text_color="#216494", border_color="#3A506E"):
+def create_compact_outline_button(label, action, text_color="#216494", border_color="#6482AD"):
     """
     用 BoxComponent 做小型假按鈕。
     改成透明底、細邊框、微圓角長方形，整體更俐落。
