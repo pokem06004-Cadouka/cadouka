@@ -26,11 +26,14 @@ from linebot.models import (
     ConfirmTemplate
 )
 
-from urllib.parse import parse_qs, unquote, quote
+from urllib.parse import parse_qs, unquote, quote, urlparse
 import urllib.request as req
 import traceback
 import os
 import csv
+import time
+import socket
+import ipaddress
 import random
 import string
 import secrets
@@ -158,13 +161,227 @@ from datetime import datetime, date, timedelta,timezone
 
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "cadouka-secret-key")
+
+# =========================
+# Security Settings
+# =========================
+
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+
+if not SECRET_KEY:
+    # Render / 正式資料庫環境不能使用固定預設 secret key。
+    if os.getenv("RENDER") or os.getenv("DATABASE_URL"):
+        raise RuntimeError("SECRET_KEY is not set. Please set SECRET_KEY in Render Environment Variables.")
+
+    # 本機開發用 fallback；正式環境不會走到這裡。
+    SECRET_KEY = "dev-only-change-this-secret-key"
+
+app.secret_key = SECRET_KEY
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "1").strip() != "0"
+)
 
 # 圖片上傳限制：前端會先壓縮，後端再保護性限制大小。
 CARD_IMAGE_MAX_MB = 3
 app.config["MAX_CONTENT_LENGTH"] = CARD_IMAGE_MAX_MB * 1024 * 1024
 
 LINE_LIFF_ID = os.getenv("LINE_LIFF_ID", "")
+
+MIN_PASSWORD_LENGTH = int(os.getenv("MIN_PASSWORD_LENGTH", "8"))
+
+CSRF_EXEMPT_PATHS = {
+    "/callback",                 # LINE webhook，不會帶網站 CSRF token
+    "/line/liff-bind/confirm"    # LIFF 由 LINE 前端流程呼叫，另外用綁定碼驗證
+}
+
+RATE_LIMITS = {
+    "login": (8, 15 * 60),
+    "register": (5, 60 * 60),
+    "forgot_password": (5, 15 * 60),
+    "reset_password": (10, 15 * 60),
+    "change_password": (8, 15 * 60),
+    "line_bind": (5, 10 * 60),
+    "line_liff_bind": (10, 10 * 60)
+}
+
+_rate_limit_store = {}
+
+
+def get_or_create_csrf_token():
+    token = session.get("_csrf_token")
+
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["_csrf_token"] = token
+
+    return token
+
+
+def validate_csrf_token():
+    if request.path in CSRF_EXEMPT_PATHS:
+        return True
+
+    expected_token = session.get("_csrf_token")
+    supplied_token = (
+        request.form.get("_csrf_token")
+        or request.headers.get("X-CSRFToken")
+        or request.headers.get("X-CSRF-Token")
+    )
+
+    if not expected_token or not supplied_token:
+        return False
+
+    return secrets.compare_digest(str(expected_token), str(supplied_token))
+
+
+@app.before_request
+def verify_csrf_for_unsafe_methods():
+    if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
+        return None
+
+    if validate_csrf_token():
+        return None
+
+    if request.is_json or request.path.startswith("/cards/refresh-prices"):
+        return jsonify({
+            "success": False,
+            "message": "頁面安全驗證已過期，請重新整理後再試。"
+        }), 400
+
+    flash("頁面安全驗證已過期，請重新整理後再試。", "warning")
+    return redirect(request.referrer or "/")
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
+
+
+def get_client_ip():
+    forwarded_for = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    return forwarded_for or request.remote_addr or "unknown"
+
+
+def make_rate_limit_key(scope, identifier=""):
+    raw_key = f"{scope}:{identifier or get_client_ip()}"
+    return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+
+def is_rate_limited(key, limit, window_seconds):
+    now = time.time()
+    attempts = [ts for ts in _rate_limit_store.get(key, []) if now - ts < window_seconds]
+    _rate_limit_store[key] = attempts
+    return len(attempts) >= limit
+
+
+def record_rate_limit_attempt(key):
+    attempts = _rate_limit_store.get(key, [])
+    attempts.append(time.time())
+    _rate_limit_store[key] = attempts[-50:]
+
+
+def clear_rate_limit(key):
+    _rate_limit_store.pop(key, None)
+
+
+def is_blocked_by_rate_limit(scope, identifier=""):
+    limit, window_seconds = RATE_LIMITS.get(scope, (10, 15 * 60))
+    key = make_rate_limit_key(scope, identifier)
+    return key, is_rate_limited(key, limit, window_seconds)
+
+
+def host_matches_allowed_suffix(hostname, allowed_suffixes):
+    hostname = (hostname or "").lower().strip(".")
+
+    for suffix in allowed_suffixes:
+        suffix = suffix.lower().strip().lstrip(".")
+
+        if hostname == suffix or hostname.endswith("." + suffix):
+            return True
+
+    return False
+
+
+def hostname_resolves_to_private_ip(hostname):
+    try:
+        infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        return True
+
+    for info in infos:
+        ip_text = info[4][0]
+
+        try:
+            ip = ipaddress.ip_address(ip_text)
+        except ValueError:
+            return True
+
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return True
+
+    return False
+
+
+def is_safe_external_image_url(image_url):
+    try:
+        parsed = urlparse(image_url)
+    except Exception:
+        return False
+
+    if parsed.scheme not in ["http", "https"]:
+        return False
+
+    hostname = parsed.hostname or ""
+
+    allowed_suffixes = [
+        suffix.strip()
+        for suffix in os.getenv(
+            "ALLOWED_CROP_IMAGE_HOSTS",
+            "snkrdunk.com,res.cloudinary.com,cloudinary.com,amazonaws.com,cloudfront.net,googleusercontent.com,gstatic.com"
+        ).split(",")
+        if suffix.strip()
+    ]
+
+    if not host_matches_allowed_suffix(hostname, allowed_suffixes):
+        return False
+
+    if hostname_resolves_to_private_ip(hostname):
+        return False
+
+    return True
+
+
+def read_limited_response(response, max_bytes):
+    content_length = response.headers.get("Content-Length")
+
+    if content_length:
+        try:
+            if int(content_length) > max_bytes:
+                raise ValueError("image too large")
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
+    data = response.read(max_bytes + 1)
+
+    if len(data) > max_bytes:
+        raise ValueError("image too large")
+
+    return data
 
 init_db()
 migrate_db()
@@ -383,14 +600,14 @@ def generate_line_bind_code():
     characters = string.ascii_uppercase + string.digits
 
     for _ in range(20):
-        bind_code = "".join(random.choice(characters) for _ in range(6))
+        bind_code = "".join(secrets.choice(characters) for _ in range(8))
 
         existing_user = get_user_by_line_bind_code(bind_code)
 
         if not existing_user:
             return bind_code
 
-    return "".join(random.choice(characters) for _ in range(10))
+    return "".join(secrets.choice(characters) for _ in range(12))
 
 
 
@@ -422,7 +639,7 @@ def send_password_reset_email(to_email, reset_url):
         return False
 
     if not SMTP_HOST or not SMTP_PORT or not SMTP_FROM_EMAIL:
-        print("密碼重設連結（SMTP 尚未設定）：", reset_url, flush=True)
+        print("密碼重設 Email 未寄出：SMTP 尚未設定。", flush=True)
         return False
 
     subject = "Cadouka 密碼重設連結"
@@ -461,7 +678,7 @@ Cadouka"""
     except Exception as e:
         print("密碼重設 Email 寄送失敗：", e, flush=True)
         traceback.print_exc()
-        print("密碼重設連結（Email 寄送失敗備援）：", reset_url, flush=True)
+        print("密碼重設 Email 未寄出；正式環境不會在 Logs 顯示重設 token。", flush=True)
         return False
 
 
@@ -558,7 +775,8 @@ def inject_current_user():
         "line_liff_id": LINE_LIFF_ID,
         "membership_level": get_membership_level(user),
         "is_pro": is_pro_user(user),
-        "get_optimized_image_url": get_optimized_image_url
+        "get_optimized_image_url": get_optimized_image_url,
+        "csrf_token": get_or_create_csrf_token
     }
 
 # =========================
@@ -1785,6 +2003,16 @@ def register_page():
         )
 
     if request.method == "POST":
+        register_rate_key, register_blocked = is_blocked_by_rate_limit(
+            "register",
+            get_client_ip()
+        )
+
+        if register_blocked:
+            return render_register_with_warning("註冊嘗試次數過多，請稍後再試。")
+
+        record_rate_limit_attempt(register_rate_key)
+
         username = request.form.get("username", "").strip()
         email = normalize_email(request.form.get("email", ""))
         password = request.form.get("password", "").strip()
@@ -1803,8 +2031,8 @@ def register_page():
         if not is_valid_email(email):
             return render_register_with_warning("Email 格式不正確")
 
-        if len(password) < 6:
-            return render_register_with_warning("密碼至少需要 6 碼")
+        if len(password) < MIN_PASSWORD_LENGTH:
+            return render_register_with_warning(f"密碼至少需要 {MIN_PASSWORD_LENGTH} 碼")
 
         if password != confirm_password:
             return render_register_with_warning("兩次輸入的密碼不一致")
@@ -1863,16 +2091,29 @@ def login_page():
         password = request.form.get("password", "").strip()
         next_url = request.form.get("next", "").strip()
 
+        login_identifier = f"{get_client_ip()}:{username.lower()}"
+        login_rate_key, login_blocked = is_blocked_by_rate_limit(
+            "login",
+            login_identifier
+        )
+
+        if login_blocked:
+            flash("登入嘗試次數過多，請 15 分鐘後再試。", "warning")
+            return redirect("/login")
+
         user = get_user_by_username(username)
 
         if not user:
+            record_rate_limit_attempt(login_rate_key)
             flash("帳號或密碼錯誤", "warning")
             return redirect("/login")
 
         if not check_password_hash(user["password_hash"], password):
+            record_rate_limit_attempt(login_rate_key)
             flash("帳號或密碼錯誤", "warning")
             return redirect("/login")
 
+        clear_rate_limit(login_rate_key)
         session["user_id"] = user["id"]
         session["username"] = user["username"]
 
@@ -2001,12 +2242,24 @@ def change_password_page():
         flash("請完整填寫密碼欄位", "warning")
         return redirect("/profile")
 
+    change_password_rate_key, change_password_blocked = is_blocked_by_rate_limit(
+        "change_password",
+        f"user:{user['id']}"
+    )
+
+    if change_password_blocked:
+        flash("密碼嘗試次數過多，請 15 分鐘後再試。", "warning")
+        return redirect("/profile")
+
     if not check_password_hash(user["password_hash"], current_password):
+        record_rate_limit_attempt(change_password_rate_key)
         flash("目前密碼錯誤", "warning")
         return redirect("/profile")
 
-    if len(new_password) < 6:
-        flash("新密碼至少需要 6 碼", "warning")
+    clear_rate_limit(change_password_rate_key)
+
+    if len(new_password) < MIN_PASSWORD_LENGTH:
+        flash(f"新密碼至少需要 {MIN_PASSWORD_LENGTH} 碼", "warning")
         return redirect("/profile")
 
     if new_password != confirm_password:
@@ -2045,6 +2298,16 @@ def forgot_password_page():
 
     # 免費版改為 LINE 綁定帳號重設密碼，不再使用 Email / SMTP 寄信。
     if request.method == "POST":
+        forgot_rate_key, forgot_blocked = is_blocked_by_rate_limit(
+            "forgot_password",
+            get_client_ip()
+        )
+
+        if forgot_blocked:
+            flash("操作次數過多，請稍後再試。", "warning")
+            return redirect("/forgot-password")
+
+        record_rate_limit_attempt(forgot_rate_key)
         flash("請到 LINE 輸入：忘記密碼，系統會傳送重設密碼連結。", "info")
         return redirect("/forgot-password")
 
@@ -2067,6 +2330,17 @@ def reset_password_page(token):
         )
 
     if request.method == "POST":
+        reset_rate_key, reset_blocked = is_blocked_by_rate_limit(
+            "reset_password",
+            get_client_ip()
+        )
+
+        if reset_blocked:
+            flash("密碼重設嘗試次數過多，請稍後再試。", "warning")
+            return redirect(f"/reset-password/{token}")
+
+        record_rate_limit_attempt(reset_rate_key)
+
         new_password = request.form.get("new_password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
 
@@ -2074,8 +2348,8 @@ def reset_password_page(token):
             flash("請完整填寫新密碼欄位", "warning")
             return redirect(f"/reset-password/{token}")
 
-        if len(new_password) < 6:
-            flash("新密碼至少需要 6 碼", "warning")
+        if len(new_password) < MIN_PASSWORD_LENGTH:
+            flash(f"新密碼至少需要 {MIN_PASSWORD_LENGTH} 碼", "warning")
             return redirect(f"/reset-password/{token}")
 
         if new_password != confirm_password:
@@ -2088,6 +2362,7 @@ def reset_password_page(token):
             token_row["id"],
             get_taiwan_now_text()
         )
+        clear_rate_limit(reset_rate_key)
 
         flash("密碼已重設成功，請使用新密碼登入。", "success")
         return redirect("/login")
@@ -2130,13 +2405,27 @@ def line_liff_bind_confirm_page():
     line_user_id = data.get("line_user_id", "").strip()
     bind_code = data.get("bind_code", "").strip().upper()
 
+    liff_bind_identifier = line_user_id or get_client_ip()
+    liff_bind_rate_key, liff_bind_blocked = is_blocked_by_rate_limit(
+        "line_liff_bind",
+        liff_bind_identifier
+    )
+
+    if liff_bind_blocked:
+        return jsonify({
+            "success": False,
+            "message": "綁定嘗試次數過多，請稍後再試。"
+        }), 429
+
     if not line_user_id:
+        record_rate_limit_attempt(liff_bind_rate_key)
         return jsonify({
             "success": False,
             "message": "無法取得 LINE 使用者資訊，請重新開啟綁定頁。"
         }), 400
 
     if not bind_code:
+        record_rate_limit_attempt(liff_bind_rate_key)
         return jsonify({
             "success": False,
             "message": "找不到綁定碼，請回 Cadouka 個人資料頁重新產生綁定連結。"
@@ -2145,6 +2434,7 @@ def line_liff_bind_confirm_page():
     user = get_user_by_line_bind_code(bind_code)
 
     if not user:
+        record_rate_limit_attempt(liff_bind_rate_key)
         return jsonify({
             "success": False,
             "message": "找不到這組綁定碼，請回 Cadouka 個人資料頁重新產生。"
@@ -2159,11 +2449,13 @@ def line_liff_bind_confirm_page():
             taiwan_now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
 
             if taiwan_now > expires_at:
+                record_rate_limit_attempt(liff_bind_rate_key)
                 return jsonify({
                     "success": False,
                     "message": "這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。"
                 }), 400
         except:
+            record_rate_limit_attempt(liff_bind_rate_key)
             return jsonify({
                 "success": False,
                 "message": "綁定碼狀態異常，請回 Cadouka 個人資料頁重新產生。"
@@ -2172,11 +2464,13 @@ def line_liff_bind_confirm_page():
     existing_line_user = get_user_by_line_user_id(line_user_id)
 
     if existing_line_user and existing_line_user["id"] != user["id"]:
+        record_rate_limit_attempt(liff_bind_rate_key)
         return jsonify({
             "success": False,
             "message": "這個 LINE 帳號已經綁定其他 Cadouka 帳號，請先解除綁定。"
         }), 409
 
+    clear_rate_limit(liff_bind_rate_key)
     bind_line_user_to_account(user["id"], line_user_id)
 
     safe_add_line_log(
@@ -4120,12 +4414,22 @@ def crop_image():
         return "Missing image url", 400
 
     try:
-        image_url = unquote(image_url)
+        image_url = unquote(image_url).strip()
+
+        if not is_safe_external_image_url(image_url):
+            return "Image url is not allowed", 400
 
         request_obj = req.Request(image_url, headers=headers)
 
-        with req.urlopen(request_obj) as response:
-            image_bytes = response.read()
+        max_image_bytes = int(os.getenv("CROP_IMAGE_MAX_BYTES", str(5 * 1024 * 1024)))
+
+        with req.urlopen(request_obj, timeout=10) as response:
+            content_type = response.headers.get("Content-Type", "")
+
+            if content_type and not content_type.lower().startswith("image/"):
+                return "URL is not an image", 400
+
+            image_bytes = read_limited_response(response, max_image_bytes)
 
         cropped_image = crop_white_border(image_bytes)
 
@@ -4150,17 +4454,30 @@ def handle_message(event):
 
     if card_id.startswith("綁定 "):
         bind_code = card_id.replace("綁定 ", "", 1).strip().upper()
+        line_bind_rate_key, line_bind_blocked = is_blocked_by_rate_limit(
+            "line_bind",
+            line_user_id
+        )
 
-        if not bind_code:
+        if line_bind_blocked:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="請輸入綁定碼，例如：綁定 A8K29Q")
+                TextSendMessage(text="綁定嘗試次數過多，請 10 分鐘後再試。")
+            )
+            return
+
+        if not bind_code:
+            record_rate_limit_attempt(line_bind_rate_key)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="請輸入綁定碼，例如：綁定 A8K29Q7B")
             )
             return
 
         user = get_user_by_line_bind_code(bind_code)
 
         if not user:
+            record_rate_limit_attempt(line_bind_rate_key)
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="找不到這組綁定碼，請確認是否輸入正確。")
@@ -4176,12 +4493,14 @@ def handle_message(event):
                 taiwan_now = datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
 
                 if taiwan_now > expires_at:
+                    record_rate_limit_attempt(line_bind_rate_key)
                     line_bot_api.reply_message(
                         event.reply_token,
                         TextSendMessage(text="這組綁定碼已過期，請回 Cadouka 個人資料頁重新產生。")
                     )
                     return
             except:
+                record_rate_limit_attempt(line_bind_rate_key)
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(text="綁定碼狀態異常，請回 Cadouka 個人資料頁重新產生。")
@@ -4191,12 +4510,14 @@ def handle_message(event):
         existing_line_user = get_user_by_line_user_id(line_user_id)
 
         if existing_line_user and existing_line_user["id"] != user["id"]:
+            record_rate_limit_attempt(line_bind_rate_key)
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="這個 LINE 帳號已經綁定其他 Cadouka 帳號，請先解除綁定。")
             )
             return
 
+        clear_rate_limit(line_bind_rate_key)
         bind_line_user_to_account(user["id"], line_user_id)
 
         safe_add_line_log(

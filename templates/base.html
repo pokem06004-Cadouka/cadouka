@@ -4,6 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadouka</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        window.CADOUKA_CSRF_TOKEN = "{{ csrf_token() }}";
+
+        (function () {
+            const originalFetch = window.fetch;
+
+            window.fetch = function (input, init) {
+                init = init || {};
+
+                const method = (
+                    init.method ||
+                    (input && input.method) ||
+                    "GET"
+                ).toString().toUpperCase();
+
+                if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+                    init.headers = new Headers(
+                        init.headers ||
+                        (input && input.headers) ||
+                        {}
+                    );
+
+                    if (!init.headers.has("X-CSRFToken")) {
+                        init.headers.set("X-CSRFToken", window.CADOUKA_CSRF_TOKEN || "");
+                    }
+                }
+
+                return originalFetch(input, init);
+            };
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .nav-settings-wrap {
@@ -549,7 +581,35 @@
             }
         });
 
+        function injectCsrfTokensIntoForms() {
+            const token = window.CADOUKA_CSRF_TOKEN || "";
+
+            if (!token) {
+                return;
+            }
+
+            document.querySelectorAll("form").forEach(function (form) {
+                const method = (form.getAttribute("method") || "GET").toUpperCase();
+
+                if (method !== "POST") {
+                    return;
+                }
+
+                if (form.querySelector('input[name="_csrf_token"]')) {
+                    return;
+                }
+
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "_csrf_token";
+                input.value = token;
+                form.appendChild(input);
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
+            injectCsrfTokensIntoForms();
+
             const savedMode = localStorage.getItem("cadoukaProfitColorMode") || "rise-green";
             applyProfitColorMode(savedMode);
         });
