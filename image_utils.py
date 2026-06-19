@@ -754,7 +754,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     )
 
     product_name_raw = format_product_name_for_card(product.get("name"))
-    product_name = format_title_with_bracket_linebreak(product_name_raw)
+    product_name = format_title_with_bracket_linebreak(product_name_raw) 
     image_url = product.get("image") or ""
     stats = calculate_price_stats_for_card(prices)
 
