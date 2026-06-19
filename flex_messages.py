@@ -1427,7 +1427,7 @@ def create_market_image_card_flex(
         ),
         footer=BoxComponent(
             layout="vertical",
-            spacing="xxs",
+            spacing="xs",
             padding_all="xs",
             contents=[
                 BoxComponent(

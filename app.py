@@ -5407,10 +5407,15 @@ def handle_postback(event):
             message="查詢時發生錯誤"
         )
 
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="查詢時發生錯誤，請稍後再試。")
-        )
+        try:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="查詢時發生錯誤，請稍後再試。")
+            )
+        except Exception as reply_error:
+            # 如果前一次 reply_message 已經送到 LINE 但 Flex 格式錯誤，
+            # reply token 可能已失效。這裡只記錄，不要讓 webhook 變成 500。
+            print("LINE 錯誤回覆也失敗：", reply_error, flush=True)
 
 
 if __name__ == "__main__":
