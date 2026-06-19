@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import font_manager, rcParams
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, FuncFormatter
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
@@ -693,6 +693,23 @@ def generate_price_chart_image(prices, selected_grade="PSA10", y_tick_font_size=
 
         # Y 軸數字與刻度數量
         ax.yaxis.set_major_locator(MaxNLocator(nbins=5, min_n_ticks=4))
+
+        def format_y_axis_price(value, pos):
+            try:
+                value = int(round(value))
+
+                if abs(value) >= 1000000:
+                    return f"{value / 10000:.0f}萬"
+
+                return f"{value:,}"
+            except:
+                return str(value)
+
+        ax.yaxis.set_major_formatter(FuncFormatter(format_y_axis_price))
+
+        # 關掉左上角 1e6 / 1e7 那種科學記號
+        ax.yaxis.offsetText.set_visible(False)
+
         ax.tick_params(
             axis="y",
             labelsize=y_tick_font_size,
@@ -788,7 +805,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (30, 35, canvas_width - 30, canvas_height - 35)
+    outer_box = (27, 32, canvas_width - 27, canvas_height - 32)
     draw.rounded_rectangle(
         outer_box,
         radius=20,
@@ -807,7 +824,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     )
 
     if os.path.exists(logo_path):
-        logo = load_logo_remove_white(logo_path, target_w=110, white_threshold=245)
+        logo = load_logo_remove_white(logo_path, target_w=80, white_threshold=245)
 
         logo_x = outer_box[0] + 18
         logo_y = outer_box[3] - logo.height - 28
@@ -894,7 +911,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 商品名稱：日文字型 + 遇到 [ / ［ 自動換行，避免爆版
     title_x = right_x
     title_y = 65
-    title_font_size = 52
+    title_font_size = 50
     title_min_size = 34
     title_line_spacing = 8
     title_font_dynamic = title_font
@@ -962,9 +979,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 695
 
-    stat_start_x = 610
+    stat_start_x = 590
     stat_gap = 35
-    stat_w = 255
+    stat_w = 270
 
     stat_items = [
         ("最高", stats["highest"]),
