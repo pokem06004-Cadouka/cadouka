@@ -320,17 +320,20 @@ def get_font(size=24, bold=False):
     return ImageFont.load_default()
 
 
-def get_jp_font(size=24, bold=False):
+def get_title_font(size=24, bold=False):
     """
     商品名稱專用字型：
-    優先使用日文字型，避免「団 / 済」等日文字變成方塊。
-    請將 NotoSansJP-Regular.ttf / NotoSansJP-Bold.ttf 放在 fonts/ 資料夾。
-    如果沒有，會退回 NotoSansCJKjp 或系統字型。
+    優先支援日文，其次支援簡體中文，再退回繁中 / 系統字型。
+    建議 fonts/ 內可放：
+    - NotoSansJP-Regular.ttf / NotoSansJP-Bold.ttf
+    - NotoSansSC-Regular.ttf / NotoSansSC-Bold.ttf
     """
     if bold:
         font_names = [
             "NotoSansJP-Bold.ttf",
             "NotoSansCJKjp-Bold.otf",
+            "NotoSansSC-Bold.ttf",
+            "NotoSansCJKsc-Bold.otf",
             "NotoSansCJK-Bold.ttc",
             "NotoSansTC-Bold.ttf",
             "NotoSansCJKtc-Bold.otf"
@@ -338,22 +341,30 @@ def get_jp_font(size=24, bold=False):
         system_fonts = [
             "C:/Windows/Fonts/meiryob.ttc",
             "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/simhei.ttf",
+            "C:/Windows/Fonts/msyhbd.ttc",
             "C:/Windows/Fonts/msjhbd.ttc",
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansSC-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         ]
     else:
         font_names = [
             "NotoSansJP-Regular.ttf",
             "NotoSansCJKjp-Regular.otf",
+            "NotoSansSC-Regular.ttf",
+            "NotoSansCJKsc-Regular.otf",
             "NotoSansCJK-Regular.ttc",
             "NotoSansTC-Regular.ttf",
             "NotoSansCJKtc-Regular.otf"
         ]
         system_fonts = [
             "C:/Windows/Fonts/meiryo.ttc",
+            "C:/Windows/Fonts/simhei.ttf",
+            "C:/Windows/Fonts/msyh.ttc",
             "C:/Windows/Fonts/msjh.ttc",
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
         ]
 
@@ -364,7 +375,7 @@ def get_jp_font(size=24, bold=False):
             if font_path.exists():
                 return ImageFont.truetype(str(font_path), size=size)
         except Exception as e:
-            print("Pillow 日文字型載入失敗：", font_path, e, flush=True)
+            print("Pillow 商品名稱字型載入失敗：", font_path, e, flush=True)
 
     for font_path in system_fonts:
         try:
@@ -373,6 +384,11 @@ def get_jp_font(size=24, bold=False):
             continue
 
     return ImageFont.load_default()
+
+
+# 舊名稱保留，避免其他地方如果有呼叫 get_jp_font 會壞掉。
+def get_jp_font(size=24, bold=False):
+    return get_title_font(size=size, bold=bold)
 
 
 def setup_matplotlib_font():
@@ -765,7 +781,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw = ImageDraw.Draw(card)
 
     # 字型
-    title_font = get_jp_font(52, bold=True)
+    title_font = get_title_font(52, bold=True)
 
     stat_label_font = get_font(42, bold=True)
     stat_jpy_font = get_font(46, bold=True)
@@ -884,7 +900,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     title_font_dynamic = title_font
 
     while title_font_size >= title_min_size:
-        title_font_dynamic = get_jp_font(title_font_size, bold=True)
+        title_font_dynamic = get_title_font(title_font_size, bold=True)
 
         title_bbox = draw.multiline_textbbox(
             (0, 0),
@@ -939,78 +955,6 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         fill="#222222",
         font=title_font_dynamic,
         spacing=title_line_spacing
-    )
-
-    # =========================
-    # selected_grade 標籤（商品名稱下方的精緻 badge）
-    # =========================
-    badge_text = str(selected_grade)
-
-    badge_font = get_font(27, bold=True)
-
-    # 用 textbbox 抓文字實際尺寸，比較準
-    badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
-    badge_text_w = badge_bbox[2] - badge_bbox[0]
-    badge_text_h = badge_bbox[3] - badge_bbox[1]
-
-    # 位置
-    badge_x = right_x + 30
-    badge_y = title_y + title_h + 16   # 商品名稱換行後，PSA 標籤自動排在標題下方
-
-    # 內距
-    badge_padding_x = 20
-    badge_padding_y = 11
-
-    badge_w = int(badge_text_w + badge_padding_x * 2)
-    badge_h = int(badge_text_h + badge_padding_y * 2)
-
-    # 顏色
-    badge_fill = "#EEF4FF"         # 更柔和的淡藍底
-    badge_outline = "#B7C9EE"      # 淡藍灰邊框（不要太重）
-    badge_text_color = "#2F5FBF"   # 深藍字
-    badge_shadow = "#E6EDF8"       # 很淡的陰影
-
-    # 圓角：做成 pill 形狀
-    badge_radius = badge_h // 2
-
-    # 陰影
-    shadow_offset_x = 0
-    shadow_offset_y = 3
-
-    draw.rounded_rectangle(
-        (
-            badge_x + shadow_offset_x,
-            badge_y + shadow_offset_y,
-            badge_x + badge_w + shadow_offset_x,
-            badge_y + badge_h + shadow_offset_y
-        ),
-        radius=badge_radius,
-        fill=badge_shadow
-    )
-    badge_box_offset_y = -2.5
-    # 主 badge
-    draw.rounded_rectangle(
-        (
-            badge_x,
-            badge_y,
-            badge_x + badge_w,
-            badge_y + badge_h + badge_box_offset_y 
-        ),
-        radius=badge_radius,
-        fill=badge_fill,
-        outline=badge_outline,
-        width=2
-    )
-
-    # 文字真正置中
-    text_x = badge_x + (badge_w - badge_text_w) / 2
-    text_y = badge_y + (badge_h - badge_text_h) / 2 - badge_bbox[1] - 1
-
-    draw.text(
-        (text_x, text_y),
-        badge_text,
-        fill=badge_text_color,
-        font=badge_font
     )
 
    # =========================
@@ -1089,7 +1033,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     newprice_jpy_font = get_font(48, bold=True)
     newprice_twd_font = get_font(35, bold=False)
 
-    latest_title = "最新成交"
+    latest_title = f"{selected_grade} 最新成交"
     latest_value = stats["latest"]
 
     latest_jpy_text = format_jpy_text(latest_value)
@@ -1144,7 +1088,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 865
+    footer_y = 868
 
     # 整組最右邊的位置
     footer_right_x = canvas_width - 75
