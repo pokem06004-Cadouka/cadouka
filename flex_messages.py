@@ -1295,6 +1295,35 @@ def create_product_image_grid_messages(products):
     return messages
 
 
+def create_compact_outline_button(label, action, text_color="#F8F1E8", border_color="#EADDCB"):
+    """
+    用 BoxComponent 做小型假按鈕。
+    比 LINE 原生 ButtonComponent 更矮，背景透明，只保留膠囊邊框。
+    """
+    return BoxComponent(
+        layout="vertical",
+        flex=1,
+        height="28px",
+        padding_all="none",
+        border_color=border_color,
+        border_width="1px",
+        corner_radius="xl",
+        justify_content="center",
+        align_items="center",
+        action=action,
+        contents=[
+            TextComponent(
+                text=label,
+                size="xxs",
+                weight="bold",
+                color=text_color,
+                align="center",
+                wrap=False
+            )
+        ]
+    )
+
+
 def get_market_image_filename_from_url(card_image_url):
     """
     從 /static/generated/market_card_xxx.png 取出檔名，給 LINE postback 用。
@@ -1319,95 +1348,71 @@ def create_market_image_card_flex(
     # 第一排固定顯示：PSA9 / PSA8以下 / A / B
     # 目前 A / B 先全開放，不做 Pro 會員限制。
     grade_buttons = [
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "PSA9",
+            PostbackAction(
                 label="PSA9",
                 data=f"action=select&index={product_index}&grade=PSA9",
                 display_text="查看 PSA9"
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "PSA8以下",
+            PostbackAction(
                 label="PSA8以下",
                 data=f"action=select&index={product_index}&grade={quote('PSA8以下')}",
                 display_text="查看 PSA8以下"
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "A",
+            PostbackAction(
                 label="A",
                 data=f"action=select&index={product_index}&grade=A",
                 display_text="查看 A"
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "B",
+            PostbackAction(
                 label="B",
                 data=f"action=select&index={product_index}&grade=B",
                 display_text="查看 B"
-            ),
-            flex=1
+            )
         )
     ]
 
     # 第二排固定顯示：商品連結 / 加入倉庫 / 下載圖片 / 填寫回饋
     action_buttons = [
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=URIAction(
+        create_compact_outline_button(
+            "商品連結",
+            URIAction(
                 label="商品連結",
                 uri=product_url
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "加入倉庫",
+            PostbackAction(
                 label="加入倉庫",
                 data=f"action=add_card&index={product_index}&grade={quote(selected_grade)}",
                 display_text="加入倉庫"
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=PostbackAction(
+        create_compact_outline_button(
+            "下載圖片",
+            PostbackAction(
                 label="下載圖片",
                 data=f"action=send_market_image&file={quote(market_image_filename)}",
                 display_text="下載圖片"
-            ),
-            flex=1
+            )
         ),
-        ButtonComponent(
-            style="secondary",
-            height="sm",
-            color="#CBD5E1",
-            action=URIAction(
+        create_compact_outline_button(
+            "填寫回饋",
+            URIAction(
                 label="填寫回饋",
                 uri=FEEDBACK_FORM_URL
-            ),
-            flex=1
+            )
         )
     ]
 
@@ -1422,8 +1427,8 @@ def create_market_image_card_flex(
         ),
         footer=BoxComponent(
             layout="vertical",
-            spacing="xs",
-            padding_all="sm",
+            spacing="xxs",
+            padding_all="xs",
             contents=[
                 BoxComponent(
                     layout="horizontal",

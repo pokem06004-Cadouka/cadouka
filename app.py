@@ -32,6 +32,7 @@ import urllib.request as req
 import traceback
 import os
 import csv
+import json
 import time
 import socket
 import ipaddress
@@ -792,6 +793,47 @@ def get_base_url():
 
     return base_url
 
+
+
+def start_line_loading_animation(line_user_id, loading_seconds=20):
+    """
+    LINE 官方等待動畫（三個點點）。
+    不會送出額外訊息，失敗也不影響原本回覆流程。
+    """
+    if not line_user_id:
+        return False
+
+    try:
+        seconds = int(loading_seconds or 20)
+    except:
+        seconds = 20
+
+    seconds = max(5, min(60, seconds))
+
+    try:
+        payload = json.dumps({
+            "chatId": line_user_id,
+            "loadingSeconds": seconds
+        }).encode("utf-8")
+
+        request_obj = req.Request(
+            "https://api.line.me/v2/bot/chat/loading/start",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+            },
+            method="POST"
+        )
+
+        with req.urlopen(request_obj, timeout=3) as response:
+            response.read()
+
+        return True
+
+    except Exception as e:
+        print("LINE loading animation 啟動失敗：", e, flush=True)
+        return False
 
 
 def is_valid_market_image_filename(filename):
@@ -4973,6 +5015,8 @@ def handle_message(event):
     # =========================
 
     try:
+        start_line_loading_animation(line_user_id, 20)
+
         resolved_keyword = resolve_search_alias(card_id)
         products = search_products(resolved_keyword)
 
@@ -5046,6 +5090,9 @@ def handle_postback(event):
         action = params.get("action", [""])[0]
 
         print("Postback action：", action, flush=True)
+
+        if action in ["select", "history", "add_card", "send_market_image"]:
+            start_line_loading_animation(line_user_id, 20)
 
         if action == "send_market_image":
             filename = params.get("file", [""])[0]
