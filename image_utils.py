@@ -494,32 +494,35 @@ def format_product_name_for_card(product_name):
     return text or "未命名商品"
 
 
-def format_title_with_bracket_linebreak(product_name):
+def format_title_with_bracket_linebreak(product_name, bracket_linebreak_threshold=10):
     """
     行情圖商品名稱專用：
     1. 保留到 ] 為止。
-    2. 遇到 [ 或 ［ 自動換行，避免商品名稱太長爆版。
+    2. 如果 [ / ［ 前面的字數 > bracket_linebreak_threshold，才在括號前換行。
+    3. 如果 [ / ［ 前面的字數 <= bracket_linebreak_threshold，就維持同一行。
     """
     text = str(product_name or "未命名商品").strip()
 
     if "]" in text:
         text = text.split("]", 1)[0].strip() + "]"
 
+    # 優先處理全形［
     if "［" in text:
         idx = text.find("［")
-        if idx > 0:
-            text = text[:idx].rstrip() + "\n" + text[idx:]
+        before_text = text[:idx].rstrip()
 
-    elif " [" in text:
-        text = text.replace(" [", "\n[", 1)
+        if idx > 0 and len(before_text) > bracket_linebreak_threshold:
+            text = before_text + "\n" + text[idx:]
 
+    # 再處理半形 [
     elif "[" in text:
         idx = text.find("[")
-        if idx > 0:
-            text = text[:idx].rstrip() + "\n" + text[idx:]
+        before_text = text[:idx].rstrip()
+
+        if idx > 0 and len(before_text) > bracket_linebreak_threshold:
+            text = before_text + "\n" + text[idx:]
 
     return text or "未命名商品"
-
 
 def parse_jpy_price(price):
     try:
