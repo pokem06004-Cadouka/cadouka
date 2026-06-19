@@ -427,6 +427,25 @@ def text_width(draw, text, font):
     return bbox[2] - bbox[0]
 
 
+def get_fit_font(draw, text, max_width, start_size, min_size=18, bold=False, font_getter=None):
+    """
+    依指定最大寬度自動縮小字體，避免文字超出框框。
+    - start_size: 起始字級
+    - min_size: 最小字級
+    - bold: 是否粗體
+    - font_getter: 可指定 get_font / get_title_font 等字型函式
+    """
+    font_getter = font_getter or get_font
+    text = str(text or "")
+
+    for size in range(int(start_size), int(min_size) - 1, -1):
+        font = font_getter(size, bold=bold)
+        if text_width(draw, text, font) <= max_width:
+            return font
+
+    return font_getter(min_size, bold=bold)
+
+
 def wrap_text_by_width(draw, text, font, max_width, max_lines=3):
     text = str(text or "").strip()
 
@@ -1018,24 +1037,42 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
             font=stat_label_font
         )
 
-        # 日幣
+        # 日幣（自動縮字，避免超出框框）
         jpy_text = format_jpy_text(value)
-        jpy_w = text_width(draw, jpy_text, stat_jpy_font)
+        stat_jpy_font_fit = get_fit_font(
+            draw,
+            jpy_text,
+            max_width=stat_w - 32,
+            start_size=46,
+            min_size=24,
+            bold=True,
+            font_getter=get_font
+        )
+        jpy_w = text_width(draw, jpy_text, stat_jpy_font_fit)
         draw.text(
             (x1 + (stat_w - jpy_w) / 2, y1 + 48),
             jpy_text,
             fill="#1F2937",
-            font=stat_jpy_font
+            font=stat_jpy_font_fit
         )
 
-        # 台幣
+        # 台幣（自動縮字，避免超出框框）
         twd_text = format_twd_text(value, jpy_rate)
-        twd_w = text_width(draw, twd_text, stat_twd_font)
+        stat_twd_font_fit = get_fit_font(
+            draw,
+            twd_text,
+            max_width=stat_w - 32,
+            start_size=35,
+            min_size=20,
+            bold=False,
+            font_getter=get_font
+        )
+        twd_w = text_width(draw, twd_text, stat_twd_font_fit)
         draw.text(
             (x1 + (stat_w - twd_w) / 2, y1 + 110),
             twd_text,
             fill="#91969E",
-            font=stat_twd_font
+            font=stat_twd_font_fit
         )
 
 
@@ -1059,16 +1096,44 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 以左側圖片框置中
     latest_center_x = (left_box[0] + left_box[2]) / 2
 
-    latest_title_w = text_width(draw, latest_title, latest_title_font)
-    latest_jpy_w = text_width(draw, latest_jpy_text, newprice_jpy_font)
-    latest_twd_w = text_width(draw, latest_twd_text, newprice_twd_font)
+    latest_title_font_fit = get_fit_font(
+        draw,
+        latest_title,
+        max_width=(left_box[2] - left_box[0]) - 24,
+        start_size=46,
+        min_size=24,
+        bold=True,
+        font_getter=get_font
+    )
+    latest_jpy_font_fit = get_fit_font(
+        draw,
+        latest_jpy_text,
+        max_width=(left_box[2] - left_box[0]) - 24,
+        start_size=48,
+        min_size=24,
+        bold=True,
+        font_getter=get_font
+    )
+    latest_twd_font_fit = get_fit_font(
+        draw,
+        latest_twd_text,
+        max_width=(left_box[2] - left_box[0]) - 24,
+        start_size=35,
+        min_size=20,
+        bold=False,
+        font_getter=get_font
+    )
+
+    latest_title_w = text_width(draw, latest_title, latest_title_font_fit)
+    latest_jpy_w = text_width(draw, latest_jpy_text, latest_jpy_font_fit)
+    latest_twd_w = text_width(draw, latest_twd_text, latest_twd_font_fit)
 
     # 標題
     draw.text(
         (latest_center_x - latest_title_w / 2, latest_y - 10),
         latest_title,
         fill="#1f77b4",
-        font=latest_title_font
+        font=latest_title_font_fit
     )
 
     # 日幣
@@ -1076,7 +1141,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         (latest_center_x - latest_jpy_w / 2, latest_y + 48),
         latest_jpy_text,
         fill="#1F2937",
-        font=newprice_jpy_font
+        font=latest_jpy_font_fit
     )
 
     # 台幣
@@ -1084,7 +1149,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         (latest_center_x - latest_twd_w / 2, latest_y + 110),
         latest_twd_text,
         fill="#8C9198",
-        font=newprice_twd_font
+        font=latest_twd_font_fit
     )
 
 
