@@ -334,12 +334,7 @@ def get_condition_order(prices_by_conditions=None, condition_order=None):
     """
     決定 LINE Flex 要顯示哪些 condition。
 
-    Free：
-    - PSA10 / PSA9 / PSA8以下
-
-    Pro：
-    - A / B / PSA10 / PSA9 / PSA8以下
-
+    目前 A / B 功能先全開放，不啟用 Pro 付費限制。
     app.py 如果有傳 condition_order，就優先使用 app.py 傳入的順序。
     如果沒有傳，則根據 prices_by_conditions 裡有沒有 A / B 自動判斷。
     """
@@ -1322,7 +1317,7 @@ def create_market_image_card_flex(
     market_image_filename = get_market_image_filename_from_url(card_image_url)
 
     # 第一排固定顯示：PSA9 / PSA8以下 / A / B
-    # Free 使用者點 A / B 時，app.py 會回覆 Pro 會員提示。
+    # 目前 A / B 先全開放，不做 Pro 會員限制。
     grade_buttons = [
         ButtonComponent(
             style="secondary",

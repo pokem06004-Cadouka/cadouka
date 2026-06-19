@@ -565,10 +565,10 @@ def get_optimized_image_url(image_url, preset="detail"):
 # Condition Order Settings
 # =========================
 
-# Free users only see PSA conditions.
+# 基礎條件：PSA 等級。
 BASE_CONDITION_ORDER = ["PSA10", "PSA9", "PSA8以下"]
 
-# Pro/Admin users see extra raw-card conditions after PSA conditions.
+# 目前 LINE / 網站行情分析先全開放 A / B，不啟用 Pro 付費限制。
 PRO_CONDITION_ORDER = ["PSA10", "PSA9", "PSA8以下", "A", "B"]
 
 
@@ -5122,15 +5122,9 @@ def handle_postback(event):
                 product_url = product["url"]
                 product_id = get_product_id(product_url)
 
-                line_user = get_user_by_line_user_id(line_user_id)
-                line_is_pro = bool(line_user and is_pro_user(line_user))
-
-                if selected_grade in ["A", "B"] and not line_is_pro:
-                    line_bot_api.reply_message(
-                        event.reply_token,
-                        TextSendMessage(text="A / B 行情圖卡為 Cadouka Pro 會員功能。")
-                    )
-                    return
+                # 目前 LINE 查價功能全開放，不做 Pro 會員限制。
+                # 保留 line_is_pro=True 是為了相容 flex_messages.py 既有參數。
+                line_is_pro = True
 
                 price_url = build_sales_history_url(
                     product_id,
@@ -5199,16 +5193,7 @@ def handle_postback(event):
             product = products[index]
             product_url = product["url"]
 
-            line_user = get_user_by_line_user_id(line_user_id)
-            line_is_pro = bool(line_user and is_pro_user(line_user))
-
-            if selected_grade in ["A", "B"] and not line_is_pro:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text="A / B 歷史成交為 Cadouka Pro 會員功能。")
-                )
-                return
-
+            # 目前 LINE 歷史成交全開放，不做 Pro 會員限制。
             product_id = get_product_id(product_url)
             price_url = build_sales_history_url(
                 product_id,
@@ -5220,10 +5205,8 @@ def handle_postback(event):
             prices = getprice(price_url)
             jpy_rate = get_jpy_spot_sell()
 
-            if line_is_pro:
-                history_display_limit = 10
-            else:
-                history_display_limit = 5
+            # 全開放版本：歷史成交顯示 10 筆。
+            history_display_limit = 10
 
             history_flex_message = create_history_flex(
                 product,
@@ -5260,20 +5243,7 @@ def handle_postback(event):
 
             user = get_user_by_line_user_id(line_user_id)
 
-            if selected_grade in ["A", "B"] and (not user or not is_pro_user(user)):
-                safe_add_line_log(
-                    line_user_id=line_user_id,
-                    action="add_card",
-                    result="failed",
-                    message="非 Pro，無法加入 A / B 卡牌"
-                )
-
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text="A / B 加入卡牌為 Cadouka Pro 會員功能。")
-                )
-                return
-
+            # 目前 A / B 加入倉庫全開放；只保留「是否綁定帳號」檢查。
             if not user:
                 safe_add_line_log(
                     line_user_id=line_user_id,
