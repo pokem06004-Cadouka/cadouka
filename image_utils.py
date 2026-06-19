@@ -903,7 +903,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # =========================
     bottom_stat_y = 695
 
-    stat_start_x = 630
+    stat_start_x = 610
     stat_gap = 35
     stat_w = 255
 
@@ -1029,7 +1029,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 855
+    footer_y = 865
 
     # 整組最右邊的位置
     footer_right_x = canvas_width - 75
