@@ -1,3 +1,5 @@
+import os
+
 from linebot.models import (
     FlexSendMessage,
     BubbleContainer,
@@ -12,6 +14,8 @@ from linebot.models import (
 
 from urllib.parse import quote
 from config import BASE_URL
+
+FEEDBACK_FORM_URL = os.getenv("FEEDBACK_FORM_URL", "https://forms.gle/4kMxZdM2szFbvATX7").strip()
 
 def format_product_name_for_line(product_name):
     """
@@ -1317,6 +1321,8 @@ def create_market_image_card_flex(
     product_url = product["url"]
     market_image_filename = get_market_image_filename_from_url(card_image_url)
 
+    # 第一排固定顯示：PSA9 / PSA8以下 / A / B
+    # Free 使用者點 A / B 時，app.py 會回覆 Pro 會員提示。
     grade_buttons = [
         ButtonComponent(
             style="secondary",
@@ -1332,37 +1338,75 @@ def create_market_image_card_flex(
             style="secondary",
             height="sm",
             action=PostbackAction(
-                label="PSA8↓",
+                label="PSA8以下",
                 data=f"action=select&index={product_index}&grade={quote('PSA8以下')}",
                 display_text="查看 PSA8以下"
+            ),
+            flex=1
+        ),
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=PostbackAction(
+                label="A",
+                data=f"action=select&index={product_index}&grade=A",
+                display_text="查看 A"
+            ),
+            flex=1
+        ),
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=PostbackAction(
+                label="B",
+                data=f"action=select&index={product_index}&grade=B",
+                display_text="查看 B"
             ),
             flex=1
         )
     ]
 
-    if is_pro:
-        grade_buttons.extend([
-            ButtonComponent(
-                style="secondary",
-                height="sm",
-                action=PostbackAction(
-                    label="A",
-                    data=f"action=select&index={product_index}&grade=A",
-                    display_text="查看 A"
-                ),
-                flex=1
+    # 第二排固定顯示：商品連結 / 加入倉庫 / 下載圖片 / 填寫回饋
+    action_buttons = [
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=URIAction(
+                label="商品連結",
+                uri=product_url
             ),
-            ButtonComponent(
-                style="secondary",
-                height="sm",
-                action=PostbackAction(
-                    label="B",
-                    data=f"action=select&index={product_index}&grade=B",
-                    display_text="查看 B"
-                ),
-                flex=1
-            )
-        ])
+            flex=1
+        ),
+        ButtonComponent(
+            style="primary",
+            height="sm",
+            action=PostbackAction(
+                label="加入倉庫",
+                data=f"action=add_card&index={product_index}&grade={quote(selected_grade)}",
+                display_text="加入倉庫"
+            ),
+            flex=1
+        ),
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=PostbackAction(
+                label="下載圖片",
+                data=f"action=send_market_image&file={quote(market_image_filename)}",
+                display_text="下載圖片"
+            ),
+            flex=1
+        ),
+        ButtonComponent(
+            style="secondary",
+            height="sm",
+            action=URIAction(
+                label="填寫回饋",
+                uri=FEEDBACK_FORM_URL
+            ),
+            flex=1
+        )
+    ]
 
     bubble = BubbleContainer(
         size="giga",
@@ -1376,52 +1420,18 @@ def create_market_image_card_flex(
         footer=BoxComponent(
             layout="vertical",
             spacing="sm",
-            background_color="#F3F4F6",
+            padding_all="md",
+            background_color="#FFFFFF",
             contents=[
                 BoxComponent(
                     layout="horizontal",
-                    spacing="sm",
+                    spacing="xs",
                     contents=grade_buttons
                 ),
                 BoxComponent(
                     layout="horizontal",
-                    spacing="sm",
-                    contents=[
-                        ButtonComponent(
-                            style="primary",
-                            height="sm",
-                            action=PostbackAction(
-                                label="加入倉庫",
-                                data=f"action=add_card&index={product_index}&grade={quote(selected_grade)}",
-                                display_text="加入倉庫"
-                            ),
-                            flex=1
-                        ),
-                        ButtonComponent(
-                            style="secondary",
-                            height="sm",
-                            action=URIAction(
-                                label="前往商品頁",
-                                uri=product_url
-                            ),
-                            flex=1
-                        )
-                    ]
-                ),
-                BoxComponent(
-                    layout="vertical",
-                    spacing="sm",
-                    contents=[
-                        ButtonComponent(
-                            style="secondary",
-                            height="sm",
-                            action=PostbackAction(
-                                label="下載圖片",
-                                data=f"action=send_market_image&file={quote(market_image_filename)}",
-                                display_text="下載圖片"
-                            )
-                        )
-                    ]
+                    spacing="xs",
+                    contents=action_buttons
                 )
             ]
         )
