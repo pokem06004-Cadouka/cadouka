@@ -1424,7 +1424,6 @@ def create_market_image_card_flex(
             layout="vertical",
             spacing="xs",
             padding_all="sm",
-            background_color="#FFFFFF",
             contents=[
                 BoxComponent(
                     layout="horizontal",
