@@ -1322,6 +1322,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="PSA9",
                 data=f"action=select&index={product_index}&grade=PSA9",
@@ -1332,6 +1333,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="PSA8以下",
                 data=f"action=select&index={product_index}&grade={quote('PSA8以下')}",
@@ -1342,6 +1344,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="A",
                 data=f"action=select&index={product_index}&grade=A",
@@ -1352,6 +1355,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="B",
                 data=f"action=select&index={product_index}&grade=B",
@@ -1366,6 +1370,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=URIAction(
                 label="商品連結",
                 uri=product_url
@@ -1373,8 +1378,9 @@ def create_market_image_card_flex(
             flex=1
         ),
         ButtonComponent(
-            style="primary",
+            style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="加入倉庫",
                 data=f"action=add_card&index={product_index}&grade={quote(selected_grade)}",
@@ -1385,6 +1391,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=PostbackAction(
                 label="下載圖片",
                 data=f"action=send_market_image&file={quote(market_image_filename)}",
@@ -1395,6 +1402,7 @@ def create_market_image_card_flex(
         ButtonComponent(
             style="secondary",
             height="sm",
+            color="#CBD5E1",
             action=URIAction(
                 label="填寫回饋",
                 uri=FEEDBACK_FORM_URL
@@ -1414,8 +1422,8 @@ def create_market_image_card_flex(
         ),
         footer=BoxComponent(
             layout="vertical",
-            spacing="sm",
-            padding_all="md",
+            spacing="xs",
+            padding_all="sm",
             background_color="#FFFFFF",
             contents=[
                 BoxComponent(
