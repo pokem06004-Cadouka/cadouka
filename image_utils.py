@@ -695,7 +695,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         radius=20,
         fill="#F8FAFC",
         outline="#D8E2EF",   # 邊框顏色
-        width=3                # 邊框粗細
+        width=5                # 邊框粗細
     )
     # =========================
     # Cadouka logo（左上角）
@@ -966,12 +966,12 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 最新成交價格（獨立區塊，可單獨移動）
     # =========================
-    latest_title_font = get_font(49, bold=True)
+    latest_title_font = get_font(46, bold=True)
 
     # 跟旁邊最高 / 平均 / 最低 用同一條基準線
     latest_y = bottom_stat_y
 
-    newprice_jpy_font = get_font(46, bold=True)
+    newprice_jpy_font = get_font(48, bold=True)
     newprice_twd_font = get_font(35, bold=False)
 
     latest_title = "最新成交"
@@ -1018,7 +1018,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     # 匯率不強制補小數位，保留抓到的原始值
     # =========================
    # 右下角資訊：同一排，整組靠右下
-    footer_font = get_font(20, bold=False)
+    footer_font = get_font(21, bold=False)
     footer_color = "#666666"
 
     if jpy_rate:
@@ -1029,7 +1029,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 900
+    footer_y = 875
 
     # 整組最右邊的位置
     footer_right_x = canvas_width - 55
