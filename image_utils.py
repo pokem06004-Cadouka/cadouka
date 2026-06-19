@@ -972,7 +972,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     newprice_jpy_font = get_font(46, bold=True)
     newprice_twd_font = get_font(35, bold=False)
 
-    latest_title = "最新成交價格"
+    latest_title = "最新成交"
     latest_value = stats["latest"]
 
     latest_jpy_text = format_jpy_text(latest_value)
@@ -989,7 +989,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     draw.text(
         (latest_center_x - latest_title_w / 2, latest_y - 10),
         latest_title,
-        fill="#2563EB",
+        fill="#1f77b4",
         font=latest_title_font
     )
 

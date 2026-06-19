@@ -1295,26 +1295,26 @@ def create_product_image_grid_messages(products):
     return messages
 
 
-def create_compact_outline_button(label, action, text_color="#F8F1E8", border_color="#EADDCB"):
+def create_compact_outline_button(label, action, text_color="#6B4E35", border_color="#C9A97A"):
     """
     用 BoxComponent 做小型假按鈕。
-    比 LINE 原生 ButtonComponent 更矮，背景透明，只保留膠囊邊框。
+    改成透明底、細邊框、微圓角長方形，整體更俐落。
     """
     return BoxComponent(
         layout="vertical",
         flex=1,
-        height="28px",
+        height="34px",
         padding_all="none",
         border_color=border_color,
         border_width="1px",
-        corner_radius="xl",
+        corner_radius="8px",
         justify_content="center",
         align_items="center",
         action=action,
         contents=[
             TextComponent(
                 text=label,
-                size="xxs",
+                size="xs",
                 weight="bold",
                 color=text_color,
                 align="center",
