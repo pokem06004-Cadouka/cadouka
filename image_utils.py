@@ -1088,7 +1088,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     source_text = "資料來源：SNKRDUNK"
 
     # 上下位置：數字越大越往下
-    footer_y = 868
+    footer_y = 868 
 
     # 整組最右邊的位置
     footer_right_x = canvas_width - 75
