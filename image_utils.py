@@ -689,11 +689,13 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     stat_twd_font = get_font(35, bold=False)
 
     # 外層白色卡片：圓角更乾淨
-    outer_box = (8, 30 , canvas_width - 8, canvas_height)
+    outer_box = (24, 40, canvas_width - 24, canvas_height - 20)
     draw.rounded_rectangle(
         outer_box,
         radius=20,
-        fill="#F8FAFC"
+        fill="#F8FAFC",
+        outline="#D8E2EF",   # 邊框顏色
+        width=3                # 邊框粗細
     )
     # =========================
     # Cadouka logo（左上角）
@@ -822,7 +824,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
         bg_color=(248, 250, 252)
     )
 
-    card.paste(chart_image, (right_x + 6, 180))
+    card.paste(chart_image, (right_x + 6, 160))
 
     # =========================
     # selected_grade 標籤（商品名稱下方的精緻 badge）
@@ -899,10 +901,10 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
    # =========================
     # 下方統計區：最高 / 平均 / 最低（圓角方框）
     # =========================
-    bottom_stat_y = 718
+    bottom_stat_y = 695
 
-    stat_start_x = 640
-    stat_gap = 40
+    stat_start_x = 630
+    stat_gap = 35
     stat_w = 255
 
     stat_items = [
