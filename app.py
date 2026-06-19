@@ -2533,10 +2533,51 @@ def admin_dashboard_page():
     )
 
 
+def format_created_at_taiwan_minute(created_at):
+    if not created_at:
+        return ""
+
+    try:
+        if isinstance(created_at, datetime):
+            dt = created_at
+        else:
+            created_at_text = str(created_at).split(".")[0]
+            dt = datetime.strptime(created_at_text, "%Y-%m-%d %H:%M:%S")
+
+        # 資料庫 CURRENT_TIMESTAMP 通常是 UTC
+        dt = dt.replace(tzinfo=timezone.utc)
+        taiwan_time = dt.astimezone(timezone(timedelta(hours=8)))
+
+        return taiwan_time.strftime("%Y-%m-%d %H:%M")
+    except:
+        return str(created_at)[:16]
+
+
+def prepare_admin_user_rows(users):
+    user_rows = []
+
+    for user in users or []:
+        try:
+            user_dict = dict(user)
+        except:
+            user_dict = user
+
+        if isinstance(user_dict, dict):
+            user_dict["created_at_minute"] = format_created_at_taiwan_minute(
+                user_dict.get("created_at")
+            )
+
+        user_rows.append(user_dict)
+
+    return user_rows
+
+
 @app.route("/cdk-console/users")
 @login_required
 @admin_required
 def admin_users_page():
+    keyword = request.args.get("keyword", "").strip()
+
     try:
         page = int(request.args.get("page", 1))
     except:
@@ -2546,7 +2587,7 @@ def admin_users_page():
         page = 1
 
     per_page = 20
-    total_items = count_admin_users()
+    total_items = count_admin_users(keyword=keyword)
 
     if total_items == 0:
         total_pages = 1
@@ -2560,16 +2601,113 @@ def admin_users_page():
 
     users = get_admin_users(
         limit=per_page,
-        offset=offset
+        offset=offset,
+        keyword=keyword
     )
+    users = prepare_admin_user_rows(users)
 
     return render_template(
         "admin_users.html",
         users=users,
+        keyword=keyword,
         current_page=page,
         total_pages=total_pages,
         total_items=total_items,
         per_page=per_page
+    )
+
+
+@app.route("/cdk-console/users/export-excel")
+@login_required
+@admin_required
+def admin_users_export_excel_page():
+    keyword = request.args.get("keyword", "").strip()
+
+    users = get_admin_users(
+        limit=None,
+        offset=0,
+        keyword=keyword
+    )
+    users = prepare_admin_user_rows(users)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "用戶管理"
+
+    headers = [
+        "用戶編號",
+        "帳號",
+        "Gmail",
+        "暱稱",
+        "管理者",
+        "會員",
+        "LINE",
+        "總卡牌",
+        "持有中",
+        "已售出",
+        "建立時間"
+    ]
+
+    ws.append(headers)
+
+    header_fill = PatternFill("solid", fgColor="DBEAFE")
+    header_font = Font(bold=True, color="111827")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    for user in users:
+        ws.append([
+            get_card_value(user, "user_code", "") or "-",
+            get_card_value(user, "username", "") or "-",
+            get_card_value(user, "email", "") or "-",
+            get_card_value(user, "display_name", "") or "-",
+            "是" if get_card_value(user, "is_admin", 0) else "否",
+            get_card_value(user, "membership_level", "free") or "free",
+            "已綁定" if get_card_value(user, "line_user_id", "") else "未綁定",
+            get_card_value(user, "total_cards", 0) or 0,
+            get_card_value(user, "holding_cards", 0) or 0,
+            get_card_value(user, "sold_cards", 0) or 0,
+            get_card_value(user, "created_at_minute", "") or "-"
+        ])
+
+    column_widths = {
+        "A": 14,
+        "B": 18,
+        "C": 30,
+        "D": 18,
+        "E": 10,
+        "F": 12,
+        "G": 12,
+        "H": 12,
+        "I": 12,
+        "J": 12,
+        "K": 20
+    }
+
+    for column_letter, width in column_widths.items():
+        ws.column_dimensions[column_letter].width = width
+
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(vertical="center")
+
+    ws.freeze_panes = "A2"
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"cadouka_users_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 

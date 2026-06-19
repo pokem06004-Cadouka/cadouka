@@ -535,15 +535,58 @@ def get_user_by_line_user_id(line_user_id):
     conn.close()
     return user
 
-def get_admin_users(limit=None, offset=0):
+def build_admin_users_search_clause(keyword):
+    where_sql = ""
+    params = []
+
+    keyword = (keyword or "").strip()
+
+    if keyword:
+        if is_postgres():
+            where_sql = """
+                WHERE (
+                    u.user_code ILIKE ?
+                    OR u.username ILIKE ?
+                    OR u.display_name ILIKE ?
+                    OR u.email ILIKE ?
+                    OR u.line_user_id ILIKE ?
+                )
+            """
+        else:
+            where_sql = """
+                WHERE (
+                    u.user_code LIKE ?
+                    OR u.username LIKE ?
+                    OR u.display_name LIKE ?
+                    OR u.email LIKE ?
+                    OR u.line_user_id LIKE ?
+                )
+            """
+
+        search_keyword = f"%{keyword}%"
+        params.extend([
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword,
+            search_keyword
+        ])
+
+    return where_sql, params
+
+
+def get_admin_users(limit=None, offset=0, keyword=None):
     conn = get_connection()
     cursor = conn.cursor()
+
+    where_sql, params = build_admin_users_search_clause(keyword)
 
     sql = """
         SELECT
             u.id,
             u.user_code,
             u.username,
+            u.email,
             u.display_name,
             u.is_admin,
             u.membership_level,
@@ -569,11 +612,13 @@ def get_admin_users(limit=None, offset=0):
         FROM users u
         LEFT JOIN cards c
             ON u.id = c.user_id
+    """ + where_sql + """
 
         GROUP BY
             u.id,
             u.user_code,
             u.username,
+            u.email,
             u.display_name,
             u.is_admin,
             u.membership_level,
@@ -582,8 +627,6 @@ def get_admin_users(limit=None, offset=0):
 
         ORDER BY u.id DESC
     """
-
-    params = []
 
     if limit is not None:
         sql += " LIMIT ? OFFSET ?"
@@ -596,11 +639,18 @@ def get_admin_users(limit=None, offset=0):
     return users
 
 
-def count_admin_users():
+def count_admin_users(keyword=None):
     conn = get_connection()
     cursor = conn.cursor()
 
-    execute_sql(cursor, "SELECT COUNT(*) AS count FROM users")
+    where_sql, params = build_admin_users_search_clause(keyword)
+
+    sql = """
+        SELECT COUNT(*) AS count
+        FROM users u
+    """ + where_sql
+
+    execute_sql(cursor, sql, params)
     result = cursor.fetchone()
 
     conn.close()

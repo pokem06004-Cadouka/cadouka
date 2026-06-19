@@ -8,23 +8,51 @@
     <div>
         <p class="eyebrow">Admin Users</p>
         <h1>用戶管理</h1>
-        <p class="page-subtitle">查看所有註冊用戶、LINE 綁定狀態、會員等級與卡牌數量。</p>
+        <p class="page-subtitle">查看所有註冊用戶、Gmail、LINE 綁定狀態、會員等級與卡牌數量。</p>
     </div>
 </div>
 
-<div class="list-tools">
-    <div class="page-subtitle">
-        共 {{ total_items }} 位用戶，每頁 {{ per_page }} 位。
+<div class="list-tools admin-user-list-tools">
+    <form action="/cdk-console/users" method="get" class="search-form admin-user-search-form">
+        <input
+            type="text"
+            name="keyword"
+            value="{{ keyword or '' }}"
+            placeholder="搜尋用戶編號、帳號、Gmail、暱稱或 LINE ID"
+        >
+        <button type="submit">搜尋</button>
+
+        {% if keyword %}
+            <a href="/cdk-console/users" class="btn-clear admin-user-clear-btn">清除</a>
+        {% endif %}
+    </form>
+
+    <div class="admin-user-tool-row">
+        <div class="page-subtitle">
+            {% if keyword %}
+                搜尋「{{ keyword }}」共 {{ total_items }} 位用戶，每頁 {{ per_page }} 位。
+            {% else %}
+                共 {{ total_items }} 位用戶，每頁 {{ per_page }} 位。
+            {% endif %}
+        </div>
+
+        <a
+            href="/cdk-console/users/export-excel{% if keyword %}?keyword={{ keyword | urlencode }}{% endif %}"
+            class="btn-secondary export-excel-btn"
+        >
+            匯出 Excel
+        </a>
     </div>
 </div>
 
 <div class="admin-table-card">
     <div class="admin-table-scroll">
-        <table class="admin-table">
+        <table class="admin-table admin-users-table">
             <thead>
                 <tr>
                     <th>用戶編號</th>
                     <th>帳號</th>
+                    <th>Gmail</th>
                     <th>暱稱</th>
                     <th>管理者</th>
                     <th>會員</th>
@@ -41,6 +69,7 @@
                     <tr>
                         <td>{{ user.user_code or "-" }}</td>
                         <td>{{ user.username }}</td>
+                        <td>{{ user.email or "-" }}</td>
                         <td>{{ user.display_name or "-" }}</td>
 
                         <td>
@@ -53,7 +82,7 @@
 
                         <td>
                             <form
-                                action="/cdk-console/users/{{ user.id }}/membership?page={{ current_page }}"
+                                action="/cdk-console/users/{{ user.id }}/membership?page={{ current_page }}{% if keyword %}&keyword={{ keyword | urlencode }}{% endif %}"
                                 method="post"
                                 class="inline-admin-form"
                             >
@@ -88,11 +117,11 @@
                         <td>{{ user.total_cards or 0 }}</td>
                         <td>{{ user.holding_cards or 0 }}</td>
                         <td>{{ user.sold_cards or 0 }}</td>
-                        <td>{{ user.created_at }}</td>
+                        <td>{{ user.created_at_minute or "-" }}</td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="10" class="empty-cell">目前沒有用戶資料。</td>
+                        <td colspan="11" class="empty-cell">目前沒有符合條件的用戶資料。</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -103,7 +132,7 @@
 <div class="pagination-bar">
     {% if current_page > 1 %}
         <a
-            href="/cdk-console/users?page={{ current_page - 1 }}"
+            href="/cdk-console/users?page={{ current_page - 1 }}{% if keyword %}&keyword={{ keyword | urlencode }}{% endif %}"
             class="pagination-btn"
         >
             上一頁
@@ -118,7 +147,7 @@
                 <span class="pagination-number active">{{ p }}</span>
             {% elif p <= 2 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
                 <a
-                    href="/cdk-console/users?page={{ p }}"
+                    href="/cdk-console/users?page={{ p }}{% if keyword %}&keyword={{ keyword | urlencode }}{% endif %}"
                     class="pagination-number"
                 >
                     {{ p }}
@@ -133,7 +162,7 @@
 
     {% if current_page < total_pages %}
         <a
-            href="/cdk-console/users?page={{ current_page + 1 }}"
+            href="/cdk-console/users?page={{ current_page + 1 }}{% if keyword %}&keyword={{ keyword | urlencode }}{% endif %}"
             class="pagination-btn"
         >
             下一頁

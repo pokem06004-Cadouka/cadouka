@@ -5418,3 +5418,43 @@ body.color-rise-red .pill-loss {
     font-weight: 600;
     letter-spacing: 0;
 }
+
+/* =========================
+   Admin Users Tools
+========================= */
+
+.admin-user-list-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-user-search-form {
+    margin-bottom: 0;
+}
+
+.admin-user-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.admin-user-tool-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+    white-space: nowrap;
+}
+
+.admin-users-table td:nth-child(3) {
+    white-space: normal;
+    word-break: break-all;
+}
+
