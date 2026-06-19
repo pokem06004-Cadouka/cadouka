@@ -932,6 +932,15 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     card.paste(chart_image, (right_x + 6, 160))
 
+    # 商品名稱重新畫一次，蓋在折線圖上面
+    draw.multiline_text(
+        (title_x, title_y),
+        product_name,
+        fill="#222222",
+        font=title_font_dynamic,
+        spacing=title_line_spacing
+    )
+
     # =========================
     # selected_grade 標籤（商品名稱下方的精緻 badge）
     # =========================
