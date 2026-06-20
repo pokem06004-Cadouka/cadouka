@@ -1018,6 +1018,77 @@ def safe_add_line_log(
         print("LINE log 寫入失敗：", e)
         traceback.print_exc()
 
+
+def split_alias_search_keywords(resolved_keyword):
+    parts = str(resolved_keyword or "").split("|")
+    keywords = []
+    seen = set()
+
+    for part in parts:
+        keyword = part.strip()
+
+        if not keyword:
+            continue
+
+        keyword_key = keyword.lower()
+
+        if keyword_key in seen:
+            continue
+
+        seen.add(keyword_key)
+        keywords.append(keyword)
+
+    return keywords
+
+
+def get_search_product_key(product):
+    if not product:
+        return ""
+
+    product_url = str(product.get("url") or "").strip().rstrip("/")
+
+    if product_url:
+        return product_url.lower()
+
+    product_name = str(product.get("name") or "").strip().lower()
+    product_image = str(product.get("image") or "").strip().lower()
+
+    return f"{product_name}|{product_image}"
+
+
+def search_products_by_alias_keywords(resolved_keyword):
+    keywords = split_alias_search_keywords(resolved_keyword)
+
+    if not keywords:
+        return [], [], 0
+
+    products = []
+    seen_product_keys = set()
+    error_count = 0
+
+    for keyword in keywords:
+        try:
+            keyword_products = search_products(keyword)
+        except Exception as e:
+            print("多關鍵字搜尋失敗：", keyword, e, flush=True)
+            traceback.print_exc()
+            error_count += 1
+            continue
+
+        for product in keyword_products or []:
+            product_key = get_search_product_key(product)
+
+            if product_key and product_key in seen_product_keys:
+                continue
+
+            if product_key:
+                seen_product_keys.add(product_key)
+
+            products.append(product)
+
+    return products, keywords, error_count
+
+
 # =========================
 # Calculation Helpers
 # =========================
@@ -5018,16 +5089,17 @@ def handle_message(event):
         start_line_loading_animation(line_user_id, 20)
 
         resolved_keyword = resolve_search_alias(card_id)
-        products = search_products(resolved_keyword)
+        products, resolved_keywords, search_error_count = search_products_by_alias_keywords(resolved_keyword)
+        resolved_keyword_text = " | ".join(resolved_keywords) if resolved_keywords else resolved_keyword
 
         if not products:
             safe_add_line_log(
                 line_user_id=line_user_id,
                 action="search",
                 result="no_result",
-                message=f"查無商品：{card_id} → {resolved_keyword}",
+                message=f"查無商品：{card_id} → {resolved_keyword_text}",
                 raw_keyword=card_id,
-                resolved_keyword=resolved_keyword,
+                resolved_keyword=resolved_keyword_text,
                 product_count=0
             )
 
@@ -5043,9 +5115,9 @@ def handle_message(event):
             line_user_id=line_user_id,
             action="search",
             result="success",
-            message=f"查價成功：{card_id} → {resolved_keyword}，找到 {len(products)} 筆商品",
+            message=f"查價成功：{card_id} → {resolved_keyword_text}，找到 {len(products)} 筆商品",
             raw_keyword=card_id,
-            resolved_keyword=resolved_keyword,
+            resolved_keyword=resolved_keyword_text,
             product_count=len(products)
         )
 
