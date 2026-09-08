@@ -36,66 +36,56 @@ def search_products(card_id):
 
     request_obj = req.Request(url, headers=headers)
 
-    with req.urlopen(request_obj, timeout=15) as response:
+    with req.urlopen(request_obj) as response:
         data = response.read().decode("utf-8")
 
     root = bs4.BeautifulSoup(data, "html.parser")
 
-    # 尋找上方橫向商品排行榜
-    # CSS class 前面的亂碼可能改變，只比對穩定的 scrollContainer
-    container = root.find(
+    containers = root.find_all(
         "div",
         class_=lambda c: c and "scrollContainer" in c
-)
+    )
 
-    if not container:
-        return []
-
-    a_tags = container.select('a[href*="/apparels/"]')
+    container = next(
+        (
+            item
+            for item in containers
+            if item.select_one('a[href*="/apparels/"]')
+        ),
+        None
+    )
 
     products = []
-    seen_urls = set()
 
-    for a in a_tags:
-        href = a.get("href")
+    if container:
+        a_tags = container.find_all("a")
 
-        if not href:
-            continue
+        for a in a_tags:
+            href = a.get("href")
 
-        if not href.startswith("http"):
-            href = "https://snkrdunk.com" + href
+            if href and not href.startswith("http"):
+                href = "https://snkrdunk.com" + href
 
-        # 避免同一商品重複出現
-        normalized_url = href.rstrip("/")
+            img = a.find("img")
+            src = img.get("src") if img else None
 
-        if normalized_url in seen_urls:
-            continue
+            title_row = a.find(
+                "div",
+                class_=lambda c: c and "titleRow" in c
+            )
 
-        seen_urls.add(normalized_url)
+            if title_row:
+                span = title_row.find("span")
+                label = span.get_text(strip=True) if span else ""
+            else:
+                label = a.get("aria-label", "")
 
-        img = a.find("img")
-        src = img.get("src") if img else None
-
-        title_row = a.find(
-            "div",
-            class_=lambda c: c and "titleRow" in c
-        )
-
-        if title_row:
-            span = title_row.find("span")
-            label = span.get_text(strip=True) if span else ""
-        else:
-            label = a.get("aria-label", "")
-
-        # aria-label 可能同時包含名稱及價格
-        if not label and img:
-            label = img.get("alt", "")
-
-        products.append({
-            "name": label,
-            "url": href,
-            "image": src
-        })
+            if href:
+                products.append({
+                    "name": label,
+                    "url": href,
+                    "image": src
+                })
 
     return products
 
