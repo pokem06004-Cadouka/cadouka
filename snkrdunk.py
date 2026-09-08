@@ -41,9 +41,17 @@ def search_products(card_id):
 
     root = bs4.BeautifulSoup(data, "html.parser")
 
-    # 不使用 SNKRDUNK 容易改變的 CSS class。
-    # 商品頁網址都有 /apparels/，因此直接用網址特徵尋找。
-    a_tags = root.select('a[href*="/apparels/"]')
+    # 尋找上方橫向商品排行榜
+    # CSS class 前面的亂碼可能改變，只比對穩定的 scrollContainer
+    container = root.find(
+        "div",
+        class_=lambda c: c and "scrollContainer" in c
+)
+
+    if not container:
+        return []
+
+    a_tags = container.select('a[href*="/apparels/"]')
 
     products = []
     seen_urls = set()
