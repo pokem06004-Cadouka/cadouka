@@ -854,7 +854,7 @@
             title: "準備更新",
             meta: mode === "single" ? "單張更新" : "全部更新",
             message: "正在建立分批更新流程...",
-            hint: "這版不需要 worker.py，但更新過程請先停留在此頁。"
+            hint: "更新過程請先停留在此頁。"
         });
 
         try {
@@ -919,7 +919,7 @@
                     skipped: skipped,
                     failed: failed,
                     message: "正在更新第 " + (index + 1) + "～" + Math.min(index + batch.length, total) + " 張卡牌...",
-                    hint: "系統會一批一批更新，避免 Render 免費方案 request timeout。"
+                    hint: "系統會一批一批更新。"
                 });
 
                 const batchResponse = await fetch("/cards/refresh-prices/batch", {
