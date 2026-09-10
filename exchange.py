@@ -5,6 +5,7 @@ import os
 import urllib.request as req
 import urllib.error
 import bs4
+import json
 from datetime import datetime, timedelta
 
 
@@ -42,51 +43,70 @@ def get_jpy_spot_sell():
     global _LAST_JPY_RATE
     global _LAST_JPY_RATE_AT
 
-    # 如果 3 小時內已經成功抓過，就先用快取，避免每次查價都打台銀。
+    # 3 小時內已有成功取得的匯率，直接使用記憶體快取
     if _LAST_JPY_RATE and _LAST_JPY_RATE_AT:
         if datetime.now() - _LAST_JPY_RATE_AT < timedelta(hours=3):
+            print(
+                f"使用日圓匯率快取：{_LAST_JPY_RATE}",
+                flush=True
+            )
             return _LAST_JPY_RATE
 
-    url = "https://rate.bot.com.tw/xrt?Lang=zh-TW"
+    url = "https://open.er-api.com/v6/latest/JPY"
 
     try:
-        request = req.Request(url, headers=headers)
+        request = req.Request(
+            url,
+            headers={
+                "User-Agent": "Cadouka/1.0",
+                "Accept": "application/json"
+            }
+        )
 
-        with req.urlopen(request, timeout=8) as response:
+        with req.urlopen(request, timeout=10) as response:
             result = response.read().decode("utf-8")
 
-        root = bs4.BeautifulSoup(result, "html.parser")
+        data = json.loads(result)
 
-        japan_img = root.find("img", class_=lambda c: c and "japan" in c)
+        if data.get("result") != "success":
+            raise ValueError(
+                f"匯率 API 回傳失敗：{data.get('error-type', 'unknown')}"
+            )
 
-        if not japan_img:
-            print("取得日圓匯率失敗：找不到 japan img")
-            return _LAST_JPY_RATE or get_fallback_jpy_rate()
+        rates = data.get("rates", {})
+        rate = float(rates.get("TWD", 0))
 
-        japan_tr = japan_img.find_parent("tr")
-
-        if not japan_tr:
-            print("取得日圓匯率失敗：找不到 JPY row")
-            return _LAST_JPY_RATE or get_fallback_jpy_rate()
-
-        spot_sell_td = japan_tr.find("td", attrs={"data-table": "本行即期賣出"})
-
-        if not spot_sell_td:
-            print("取得日圓匯率失敗：找不到即期賣出欄位")
-            return _LAST_JPY_RATE or get_fallback_jpy_rate()
-
-        rate_text = spot_sell_td.get_text(strip=True)
-        rate = float(rate_text)
+        if rate <= 0:
+            raise ValueError("匯率 API 未提供有效的 TWD 匯率")
 
         _LAST_JPY_RATE = rate
         _LAST_JPY_RATE_AT = datetime.now()
 
+        print(
+            f"成功取得日圓兌新臺幣參考匯率：1 JPY = {rate} TWD",
+            flush=True
+        )
+
         return rate
 
     except urllib.error.HTTPError as e:
-        print(f"取得日圓匯率失敗，HTTPError {e.code}，使用備用匯率：", e)
-        return _LAST_JPY_RATE or get_fallback_jpy_rate()
+        fallback_rate = _LAST_JPY_RATE or get_fallback_jpy_rate()
+
+        print(
+            f"取得日圓參考匯率失敗，HTTPError {e.code}，"
+            f"使用備用匯率：{fallback_rate}",
+            flush=True
+        )
+
+        return fallback_rate
 
     except Exception as e:
-        print("取得日圓匯率失敗，使用備用匯率：", e)
-        return _LAST_JPY_RATE or get_fallback_jpy_rate()
+        fallback_rate = _LAST_JPY_RATE or get_fallback_jpy_rate()
+
+        print(
+            f"取得日圓參考匯率失敗：{e}，"
+            f"使用備用匯率：{fallback_rate}",
+            flush=True
+        )
+
+        return fallback_rate

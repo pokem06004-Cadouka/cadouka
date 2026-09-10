@@ -1158,7 +1158,7 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
 
     # =========================
     # 右下角資訊：同一排左右放
-    # 左邊：資料來源；右邊：台灣銀行日圓即期匯率
+    # 左邊：資料來源；右邊：日圓兌新臺幣參考匯率
     # 匯率不強制補小數位，保留抓到的原始值
     # =========================
    # 右下角資訊：同一排，整組靠右下
@@ -1166,9 +1166,9 @@ def generate_market_card_image(product, prices, selected_grade="PSA10", jpy_rate
     footer_color = "#666666"
 
     if jpy_rate:
-        rate_text = f"台灣銀行日圓即期匯率：{jpy_rate}"
+        rate_text = f"日圓兌新臺幣參考匯率：{jpy_rate}"
     else:
-        rate_text = "台灣銀行日圓即期匯率：取得失敗"
+        rate_text = "日圓兌新臺幣參考匯率：取得失敗"
 
     source_text = "資料來源：SNKRDUNK"
 

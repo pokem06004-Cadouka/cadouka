@@ -597,7 +597,7 @@ def create_history_flex(product, prices, condition_label, jpy_rate=None, product
     if jpy_rate:
         body_contents.append(
             TextComponent(
-                text=f"台灣銀行日圓即期匯率：{jpy_rate}",
+                text=f"日圓兌新臺幣參考匯率：{jpy_rate}",
                 size="xs",
                 color="#999999",
                 wrap=True,
@@ -829,7 +829,7 @@ def create_price_bubble_for_condition(product, prices, condition_label, jpy_rate
     if jpy_rate:
         body_contents.append(
             TextComponent(
-                text=f"台灣銀行日圓即期匯率：{jpy_rate}",
+                text=f"日圓兌新臺幣參考匯率：{jpy_rate}",
                 size="xs",
                 color="#999999",
                 wrap=True
@@ -1077,7 +1077,7 @@ def create_price_flex(product, prices, jpy_rate=None, product_index=None):
     if jpy_rate:
         body_contents.append(
             TextComponent(
-                text=f"台灣銀行日圓即期匯率：{jpy_rate}",
+                text=f"日圓兌新臺幣參考匯率：{jpy_rate}",
                 size="xs",
                 color="#999999",
                 wrap=True
